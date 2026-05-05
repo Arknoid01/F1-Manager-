@@ -129,6 +129,10 @@
     .podium { background:rgba(255,215,0,.04); }
 
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+    /* FEUX DE DÉPART */
+    .light-dot { width:22px; height:22px; border-radius:50%; background:#1a0000; border:2px solid #3a0000; transition:background .15s,box-shadow .15s; }
+    .light-dot.on { background:#ff0000; box-shadow:0 0 12px #ff0000,0 0 24px #ff000066; border-color:#ff4444; }
   </style>
 </head>
 <body>
@@ -172,6 +176,18 @@
           <g id="carsG"></g>
         </svg>
         <div class="svg-overlay">Tour <span id="svgLap">0</span> / <span id="svgTotal">—</span></div>
+        <!-- FEUX DE DÉPART -->
+        <div id="lightsOverlay" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(0,0,0,0.75);z-index:10;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:3px;color:#fff;text-transform:uppercase;">Prêt au départ</div>
+          <div style="display:flex;gap:8px;" id="lightDots">
+            <div class="light-dot"></div>
+            <div class="light-dot"></div>
+            <div class="light-dot"></div>
+            <div class="light-dot"></div>
+            <div class="light-dot"></div>
+          </div>
+          <div id="lightsMsg" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--muted);letter-spacing:2px;margin-top:4px;"></div>
+        </div>
       </div>
       <div class="prog-wrap">
         <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
@@ -304,10 +320,13 @@ const CR = {
     Race.state.grid.forEach((car, idx) => {
       const g = document.createElementNS('http://www.w3.org/2000/svg','g');
 
+      // Couleur via F1Data pour être sûr
+      const teamColor = F1Data.teams.find(t => t.id === car.driver.teamId)?.color || '#ffffff';
+
       const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
       c.setAttribute('r','5');
-      c.setAttribute('fill', car.team.color);
-      c.setAttribute('stroke','#000');
+      c.setAttribute('fill', teamColor);
+      c.setAttribute('stroke','rgba(255,255,255,0.5)');
       c.setAttribute('stroke-width','1');
 
       const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
@@ -326,8 +345,8 @@ const CR = {
 
       this.carEls.push(g);
 
-      // Position initiale sur la grille : espacées de 2% l'une de l'autre
-      const startFrac = 1 - (idx * 0.02);
+      // Position initiale : toutes sur la ligne de départ, serrées
+      const startFrac = 0.001 * idx; // très peu d'écart, alignées au départ
       this.fractions.push(startFrac);
       this.targetFrac.push(startFrac);
     });
@@ -383,7 +402,7 @@ const CR = {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
-      if (Race.state && !isPaused) {
+      if (Race.state && !isPaused && this._started) {
         Race.state.grid.forEach((car, idx) => {
           if (car.status === 'dnf') return;
 
@@ -417,7 +436,39 @@ const CR = {
     this.carSpeed     = new Array(Race.state.grid.length).fill(1 / (getInterval() / 1000));
     this._prevFrac    = [...this.fractions];
     this._visualLap   = 1;
+
+    // Départ arrêté — les voitures restent immobiles pendant les feux
+    this._started = false;
     this.raf = requestAnimationFrame(loop);
+  },
+
+  // Séquence de feux de départ
+  startLights(onGo) {
+    const lights = document.getElementById('lightsOverlay');
+    if (!lights) { onGo(); return; }
+    lights.style.display = 'flex';
+    const dots = lights.querySelectorAll('.light-dot');
+
+    // Allumer les feux un par un (5 rouges)
+    let i = 0;
+    const on = setInterval(() => {
+      if (i < dots.length) {
+        dots[i].classList.add('on');
+        i++;
+      } else {
+        clearInterval(on);
+        // Extinction après 800ms → DÉPART !
+        setTimeout(() => {
+          dots.forEach(d => d.classList.remove('on'));
+          setTimeout(() => {
+            lights.style.display = 'none';
+            this._started = true;
+            onGo();
+          }, 300);
+        }, 800);
+      }
+    }, 400);
+  },
   },
 
   // Détecte le passage de la ligne de départ du leader
@@ -498,7 +549,9 @@ function startRace() {
 
   renderStandings();
   renderStrat();
-  runSim();
+
+  // Séquence feux de départ → puis simulation
+  CR.startLights(() => runSim());
 }
 
 function runSim() {
