@@ -176,6 +176,17 @@
 </div>
 
 <div class="page" id="mainPage">
+  <div id="newSeasonBanner" style="display:none;background:linear-gradient(135deg,#1a1a00,#0a1a00);border:1px solid var(--gold);border-left:4px solid var(--gold);border-radius:6px;padding:14px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div id="newSeasonTitle" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:var(--gold);letter-spacing:1px"></div>
+      <button onclick="dismissNewSeasonBanner()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:3px 10px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:11px">✕</button>
+    </div>
+    <div id="newSeasonSummary" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--muted);line-height:1.8"></div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <a href="race.html" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;background:#e8003d;color:#fff;padding:6px 16px;border-radius:4px;text-decoration:none;letter-spacing:1px;text-transform:uppercase">🏁 Courir</a>
+      <a href="drivers.html" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;background:#1a1a00;color:var(--gold);border:1px solid #3a3a00;padding:6px 16px;border-radius:4px;text-decoration:none;letter-spacing:1px;text-transform:uppercase">👤 Pilotes</a>
+    </div>
+  </div>
 
   <!-- TEAM SELECTION -->
   <div class="team-select-screen" id="teamSelectScreen">
@@ -293,6 +304,7 @@
 <script src="js/data.js"></script>
 <script src="js/save.js"></script>
 <script src="js/events.js"></script>
+<script src="js/career.js"></script>
 <script>
 
 // ═══════════════════════════════════════════════════════════
@@ -327,9 +339,41 @@ function init() {
   const saved = Save.load();
   if (saved && saved.playerTeamId) {
     gameState = migrateSave(saved);
+    restoreDriverStates(gameState);
     showDashboard();
   } else {
     showTeamSelection();
+  }
+}
+
+// ── Restaurer les états pilotes depuis la save ─────────────
+function restoreDriverStates(save) {
+  // Restaurer les états sauvegardés (âge, stats, retraite...)
+  if (save.driverStates) {
+    F1Data.drivers.forEach(d => {
+      const state = save.driverStates[d.id];
+      if (!state) return;
+      d.age         = state.age         ?? d.age;
+      d.pace        = state.pace        ?? d.pace;
+      d.consistency = state.consistency ?? d.consistency;
+      d.wetSkill    = state.wetSkill    ?? d.wetSkill;
+      d.overtaking  = state.overtaking  ?? d.overtaking;
+      d.defending   = state.defending   ?? d.defending;
+      d.salary      = state.salary      ?? d.salary;
+      d.trait       = state.trait       ?? d.trait;
+      d.potential   = state.potential   ?? d.potential;
+      d.retired     = state.retired     ?? false;
+      d.teamId      = state.teamId      ?? d.teamId;
+      d.seasons     = state.seasons     ?? 0;
+    });
+  }
+  // Restaurer les pilotes générés
+  if (save.generatedDrivers?.length) {
+    save.generatedDrivers.forEach(gd => {
+      if (!F1Data.drivers.find(d => d.id === gd.id)) {
+        F1Data.drivers.push(gd);
+      }
+    });
   }
 }
 
@@ -441,7 +485,11 @@ function showDashboard() {
   const drivers = F1Data.drivers.filter(d => d.teamId === gameState.playerTeamId);
 
   // Topbar
+  document.getElementById('seasonBadge').textContent = `Saison ${gameState.season || 2025}`;
   document.getElementById('budgetBadge').textContent = `💰 ${gameState.budget}M €`;
+
+  // Bannière nouvelle saison si on vient de passer en saison suivante
+  showNewSeasonBannerIfNeeded();
 
   // Next race
   const circuits = F1Data.circuits;
@@ -754,6 +802,54 @@ function renderNews() {
   const news=gameState.news || [];
   if(!news.length){ el.innerHTML='<div class="news-item"><div class="news-title">Aucune actualité majeure</div><div class="news-text">Des événements aléatoires réalistes peuvent arriver avant ou après les courses.</div></div>'; return; }
   el.innerHTML = news.slice(0,10).map(n=>`<div class="news-item"><div class="news-title">${n.title}</div><div class="news-text">Saison ${n.season}, GP ${Number(n.race||0)+1} · ${n.text}</div></div>`).join('');
+}
+
+
+// ── BANNIÈRE NOUVELLE SAISON ───────────────────────────────
+function showNewSeasonBannerIfNeeded() {
+  const banner = document.getElementById('newSeasonBanner');
+  if (!banner) return;
+  // Afficher si on est au début d'une nouvelle saison (race=0) et saison > 2025
+  if ((gameState.season || 2025) > 2025 && (gameState.race || 0) === 0 && !gameState._bannerDismissed) {
+    banner.style.display = 'block';
+    const season = gameState.season;
+    document.getElementById('newSeasonTitle').textContent = `🏁 Bienvenue en saison ${season} !`;
+
+    // Résumé saison précédente
+    const prev = (gameState.completedSeasons || []).slice(-1)[0];
+    let summary = '';
+    if (prev) {
+      summary += `<div>📅 Saison ${season - 1} terminée · Position constructeurs : P${prev.playerConstructorPos}</div>`;
+      const champ = F1Data.drivers.find(d => d.id === prev.driverChampionId);
+      if (champ) summary += `<div>🏆 Champion pilotes : ${champ.firstName} ${champ.name}</div>`;
+      summary += `<div>💰 Prime de fin de saison : +${prev.prize}M€</div>`;
+    }
+
+    // Nouvelles évolutions pilotes
+    const myDrivers = F1Data.drivers.filter(d => d.teamId === gameState.playerTeamId && !d.retired);
+    if (myDrivers.length) {
+      summary += `<div style="margin-top:6px">👤 Tes pilotes :</div>`;
+      myDrivers.forEach(d => {
+        const phase = typeof Career !== 'undefined' ? Career.getAgePhase(d.age) : null;
+        summary += `<div>&nbsp;&nbsp;• ${d.firstName} ${d.name} — ${d.age} ans · Pace ${d.pace} · Consistency ${d.consistency}${phase ? ' · '+phase.icon+' '+phase.label : ''}</div>`;
+      });
+    }
+
+    // Nouveaux talents
+    const newTalents = F1Data.drivers.filter(d => d.generated && (d.seasons || 0) === 0);
+    if (newTalents.length) {
+      summary += `<div style="margin-top:6px;color:var(--green)">✨ ${newTalents.length} nouveaux talents en F1 — va sur <a href="drivers.html" style="color:var(--gold)">la page Pilotes</a> pour les recruter !</div>`;
+    }
+
+    document.getElementById('newSeasonSummary').innerHTML = summary;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function dismissNewSeasonBanner() {
+  gameState._bannerDismissed = true;
+  document.getElementById('newSeasonBanner').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════════════════
