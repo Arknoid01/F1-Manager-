@@ -431,7 +431,7 @@ let isSlow      = false;
 let started     = false;
 
 // Intervalles en ms par tour simulé
-const SPEEDS = { slow: 800, normal: 400, fast: 35 };
+const SPEEDS = { slow: 3000, normal: 1200, fast: 80 };
 
 function getInterval() {
   if (isSlow) return SPEEDS.slow;
@@ -510,7 +510,7 @@ function toggleSlow() {
   if (isSlow) isFast = false;
   document.getElementById('btnSlow').classList.toggle('on', isSlow);
   document.getElementById('btnFast').classList.remove('on');
-  document.getElementById('spdLbl').textContent = isSlow ? 'x0.5' : 'x1';
+  document.getElementById('spdLbl').textContent = isSlow ? '🐢 Lent' : 'x1';
   if (started) runSim();
 }
 
@@ -519,7 +519,7 @@ function toggleFast() {
   if (isFast) isSlow = false;
   document.getElementById('btnFast').classList.toggle('on', isFast);
   document.getElementById('btnSlow').classList.remove('on');
-  document.getElementById('spdLbl').textContent = isFast ? 'x10' : 'x1';
+  document.getElementById('spdLbl').textContent = isFast ? '⚡ x15' : 'x1';
   if (started) runSim();
 }
 
