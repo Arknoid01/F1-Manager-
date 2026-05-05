@@ -159,6 +159,12 @@
 <!-- PAGE -->
 <div class="page">
 
+  <div class="player-box" id="preRaceBox">
+    <div class="player-title">🧠 Stratégie pré-course</div>
+    <div style="color:var(--muted);font-size:11px;margin-bottom:8px">Planifie les relais. Les pilotes suivront automatiquement ces tours d'arrêt, sauf pluie forte, piste sèche ou Safety Car où l'IA adaptera le pit stop.</div>
+    <div id="preRaceStrategy"><span style="color:var(--muted);font-size:11px">Charge une carrière depuis la page Équipe pour préparer tes pilotes.</span></div>
+  </div>
+
   <!-- CONTROLS -->
   <div class="controls">
     <select id="circSel" class="sel"></select>
@@ -539,6 +545,8 @@ function initSel() {
     sel.appendChild(o);
   });
   if (nextCircuitId) sel.value = nextCircuitId;
+  sel.addEventListener('change', initPreRaceStrategy);
+  initPreRaceStrategy();
 }
 
 
@@ -546,7 +554,7 @@ function startRace() {
   const cid = document.getElementById('circSel').value;
   if (!cid) { alert('Choisis un circuit !'); return; }
 
-  Race.init(cid);
+  Race.init(cid, 'dry', collectPreRaceStrategies());
   started = true;
 
   const cir = Race.state.circuit;
@@ -557,6 +565,7 @@ function startRace() {
   document.getElementById('btnPause').disabled    = false;
   document.getElementById('btnSkip').disabled     = false;
   document.getElementById('circSel').disabled     = true;
+  document.querySelectorAll('#preRaceStrategy select,#preRaceStrategy input').forEach(el => el.disabled = true);
 
   CR.init(cid);
   CR.startAnim();
@@ -699,6 +708,67 @@ function addEvents(evs) {
 }
 
 
+
+function getPlayerDrivers() {
+  const save = Save.load();
+  const playerTeamId = save?.playerTeamId;
+  return F1Data.drivers.filter(d => d.teamId === playerTeamId);
+}
+
+function initPreRaceStrategy() {
+  const box = document.getElementById('preRaceStrategy');
+  if (!box) return;
+  const cid = document.getElementById('circSel')?.value || F1Data.circuits[0].id;
+  const circuit = F1Data.circuits.find(c => c.id === cid) || F1Data.circuits[0];
+  const drivers = getPlayerDrivers();
+  if (!drivers.length) {
+    box.innerHTML = '<span style="color:var(--muted);font-size:11px">Aucune équipe joueur détectée. Va sur la page Équipe pour créer/charger une carrière.</span>';
+    return;
+  }
+  box.innerHTML = '';
+  drivers.forEach((driver, idx) => {
+    const defaultPits = circuit.tyreDegradation > 1.2 || circuit.laps > 65
+      ? [Math.round(circuit.laps * 0.33), Math.round(circuit.laps * 0.66)]
+      : [Math.round(circuit.laps * 0.48)];
+    const defaults = idx === 0 ? ['MEDIUM','HARD','SOFT'] : ['SOFT','HARD','MEDIUM'];
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="player-name">${driver.name}</div>
+      <select class="mini-sel" id="pre_c1_${driver.id}">${tyreOptions(defaults[0])}</select>
+      <span style="font-family:var(--fh);color:var(--muted);font-size:11px">Pit T.</span>
+      <input class="mini-sel" id="pre_p1_${driver.id}" type="number" min="2" max="${circuit.laps-3}" value="${defaultPits[0] || ''}" style="width:58px">
+      <select class="mini-sel" id="pre_c2_${driver.id}">${tyreOptions(defaults[1])}</select>
+      <span style="font-family:var(--fh);color:var(--muted);font-size:11px">Pit T.</span>
+      <input class="mini-sel" id="pre_p2_${driver.id}" type="number" min="2" max="${circuit.laps-3}" value="${defaultPits[1] || ''}" style="width:58px">
+      <select class="mini-sel" id="pre_c3_${driver.id}">${tyreOptions(defaults[2])}</select>
+      <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">${circuit.laps} tours · pneus adaptatifs pluie/SC</span>
+    `;
+    box.appendChild(row);
+  });
+}
+
+function tyreOptions(selected) {
+  return ['SOFT','MEDIUM','HARD','INTER','WET'].map(c => `<option value="${c}" ${c===selected?'selected':''}>${F1Data.tyres[c].name}</option>`).join('');
+}
+
+function collectPreRaceStrategies() {
+  const strategies = {};
+  getPlayerDrivers().forEach(driver => {
+    const c1 = document.getElementById('pre_c1_'+driver.id)?.value || 'MEDIUM';
+    const c2 = document.getElementById('pre_c2_'+driver.id)?.value || 'HARD';
+    const c3 = document.getElementById('pre_c3_'+driver.id)?.value || 'MEDIUM';
+    const p1 = parseInt(document.getElementById('pre_p1_'+driver.id)?.value || '', 10);
+    const p2 = parseInt(document.getElementById('pre_p2_'+driver.id)?.value || '', 10);
+    const compounds = [c1, c2];
+    const pitLaps = [];
+    if (Number.isFinite(p1)) pitLaps.push(p1);
+    if (Number.isFinite(p2)) { pitLaps.push(p2); compounds.push(c3); }
+    strategies[driver.id] = { compounds, pitLaps };
+  });
+  return strategies;
+}
+
 function renderPlayerControls() {
   const box = document.getElementById('playerControls');
   if (!box || !Race.state) return;
@@ -759,10 +829,11 @@ function persistRaceResults(results) {
 }
 
 function showResults() {
-  CR.stopAnim();
-  const results = Race.assignPoints();
-  persistRaceResults(results);
-  const careerReward = Race.state._careerReward;
+  try { CR.stopAnim(); } catch(e) { console.warn(e); }
+  let results = [];
+  try { results = Race.assignPoints(); } catch(e) { console.error('[Race] Erreur assignPoints', e); }
+  try { persistRaceResults(results); } catch(e) { console.error('[Race] Erreur sauvegarde résultats', e); }
+  const careerReward = Race.state?._careerReward;
   document.getElementById('resSub').textContent = `Grand Prix de ${Race.state.circuit.name}` + (careerReward ? ` · Gains équipe : +${careerReward.reward}M € · +${careerReward.tokens} token${careerReward.tokens > 1 ? 's' : ''}` : '');
   const body = document.getElementById('resBody');
   body.innerHTML = '';
@@ -784,6 +855,8 @@ function showResults() {
     body.appendChild(row);
   });
   document.getElementById('resOverlay').style.display = 'flex';
+  document.getElementById('btnPause').disabled = true;
+  document.getElementById('btnSkip').disabled = true;
 }
 
 function closeRes() { document.getElementById('resOverlay').style.display='none'; }
@@ -797,6 +870,7 @@ function resetRace() {
   document.getElementById('btnPause').disabled  = true;
   document.getElementById('btnSkip').disabled   = true;
   document.getElementById('circSel').disabled   = false;
+  document.querySelectorAll('#preRaceStrategy select,#preRaceStrategy input').forEach(el => el.disabled = false);
   document.getElementById('tLap').innerHTML     = 'Tour <b>0</b>/<span id="tTotal">—</span>';
   document.getElementById('svgLap').textContent = '0';
   document.getElementById('svgTotal').textContent = '—';

@@ -30,6 +30,7 @@
     <div class="panel"><div class="ph"><div class="dot"></div>Classement pilotes</div><div class="table" id="driversTable"></div></div>
     <div class="panel"><div class="ph"><div class="dot"></div>Classement constructeurs</div><div class="table" id="teamsTable"></div></div>
   </div>
+  <div class="panel"><div class="ph"><div class="dot"></div>Calendrier complet</div><div class="history" id="calendar"></div></div>
   <div class="panel"><div class="ph"><div class="dot"></div>Historique des Grands Prix</div><div class="history" id="history"></div></div>
 </div>
 <script src="js/data.js"></script>
@@ -65,6 +66,12 @@ function render() {
   document.getElementById('teamsTable').innerHTML = '<div class="row header"><div>Pos</div><div>Équipe</div><div style="text-align:right">Pts</div></div>' + teamRows.map((t,i)=>
     `<div class="row"><div class="pos">${i+1}</div><div><div class="name" style="color:${t.color}">${t.name}</div><div class="team">${t.shortName}</div></div><div class="pts">${pts(save.teamStandings,t.id)}</div></div>`
   ).join('');
+
+  const currentRaceIndex = Number(save.race) || 0;
+  document.getElementById('calendar').innerHTML = F1Data.circuits.map((c,i) => {
+    const status = i < currentRaceIndex ? '✅ Disputé' : i === currentRaceIndex ? '➡️ Prochain' : '—';
+    return `<div class="race"><div><div class="race-title">${i+1}. GP de ${c.name}</div><div class="race-sub">${c.fullName} · ${c.laps} tours · ${c.lapDistance} km/tour</div></div><div class="pts" style="font-size:14px">${status}</div></div>`;
+  }).join('');
 
   const hist = [...(save.raceResults || [])].reverse();
   document.getElementById('history').innerHTML = hist.length ? hist.map(r => {
