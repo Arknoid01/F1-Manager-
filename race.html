@@ -369,7 +369,7 @@ const CR = {
     });
   },
 
-  // Animation RAF — interpolation fluide des points sur le tracé
+  // Animation RAF — tourne TOUJOURS en continu, indépendamment de la simulation
   startAnim() {
     if (!this.pathEl) return;
     let lastTime = performance.now();
@@ -378,27 +378,21 @@ const CR = {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
-      if (Race.state && !Race.state.finished) {
-        // Synchronisation exacte : 1 tour simulé = 1 tour visuel
-        // x1  = 350ms/tour → lapsPerSec = 2.86
-        // x10 = 35ms/tour  → lapsPerSec = 28.6
-        const intervalSec = getInterval() / 1000;
-        const lapsPerSec  = 1 / intervalSec;
+      if (Race.state) {
+        // Vitesse visuelle CONSTANTE basée sur le temps réel d'un tour F1
+        // Un tour F1 ≈ 90s réelles → on veut que ça soit fluide visuellement
+        // En mode lent  : 3s simulé/tour → 1 tour visuel en 3s → lapsPerSec = 0.333
+        // En mode normal: 1.2s simulé/tour → lapsPerSec = 0.833
+        // En mode rapide: 0.08s simulé/tour → lapsPerSec = 12.5
+        // → les voitures TOURNENT EN CONTINU, jamais d'arrêt
+        const lapsPerSec = 1 / (getInterval() / 1000);
 
         Race.state.grid.forEach((car, idx) => {
           if (car.status === 'dnf') return;
 
-          const target = this.fractions[idx] !== undefined ? this.fractions[idx] : 0;
-          let   cur    = this._displayFrac[idx] !== undefined ? this._displayFrac[idx] : target;
-
-          // Avancer continuellement (les voitures tournent !)
+          // Avancer en continu selon la vitesse
+          let cur = this._displayFrac[idx] !== undefined ? this._displayFrac[idx] : (this.fractions[idx] || 0);
           cur = (cur + dt * lapsPerSec) % 1;
-
-          // Garder l'écart relatif entre voitures cohérent avec fractions[]
-          // On snap doucement vers la fraction cible sans bloquer le mouvement
-          const diff = ((target - cur + 1.5) % 1) - 0.5;
-          cur = (cur + diff * 0.02 + 1) % 1;
-
           this._displayFrac[idx] = cur;
 
           const pt = this.pathEl.getPointAtLength(cur * this.len);
