@@ -135,6 +135,7 @@
   <a href="race.html"     class="nav-link">🏁 Course</a>
   <a href="standings.html"class="nav-link">🏆 Champ.</a>
   <a href="drivers.html"  class="nav-link active">👤 Pilotes</a>
+  <a href="contracts.html" class="nav-link">📝 Contrats</a>
   <div class="tb-right">
     <div class="season-badge" id="seasonBadge">Saison 2025</div>
     <div class="budget-badge" id="budgetBadge">—</div>
@@ -473,14 +474,14 @@ function buildDriverCard(driver, team, extraClass, showActions) {
     <div class="dc-actions">
       <div class="dc-salary">💰 ${driver.salary}M€/an</div>
       ${!isMyTeam && !driver.retired ? `
-        <button class="btn btn-green" onclick="openSignModal('${driver.id}')">
-          ✅ Recruter (${signingFee}M€)
-        </button>
+        <a class="btn btn-green" href="contracts.html">
+          📝 Négocier
+        </a>
       ` : ''}
       ${isMyTeam ? `
-        <button class="btn btn-sec" onclick="openReleaseModal('${driver.id}')">
+        <a class="btn btn-sec" href="contracts.html">
           ❌ Libérer
-        </button>
+        </a>
       ` : ''}
     </div>
   `;
