@@ -1,5 +1,5 @@
 // ============================================================
-//  F1 Manager — race.js
+//  F1 Manager — race.js  (v2 — gaps réalistes)
 //  Gestion d'état de course : initialisation, simulation tour par tour
 // ============================================================
 
@@ -10,25 +10,19 @@ const Race = {
   // ── INITIALISATION ────────────────────────────────────────
   init(circuitId, weather = 'dry') {
     const circuit = F1Data.circuits.find(c => c.id === circuitId);
-    if (!circuit) throw new Error('Circuit introuvable: ' + circuitId);
+    if (!circuit) throw new Error('Circuit introuvable : ' + circuitId);
 
-    // Construction de la grille
     const grid = [];
     F1Data.drivers.forEach(driver => {
-      const team = F1Data.teams.find(t => t.id === driver.teamId);
+      const team     = F1Data.teams.find(t => t.id === driver.teamId);
       const strategy = Engine.generateStrategy(circuit, team.performance, weather);
-      const firstCompound = strategy.compounds[0];
 
       grid.push({
         driver,
         team,
         strategy,
         currentCompoundIndex: 0,
-        tyre: {
-          compound: firstCompound,
-          condition: 1.0,
-          age: 0,
-        },
+        tyre: { compound: strategy.compounds[0], condition: 1.0, age: 0 },
         fuelLoad: circuit.fuelPerLap * circuit.laps,
         totalTime: 0,
         penaltyTime: 0,
@@ -36,24 +30,34 @@ const Race = {
         lapTimes: [],
         pitStops: [],
         position: 0,
-        gap: 0,
-        status: 'racing', // 'racing' | 'dnf' | 'pit'
-        inPit: false,
+        gap: 0,          // écart en secondes au leader (calculé chaque tour)
+        gapLaps: 0,      // écart en tours (doublés)
+        status: 'racing',
         pitThisLap: false,
         dnfLap: null,
         currentPace: 0,
-        safetyCarDelta: 0,
       });
     });
 
-    // Grille de départ : tri par performance équipe + pilote + aléatoire
-    grid.sort((a, b) => {
-      const scoreA = a.team.performance * 0.6 + a.driver.pace * 0.4 + (Math.random() - 0.5) * 8;
-      const scoreB = b.team.performance * 0.6 + b.driver.pace * 0.4 + (Math.random() - 0.5) * 8;
-      return scoreB - scoreA;
+    // ── Grille de départ : quali simulée ──────────────────────
+    // On calcule un score de qualif (temps sec sur 1 tour rapide)
+    grid.forEach(car => {
+      const qualiBase  = circuit.baseLapTime;
+      const teamBonus  = (85 - car.team.performance) * 0.10;
+      const driverBonus= (87 - car.driver.pace) * 0.018;
+      // Soft en quali → meilleur grip
+      const tyreBonus  = 0; // tout le monde en soft
+      const random     = (Math.random() - 0.5) * 0.5; // ±0.25s seulement
+      car._qualiTime   = qualiBase + teamBonus + driverBonus + tyreBonus + random;
     });
 
-    grid.forEach((car, i) => car.position = i + 1);
+    grid.sort((a, b) => a._qualiTime - b._qualiTime);
+    grid.forEach((car, i) => {
+      car.position = i + 1;
+      // Décalage de grille en secondes : P1=0, P2=+0.2s, P3=+0.4s…
+      // Cela simule les intervalles de départ
+      car.totalTime = i * 0.2;
+    });
 
     this.state = {
       circuit,
@@ -63,8 +67,7 @@ const Race = {
       grid,
       safetyCar: { active: false, remainingLaps: 0 },
       finished: false,
-      raceTime: 0,
-      events: [], // log des événements importants
+      events: [],
     };
 
     return this.state;
@@ -74,25 +77,26 @@ const Race = {
   simulateLap() {
     if (!this.state || this.state.finished) return null;
 
-    const s = this.state;
+    const s   = this.state;
+    const cir = s.circuit; // ← référence correcte au circuit
     s.currentLap++;
-    const lap = s.currentLap;
+    const lap       = s.currentLap;
     const lapEvents = [];
 
-    // --- Météo dynamique ---
-    if (Math.random() < 0.02 && s.weather === 'dry' && lap > 5) {
+    // ── Météo dynamique ──────────────────────────────────────
+    if (s.weather === 'dry' && lap > 5 && Math.random() < 0.018) {
       s.weather = 'light_rain';
       lapEvents.push({ lap, type: 'weather', message: '🌧️ La pluie commence à tomber !' });
-    } else if (s.weather === 'light_rain' && Math.random() < 0.03) {
+    } else if (s.weather === 'light_rain' && Math.random() < 0.025) {
       s.weather = 'heavy_rain';
-      lapEvents.push({ lap, type: 'weather', message: '⛈️ Forte pluie ! Safety Car déployée.' });
       s.safetyCar = { active: true, remainingLaps: 5 };
-    } else if (s.weather !== 'dry' && Math.random() < 0.04 && lap > 15) {
+      lapEvents.push({ lap, type: 'weather', message: '⛈️ Forte pluie ! Safety Car déployée.' });
+    } else if (s.weather !== 'dry' && lap > 15 && Math.random() < 0.035) {
       s.weather = 'dry';
       lapEvents.push({ lap, type: 'weather', message: '☀️ La piste sèche !' });
     }
 
-    // --- Safety Car ---
+    // ── Safety Car ───────────────────────────────────────────
     if (s.safetyCar.active) {
       s.safetyCar.remainingLaps--;
       if (s.safetyCar.remainingLaps <= 0) {
@@ -101,24 +105,23 @@ const Race = {
       }
     }
 
-    // --- Calcul de chaque voiture ---
+    // ── Calcul chaque voiture ─────────────────────────────────
     let someoneJustPitted = false;
 
     s.grid.forEach(car => {
       if (car.status === 'dnf') return;
-
       car.pitThisLap = false;
 
       // Incidents
       const incidents = Engine.rollIncidents(car.driver, car.team, lap, s.totalLaps);
       const dnf = incidents.find(i => i.type === 'dnf');
       if (dnf) {
-        car.status = 'dnf';
-        car.dnfLap = lap;
+        car.status  = 'dnf';
+        car.dnfLap  = lap;
         lapEvents.push({
           lap,
           type: 'dnf',
-          message: `❌ ${car.driver.firstName} ${car.driver.name} abandon (${dnf.reason === 'crash' ? 'accident' : 'problème mécanique'}) — Tour ${lap}`,
+          message: `❌ ${car.driver.firstName} ${car.driver.name} — Abandon (${dnf.reason === 'crash' ? 'Accident' : 'Problème mécanique'}) Tour ${lap}`,
         });
         return;
       }
@@ -127,109 +130,78 @@ const Race = {
       const penalty = incidents.find(i => i.type === 'penalty');
       if (penalty) {
         car.penaltyTime += penalty.seconds;
-        lapEvents.push({
-          lap,
-          type: 'penalty',
-          message: `⚠️ ${car.driver.name} — Pénalité ${penalty.seconds}s`,
-        });
+        lapEvents.push({ lap, type: 'penalty', message: `⚠️ ${car.driver.name} — Pénalité +${penalty.seconds}s` });
       }
 
-      // Décision pit stop
+      // Pit stop
       const pitDecision = Engine.shouldPit(
-        car.tyre,
-        lap,
-        s.totalLaps,
-        car.strategy,
-        someoneJustPitted,
-        s.weather
+        car.tyre, lap, s.totalLaps, car.strategy, someoneJustPitted, s.weather
       );
 
       if (pitDecision.pit && lap < s.totalLaps - 2) {
-        // PIT STOP
         car.pitThisLap = true;
-        car.inPit = true;
         someoneJustPitted = true;
 
-        // Prochain composé
         car.currentCompoundIndex = Math.min(
           car.currentCompoundIndex + 1,
           car.strategy.compounds.length - 1
         );
 
-        // Adaptations météo : si pluie → inter/wet, si sec → slicks
         let nextCompound = car.strategy.compounds[car.currentCompoundIndex];
-        if (s.weather === 'light_rain' || s.weather === 'heavy_rain') {
-          nextCompound = s.weather === 'heavy_rain' ? 'WET' : 'INTER';
-        } else if (['INTER', 'WET'].includes(car.tyre.compound) && s.weather === 'dry') {
-          nextCompound = 'MEDIUM';
-        }
+        if (s.weather === 'heavy_rain') nextCompound = 'WET';
+        else if (s.weather === 'light_rain') nextCompound = 'INTER';
+        else if (['INTER', 'WET'].includes(car.tyre.compound)) nextCompound = 'MEDIUM';
 
-        car.pitStops.push({
-          lap,
-          fromCompound: car.tyre.compound,
-          toCompound: nextCompound,
-          reason: pitDecision.reason,
-        });
-
+        car.pitStops.push({ lap, fromCompound: car.tyre.compound, toCompound: nextCompound, reason: pitDecision.reason });
         car.tyre = { compound: nextCompound, condition: 1.0, age: 0 };
-        car.totalTime += circuit.pitLoss; // temps perdu au stand
+
+        // ← CORRECTION : utiliser cir.pitLoss et non circuit.pitLoss
+        car.totalTime += cir.pitLoss;
 
         lapEvents.push({
           lap,
           type: 'pit',
           message: `🔧 ${car.driver.name} — Pit stop → ${F1Data.tyres[nextCompound].name}`,
-          teamColor: car.team.color,
         });
       }
 
       // Temps au tour
-      const fuelLoad = Engine.calcFuelLoad(s.circuit, lap);
-      let lapTime = Engine.calcLapTime(
-        car.driver,
-        car.team,
-        s.circuit,
-        car.tyre,
-        fuelLoad,
-        s.weather,
-        lap
-      );
+      const fuelLoad = Engine.calcFuelLoad(cir, lap);
+      let lapTime    = Engine.calcLapTime(car.driver, car.team, cir, car.tyre, fuelLoad, s.weather, lap);
 
-      // Safety Car : tous les tours sont plus lents
+      // Safety Car : tout le monde roule au même rythme lent
       if (s.safetyCar.active) {
-        lapTime = s.circuit.baseLapTime * 1.35 + (Math.random() * 0.5);
+        lapTime = cir.baseLapTime * 1.38 + (Math.random() - 0.5) * 0.4;
       }
 
-      car.currentPace = lapTime;
-      car.totalTime += lapTime + car.penaltyTime;
-      car.penaltyTime = 0;
+      car.currentPace  = lapTime;
+      car.totalTime   += lapTime + car.penaltyTime;
+      car.penaltyTime  = 0;
       car.lapTimes.push(parseFloat(lapTime.toFixed(3)));
-      car.currentLap = lap;
+      car.currentLap   = lap;
 
-      // Dégradation pneus
       if (!car.pitThisLap) {
-        car.tyre = Engine.degradeTyre(car.tyre, s.circuit, car.driver, s.weather);
+        car.tyre = Engine.degradeTyre(car.tyre, cir, car.driver, s.weather);
       }
     });
 
-    // --- Safety Car aléatoire ---
+    // Safety Car aléatoire
     const scRoll = Engine.rollSafetyCar(lap, s.totalLaps, []);
     if (scRoll.active && !s.safetyCar.active) {
       s.safetyCar = { active: true, remainingLaps: scRoll.laps };
       lapEvents.push({ lap, type: 'safety_car', message: '🟡 Safety Car déployée !' });
     }
 
-    // --- Classement ---
+    // Classement
     this.updateStandings();
 
-    // --- Fin de course ---
+    // Fin de course
     if (lap >= s.totalLaps) {
       s.finished = true;
       lapEvents.push({ lap, type: 'finish', message: '🏁 Drapeau à damiers !' });
     }
 
-    // Stockage des events
     s.events.push(...lapEvents);
-
     return { lap, events: lapEvents, standings: this.getStandings() };
   },
 
@@ -239,13 +211,20 @@ const Race = {
     const dnf    = this.state.grid.filter(c => c.status === 'dnf');
 
     racing.sort((a, b) => a.totalTime - b.totalTime);
+
+    const leaderTime = racing.length > 0 ? racing[0].totalTime : 0;
+
     racing.forEach((car, i) => {
       car.position = i + 1;
-      car.gap = i === 0 ? 0 : car.totalTime - racing[0].totalTime;
+      // Gap = écart réel en secondes au leader (pas le temps cumulé total)
+      car.gap = i === 0 ? 0 : parseFloat((car.totalTime - leaderTime).toFixed(3));
     });
 
+    // DNF : classés derrière, triés par tour d'abandon (le plus loin = mieux classé)
+    dnf.sort((a, b) => (b.dnfLap || 0) - (a.dnfLap || 0));
     dnf.forEach((car, i) => {
       car.position = racing.length + i + 1;
+      car.gap      = null;
     });
   },
 
@@ -253,7 +232,7 @@ const Race = {
     return [...this.state.grid].sort((a, b) => a.position - b.position);
   },
 
-  // ── SIMULATION COMPLÈTE (fast) ────────────────────────────
+  // ── SIMULATION COMPLÈTE ───────────────────────────────────
   simulateAll(onLapComplete = null) {
     if (!this.state) return null;
     const results = [];
@@ -267,36 +246,39 @@ const Race = {
 
   // ── POINTS ────────────────────────────────────────────────
   assignPoints() {
-    const standings = this.getStandings().filter(c => c.status === 'racing');
+    const all     = this.getStandings();
+    const racing  = all.filter(c => c.status === 'racing');
+    const dnf     = all.filter(c => c.status === 'dnf');
     const results = [];
-    standings.forEach((car, i) => {
-      const pts = F1Data.pointsSystem[i] || 0;
+
+    racing.forEach((car, i) => {
       results.push({
         position: i + 1,
-        driver: car.driver,
-        team: car.team,
-        points: pts,
+        driver:   car.driver,
+        team:     car.team,
+        points:   F1Data.pointsSystem[i] || 0,
         totalTime: car.totalTime,
+        gap:      car.gap,
         pitStops: car.pitStops,
-        bestLap: Math.min(...car.lapTimes),
+        bestLap:  car.lapTimes.length > 0 ? Math.min(...car.lapTimes) : null,
+        status:   'racing',
       });
     });
-    // DNF = 0 points
-    this.state.grid.filter(c => c.status === 'dnf').forEach(car => {
+
+    dnf.forEach((car, i) => {
       results.push({
-        position: car.position,
-        driver: car.driver,
-        team: car.team,
-        points: 0,
-        dnfLap: car.dnfLap,
+        position: racing.length + i + 1,
+        driver:   car.driver,
+        team:     car.team,
+        points:   0,
+        dnfLap:   car.dnfLap,
         pitStops: car.pitStops,
-        bestLap: car.lapTimes.length > 0 ? Math.min(...car.lapTimes) : null,
+        bestLap:  car.lapTimes.length > 0 ? Math.min(...car.lapTimes) : null,
+        status:   'dnf',
       });
     });
+
     return results;
   },
 
 };
-
-// Référence locale au circuit dans simulateLap
-const circuit = null; // sera résolu via this.state.circuit
