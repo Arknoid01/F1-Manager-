@@ -172,6 +172,7 @@ const Save = {
       save.tokens = (save.tokens || 0) + 6;
       save.driverStandings = {};
       save.teamStandings = {};
+      save.raceResults = [];  // ← RESET les résultats pour la nouvelle saison
       (save.sponsors || []).forEach(sp => { sp.progress = 0; sp.paid = false; });
     }
 

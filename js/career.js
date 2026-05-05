@@ -226,6 +226,9 @@ const Career = {
   },
 
   // ── FIN DE SAISON COMPLÈTE ────────────────────────────────
+  // Appelé manuellement depuis drivers.html
+  // save.js gère déjà : season++, race=0, standings reset, raceResults reset
+  // career.js gère : pilotes, carDev, tokens bonus, nouveaux talents
   endOfSeason(save) {
     const report = {
       retired:    [],
@@ -270,11 +273,15 @@ const Career = {
     // 5. Remplir les sièges vides (IA)
     this.fillEmptySeats(save);
 
-    // 6. Incrémenter la saison
-    save.season = (save.season || 2025) + 1;
-    save.race   = 0;
+    // 6. Incrémenter la saison et reset standings/courses
+    save.season          = (save.season || 2025) + 1;
+    save.race            = 0;
+    save.driverStandings = {};
+    save.teamStandings   = {};
+    save.raceResults     = [];
+    save.news            = (save.news || []).slice(0, 5);
 
-    // 7. Tokens bonus
+    // 7. Tokens bonus fin de saison
     save.tokens = (save.tokens || 0) + 5;
 
     // 8. Revenus annuels
@@ -284,29 +291,16 @@ const Career = {
       save.budget = Math.round(((save.budget || 0) + incomeBonus) * 10) / 10;
     }
 
-    // 9. RESET standings pour nouvelle saison
-    save.driverStandings = {};
-    save.teamStandings   = {};
-    save.raceResults     = save.raceResults || [];
-
-    // 10. RESET carDev — revenir aux stats de base de l'équipe
-    // On garde les upgrades achetés MAIS on recalcule depuis les stats actuelles
-    // pour éviter les stats bloquées à 100
+    // 9. Reset carDev aux stats de base de l'équipe
     if (save.carDev && team) {
-      const CAR_COMPONENTS = ['aero','chassis','engine','reliability','suspension','pitstop'];
-      CAR_COMPONENTS.forEach(compId => {
+      ['aero','chassis','engine','reliability','suspension','pitstop'].forEach(compId => {
         if (!save.carDev[compId]) return;
-        // Réinitialiser le niveau depuis les vraies stats de l'équipe
-        // (pas depuis le carDev accumulé)
         const baseStat = team[compId] !== undefined ? team[compId] : 70;
-        save.carDev[compId] = {
-          level:    baseStat,
-          upgrades: 0, // reset les upgrades pour repartir à coût de base
-        };
+        save.carDev[compId] = { level: baseStat, upgrades: 0 };
       });
     }
 
-    // 11. Reset le flag bannière pour qu'elle s'affiche à nouveau
+    // 10. Reset le flag bannière
     delete save._bannerDismissed;
 
     Save.save(save);
