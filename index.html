@@ -486,7 +486,7 @@ function showDashboard() {
 
   // Topbar
   document.getElementById('seasonBadge').textContent = `Saison ${gameState.season || 2025}`;
-  document.getElementById('budgetBadge').textContent = `💰 ${gameState.budget}M €`;
+  document.getElementById('budgetBadge').textContent = `💰 ${Math.round(gameState.budget * 10) / 10}M €`;
 
   // Bannière nouvelle saison si on vient de passer en saison suivante
   showNewSeasonBannerIfNeeded();
@@ -653,7 +653,7 @@ function upgradeComponent(compId) {
   if (gameState.budget < cost) { showToast('❌ Budget insuffisant !', true); return; }
   if (gameState.tokens < comp.tokenCost) { showToast('❌ Pas assez de tokens !', true); return; }
 
-  gameState.budget -= cost;
+  gameState.budget = Math.round((gameState.budget - cost) * 10) / 10;
   gameState.tokens -= comp.tokenCost;
   devData.level    = Math.min(100, devData.level + Math.floor(Math.random() * 3) + 2);
   devData.upgrades++;
@@ -668,7 +668,7 @@ function upgradeComponent(compId) {
   Save.save(gameState);
   showToast(`✅ ${comp.name} amélioré ! Niveau ${devData.level}`, false);
 
-  document.getElementById('budgetBadge').textContent = `💰 ${gameState.budget}M €`;
+  document.getElementById('budgetBadge').textContent = `💰 ${Math.round(gameState.budget * 10) / 10}M €`;
   renderDev(team || F1Data.teams.find(t => t.id === gameState.playerTeamId));
 }
 
@@ -717,7 +717,7 @@ function renderFinances() {
   el.innerHTML = `
     <div class="finance-row">
       <span class="finance-label">Budget actuel</span>
-      <span class="finance-val neutral budget-total">${gameState.budget}M €</span>
+      <span class="finance-val neutral budget-total">${Math.round(gameState.budget * 10) / 10}M €</span>
     </div>
     <div class="finance-row">
       <span class="finance-label">Revenus annuels</span>
@@ -744,7 +744,7 @@ function renderFinances() {
 function addBudget() {
   gameState.budget += 20;
   Save.save(gameState);
-  document.getElementById('budgetBadge').textContent = `💰 ${gameState.budget}M €`;
+  document.getElementById('budgetBadge').textContent = `💰 ${Math.round(gameState.budget * 10) / 10}M €`;
   renderFinances();
   showToast('💰 +20M € de sponsor trouvé !', false);
 }
