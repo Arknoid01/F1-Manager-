@@ -378,7 +378,7 @@ function restoreDriverStates(save) {
       d.trait       = state.trait       ?? d.trait;
       d.potential   = state.potential   ?? d.potential;
       d.retired     = state.retired     ?? false;
-      d.teamId      = state.teamId      ?? d.teamId;
+      d.teamId      = Object.prototype.hasOwnProperty.call(state, 'teamId') ? state.teamId : d.teamId;
       d.seasons     = state.seasons     ?? 0;
     });
   }
