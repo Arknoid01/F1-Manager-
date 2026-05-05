@@ -227,8 +227,6 @@ const Career = {
 
   // ── FIN DE SAISON COMPLÈTE ────────────────────────────────
   // Appelé manuellement depuis drivers.html
-  // save.js gère déjà : season++, race=0, standings reset, raceResults reset
-  // career.js gère : pilotes, carDev, tokens bonus, nouveaux talents
   endOfSeason(save) {
     const report = {
       retired:    [],
@@ -238,7 +236,37 @@ const Career = {
 
     if (!save) return report;
 
-    save.generatedDrivers = save.generatedDrivers || [];
+    save.generatedDrivers  = save.generatedDrivers  || [];
+    save.completedSeasons  = save.completedSeasons  || [];
+    save.driverStandings   = save.driverStandings   || {};
+    save.teamStandings     = save.teamStandings     || {};
+    save.raceResults       = save.raceResults       || [];
+
+    const currentSeason = save.season || 2025;
+    const playerTeamId  = save.playerTeamId;
+
+    // 0. Archiver le palmarès de la saison que l'on termine.
+    // Même si le joueur clique sur "Fin de saison" avant le dernier GP,
+    // l'ancienne saison est clôturée proprement et les stats repartent à zéro.
+    const teamRank = [...F1Data.teams].sort((a, b) =>
+      (save.teamStandings[b.id] || 0) - (save.teamStandings[a.id] || 0)
+    );
+    const driverRank = [...F1Data.drivers].sort((a, b) =>
+      (save.driverStandings[b.id] || 0) - (save.driverStandings[a.id] || 0)
+    );
+    const playerConstructorPos = teamRank.findIndex(t => t.id === playerTeamId) + 1 || null;
+    const champion             = driverRank[0] || null;
+    const constructorChampion  = teamRank[0] || null;
+    const prize = playerConstructorPos ? Math.max(20, 120 - (playerConstructorPos - 1) * 10) : 20;
+
+    save.completedSeasons.push({
+      season: currentSeason,
+      playerConstructorPos,
+      driverChampionId: champion?.id || null,
+      constructorChampionId: constructorChampion?.id || null,
+      prize,
+      racesCompleted: Number(save.race) || 0,
+    });
 
     // 1. Vieillir tous les pilotes
     report.retired = this.ageAllDrivers(save) || [];
@@ -251,7 +279,11 @@ const Career = {
     report.newTalents = newDrivers;
     newDrivers.forEach(d => save.generatedDrivers.push(d));
 
-    // 4. Persister l'état de tous les pilotes
+    // 4. Remplir les sièges vides (IA) AVANT de persister les états pilotes.
+    // Avant, les changements de teamId pouvaient être perdus au rechargement.
+    this.fillEmptySeats(save);
+
+    // 5. Persister l'état de tous les pilotes
     save.driverStates = {};
     F1Data.drivers.forEach(d => {
       save.driverStates[d.id] = {
@@ -268,21 +300,23 @@ const Career = {
         teamId:      d.teamId,
         seasons:     (d.seasons || 0) + 1,
       };
+      d.seasons = (d.seasons || 0) + 1;
     });
 
-    // 5. Remplir les sièges vides (IA)
-    this.fillEmptySeats(save);
-
-    // 6. Incrémenter la saison et reset standings/courses
-    save.season          = (save.season || 2025) + 1;
+    // 6. Incrémenter la saison et reset complet des stats/courses
+    save.season          = currentSeason + 1;
     save.race            = 0;
     save.driverStandings = {};
     save.teamStandings   = {};
     save.raceResults     = [];
     save.news            = (save.news || []).slice(0, 5);
 
-    // 7. Tokens bonus fin de saison
+    // Reset objectifs sponsors pour la nouvelle saison
+    (save.sponsors || []).forEach(sp => { sp.progress = 0; sp.paid = false; });
+
+    // 7. Tokens bonus + prime fin de saison
     save.tokens = (save.tokens || 0) + 5;
+    save.budget = Math.round(((save.budget || 0) + prize) * 10) / 10;
 
     // 8. Revenus annuels
     const team = F1Data.teams.find(t => t.id === save.playerTeamId);
