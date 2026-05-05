@@ -231,36 +231,67 @@ const Career = {
       retired:    [],
       newTalents: [],
       released:   [],
-      ageUpdates: [],
     };
 
     if (!save) return report;
 
-    // 1. Vieillir tous les pilotes
+    // Initialiser le stockage des pilotes générés dans la save
+    save.generatedDrivers = save.generatedDrivers || [];
+
+    // 1. Vieillir tous les pilotes (y compris ceux en mémoire)
     report.retired = this.ageAllDrivers(save) || [];
 
     // 2. Libérer les mauvais performers (IA)
     report.released = this.releasePoorPerformers(save);
 
     // 3. Générer de nouveaux talents
-    report.newTalents = this.generateNewTalents(save);
+    const newDrivers = this.generateNewTalents(save);
+    report.newTalents = newDrivers;
 
-    // 4. Remplir les sièges vides (IA)
+    // 4. Persister les nouveaux pilotes générés dans la save
+    newDrivers.forEach(d => {
+      save.generatedDrivers.push(d);
+    });
+
+    // 5. Persister l'état de TOUS les pilotes dans la save
+    save.driverStates = {};
+    F1Data.drivers.forEach(d => {
+      save.driverStates[d.id] = {
+        age:         d.age,
+        pace:        d.pace,
+        consistency: d.consistency,
+        wetSkill:    d.wetSkill,
+        overtaking:  d.overtaking,
+        defending:   d.defending,
+        salary:      d.salary,
+        trait:       d.trait,
+        potential:   d.potential,
+        retired:     d.retired,
+        teamId:      d.teamId,
+        seasons:     (d.seasons || 0) + 1,
+      };
+    });
+
+    // 6. Remplir les sièges vides (IA)
     this.fillEmptySeats(save);
 
-    // 5. Incrémenter la saison
+    // 7. Incrémenter la saison
     save.season = (save.season || 2025) + 1;
-    save.race   = 0; // repartir du début du calendrier
+    save.race   = 0;
 
-    // 6. Tokens bonus fin de saison
+    // 8. Tokens bonus
     save.tokens = (save.tokens || 0) + 5;
 
-    // 7. Revenus annuels
+    // 9. Revenus annuels
     const team = F1Data.teams.find(t => t.id === save.playerTeamId);
     if (team) {
       const incomeBonus = Math.round(team.performance * 0.8);
       save.budget = Math.round(((save.budget || 0) + incomeBonus) * 10) / 10;
     }
+
+    // 10. Reset standings pour nouvelle saison
+    save.driverStandings = {};
+    save.teamStandings   = {};
 
     Save.save(save);
     return report;
