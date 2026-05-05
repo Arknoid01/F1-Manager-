@@ -7,192 +7,196 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     :root {
-      --bg:       #0a0a0f;
-      --surface:  #12121a;
-      --surface2: #1a1a26;
-      --border:   #2a2a3e;
-      --text:     #e8e8f0;
-      --muted:    #6a6a8a;
-      --accent:   #e8003d;
-      --gold:     #ffd700;
-      --green:    #00e676;
-      --yellow:   #ffea00;
-      --font-h:   'Barlow Condensed', sans-serif;
-      --font-b:   'Barlow', sans-serif;
+      --bg:#0a0a0f; --surface:#12121a; --surface2:#1a1a26; --border:#2a2a3e;
+      --text:#e8e8f0; --muted:#6a6a8a; --accent:#e8003d; --gold:#ffd700;
+      --green:#00e676; --yellow:#ffea00;
+      --fh:'Barlow Condensed',sans-serif; --fb:'Barlow',sans-serif;
     }
-    html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; overflow-x:hidden; }
+    html,body { height:100%; background:var(--bg); color:var(--text); font-family:var(--fb); font-size:14px; overflow-x:hidden; }
 
     /* TOPBAR */
-    .topbar { background:var(--surface); border-bottom:2px solid var(--accent); padding:0 14px; height:50px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
-    .logo { font-family:var(--font-h); font-weight:900; font-size:20px; color:var(--accent); letter-spacing:2px; text-transform:uppercase; }
+    .topbar { background:var(--surface); border-bottom:2px solid var(--accent); padding:0 12px; height:48px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:100; }
+    .logo { font-family:var(--fh); font-weight:900; font-size:19px; color:var(--accent); letter-spacing:2px; }
     .logo span { color:var(--text); }
-    .nav-link { font-family:var(--font-h); font-size:13px; font-weight:700; color:var(--muted); text-decoration:none; letter-spacing:1px; text-transform:uppercase; padding:4px 8px; border-radius:3px; transition:color .15s; }
-    .nav-link:hover { color:var(--text); }
-    .nav-link.active { color:var(--accent); }
-    .topbar-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
-    .lap-info { font-family:var(--font-h); font-size:15px; font-weight:600; color:var(--muted); }
-    .lap-info span { color:var(--text); font-size:18px; }
-    .weather-badge { font-family:var(--font-h); font-size:12px; padding:4px 10px; border-radius:20px; font-weight:700; letter-spacing:1px; }
-    .w-dry   { background:#1a2a1a; color:var(--green); border:1px solid #1e4a1e; }
+    .nav-link { font-family:var(--fh); font-size:12px; font-weight:700; color:var(--muted); text-decoration:none; letter-spacing:1px; text-transform:uppercase; padding:3px 6px; }
+    .nav-link:hover,.nav-link.active { color:var(--accent); }
+    .tb-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+    .lap-pill { font-family:var(--fh); font-weight:700; font-size:15px; color:var(--text); }
+    .lap-pill span { color:var(--muted); font-size:13px; }
+    .w-badge { font-family:var(--fh); font-size:11px; padding:3px 8px; border-radius:12px; font-weight:700; }
+    .w-dry   { background:#1a2a1a; color:var(--green);  border:1px solid #1e4a1e; }
     .w-rain  { background:#1a1a3a; color:#88aaff; border:1px solid #2a2a5a; }
     .w-heavy { background:#0a0a2a; color:#6688ff; border:1px solid #2a2a6a; }
-    .sc-banner { display:none; background:#2a2a00; border:1px solid var(--yellow); color:var(--yellow); font-family:var(--font-h); font-weight:700; font-size:12px; letter-spacing:2px; padding:4px 10px; border-radius:4px; animation:pulse 1s ease infinite alternate; }
-    .sc-banner.on { display:block; }
-    @keyframes pulse { from{opacity:.7} to{opacity:1} }
+    .sc-pill { display:none; background:#2a2a00; border:1px solid var(--yellow); color:var(--yellow); font-family:var(--fh); font-weight:700; font-size:11px; padding:3px 8px; border-radius:12px; animation:pulse 1s ease infinite alternate; }
+    .sc-pill.on { display:block; }
+    @keyframes pulse { from{opacity:.6} to{opacity:1} }
 
-    /* LAYOUT */
-    .layout { display:grid; grid-template-columns:1fr 300px; grid-template-rows:auto auto 1fr; gap:10px; padding:10px; height:calc(100vh - 50px); }
-    @media(max-width:700px) { .layout { grid-template-columns:1fr; height:auto; } }
-
-    /* PANEL */
-    .panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
-    .ph { background:var(--surface2); border-bottom:1px solid var(--border); padding:7px 12px; font-family:var(--font-h); font-weight:700; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:7px; }
-    .ph .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); }
+    /* PAGE LAYOUT — mobile first: stack vertical */
+    .page { display:flex; flex-direction:column; gap:8px; padding:8px; }
 
     /* CONTROLS */
-    .controls { grid-column:1/-1; display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; }
-    .btn { font-family:var(--font-h); font-weight:700; font-size:13px; letter-spacing:1px; text-transform:uppercase; padding:7px 16px; border:none; border-radius:4px; cursor:pointer; transition:all .15s; }
-    .btn-primary { background:var(--accent); color:#fff; }
-    .btn-primary:hover { background:#ff1a52; }
-    .btn-primary:disabled { background:#3a1a22; color:#664; cursor:not-allowed; }
+    .controls { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:8px 10px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+    .btn { font-family:var(--fh); font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:6px 14px; border:none; border-radius:4px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+    .btn-red  { background:var(--accent); color:#fff; }
+    .btn-red:hover { background:#ff1a52; }
+    .btn-red:disabled { background:#3a1a22; color:#664; cursor:not-allowed; }
     .btn-sec { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
     .btn-sec:hover { border-color:var(--accent); color:var(--accent); }
     .btn-sec:disabled { opacity:.4; cursor:not-allowed; }
     .btn-gold { background:var(--surface2); color:var(--gold); border:1px solid #3a3a00; }
     .btn-gold.on { background:#2a2a00; border-color:var(--gold); }
-    select.sel { font-family:var(--font-h); font-size:13px; font-weight:600; background:var(--surface2); color:var(--text); border:1px solid var(--border); padding:6px 10px; border-radius:4px; cursor:pointer; outline:none; }
-    select.sel:focus { border-color:var(--accent); }
-    .speed-lbl { font-family:var(--font-h); font-size:12px; color:var(--muted); }
+    select.sel { font-family:var(--fh); font-size:13px; font-weight:600; background:var(--surface2); color:var(--text); border:1px solid var(--border); padding:5px 8px; border-radius:4px; outline:none; max-width:180px; }
+    .spd { font-family:var(--fh); font-size:12px; color:var(--muted); }
 
-    /* CIRCUIT SVG */
-    .circuit-wrap { position:relative; width:100%; height:100%; min-height:220px; display:flex; align-items:center; justify-content:center; padding:10px; }
-    #circuitSvg { width:100%; height:100%; max-height:380px; }
-    .circuit-name-overlay { position:absolute; top:14px; left:14px; font-family:var(--font-h); font-weight:900; font-size:18px; color:var(--gold); letter-spacing:2px; text-transform:uppercase; text-shadow:0 2px 8px rgba(0,0,0,.8); }
-    .circuit-lap-overlay { position:absolute; bottom:14px; right:14px; font-family:var(--font-h); font-size:13px; color:var(--muted); }
-    .circuit-lap-overlay span { color:var(--text); font-size:16px; font-weight:700; }
+    /* MAIN ROW — circuit + classement côte à côte sur desktop */
+    .main-row { display:flex; gap:8px; }
+    @media(max-width:650px) { .main-row { flex-direction:column; } }
+
+    /* CIRCUIT PANEL */
+    .circuit-panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; flex:1; min-width:0; }
+    .panel-head { background:var(--surface2); border-bottom:1px solid var(--border); padding:6px 12px; font-family:var(--fh); font-weight:700; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:6px; }
+    .panel-head .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+
+    /* SVG container — ratio fixe */
+    .svg-wrap { position:relative; width:100%; padding-top:75%; /* ratio 4:3 */ background:#0d0d14; }
+    .svg-wrap svg { position:absolute; top:0; left:0; width:100%; height:100%; }
+    .svg-overlay { position:absolute; bottom:8px; right:10px; font-family:var(--fh); font-size:12px; color:var(--muted); }
+    .svg-overlay span { color:var(--text); font-weight:700; font-size:15px; }
 
     /* PROGRESS */
-    .progress-wrap { padding:8px 12px; }
-    .progress-track { height:5px; background:var(--border); border-radius:3px; overflow:hidden; margin-bottom:4px; }
-    .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--gold)); border-radius:3px; transition:width .4s; }
-    .progress-lbl { font-family:var(--font-h); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+    .prog-wrap { padding:6px 10px; }
+    .prog-track { height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+    .prog-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--gold)); border-radius:2px; transition:width .4s; }
 
-    /* CLASSEMENT */
-    .standings-wrap { overflow-y:auto; flex:1; }
-    .s-header { display:grid; grid-template-columns:28px 24px 4px 1fr 72px 58px 50px; gap:5px; padding:5px 10px 4px; font-family:var(--font-h); font-size:10px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--border); }
-    .s-row { display:grid; grid-template-columns:28px 24px 4px 1fr 72px 58px 50px; align-items:center; gap:5px; padding:5px 10px; border-bottom:1px solid #14141e; transition:background .1s; }
+    /* CLASSEMENT PANEL */
+    .stand-panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; width:280px; flex-shrink:0; display:flex; flex-direction:column; }
+    @media(max-width:650px) { .stand-panel { width:100%; } }
+    .stand-scroll { overflow-y:auto; flex:1; }
+    .s-head { display:grid; grid-template-columns:26px 22px 3px 1fr 60px 52px; gap:4px; padding:4px 8px; font-family:var(--fh); font-size:9px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--border); }
+    .s-row  { display:grid; grid-template-columns:26px 22px 3px 1fr 60px 52px; align-items:center; gap:4px; padding:4px 8px; border-bottom:1px solid #12121e; transition:background .1s; }
     .s-row:hover { background:#14141e; }
-    .s-row.lead { background:#1a1a10; }
+    .s-row.lead { background:#191910; }
     .s-row.dnf  { opacity:.4; }
-    .pos { font-family:var(--font-h); font-weight:900; font-size:16px; color:var(--muted); text-align:center; }
+    .pos { font-family:var(--fh); font-weight:900; font-size:15px; color:var(--muted); text-align:center; }
     .pos.p1{color:var(--gold)} .pos.p2{color:#c0c0c0} .pos.p3{color:#cd7f32}
-    .dnum { font-family:var(--font-h); font-size:11px; color:var(--muted); text-align:center; }
-    .tbar { width:4px; height:26px; border-radius:2px; }
-    .dname { font-family:var(--font-h); font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .dteam { font-size:10px; color:var(--muted); font-family:var(--font-h); }
-    .tyre-info { display:flex; align-items:center; gap:3px; }
-    .tyre-dot { width:9px; height:9px; border-radius:50%; border:1px solid rgba(255,255,255,.15); flex-shrink:0; }
-    .tyre-bar-wrap { width:32px; height:3px; background:#222; border-radius:2px; overflow:hidden; }
-    .tyre-bar { height:100%; border-radius:2px; transition:width .3s,background .3s; }
-    .gap-t { font-family:var(--font-h); font-size:12px; font-weight:600; color:var(--muted); text-align:right; }
-    .gap-t.ldr { color:var(--green); }
-    .last-t { font-family:var(--font-h); font-size:11px; color:var(--muted); text-align:right; }
-    .pit-badge { font-family:var(--font-h); font-size:9px; font-weight:700; background:#2a1a00; color:var(--gold); border:1px solid #5a3a00; padding:1px 4px; border-radius:3px; }
-    .dnf-badge { font-family:var(--font-h); font-size:9px; font-weight:700; background:#2a0a0a; color:#ff4444; border:1px solid #5a1a1a; padding:1px 4px; border-radius:3px; }
+    .dnum { font-family:var(--fh); font-size:10px; color:var(--muted); text-align:center; }
+    .tbar { width:3px; height:24px; border-radius:2px; }
+    .dname { font-family:var(--fh); font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dteam-s { font-family:var(--fh); font-size:9px; color:var(--muted); }
+    .tyre-cell { display:flex; align-items:center; gap:3px; }
+    .tyre-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .tyre-cond { width:28px; height:3px; background:#1a1a2a; border-radius:2px; overflow:hidden; }
+    .tyre-bar  { height:100%; border-radius:2px; transition:width .3s; }
+    .gap-cell  { font-family:var(--fh); font-size:11px; font-weight:600; color:var(--muted); text-align:right; }
+    .gap-cell.ldr { color:var(--green); font-size:10px; }
+    .last-cell { font-family:var(--fh); font-size:10px; color:var(--muted); text-align:right; }
+    .pit-b { font-family:var(--fh); font-size:8px; font-weight:700; background:#2a1a00; color:var(--gold); border:1px solid #5a3a00; padding:1px 3px; border-radius:2px; }
+    .dnf-b { font-family:var(--fh); font-size:8px; font-weight:700; background:#2a0a0a; color:#ff4444; border:1px solid #5a1a1a; padding:1px 3px; border-radius:2px; }
 
-    /* RIGHT COL */
-    .right-col { display:flex; flex-direction:column; gap:10px; overflow:hidden; }
-    .events-log { overflow-y:auto; max-height:200px; padding:6px 0; flex:1; }
-    .ev { padding:4px 10px; font-size:11px; border-bottom:1px solid #10101a; display:flex; gap:7px; animation:fadeIn .3s; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)} }
-    .ev-lap { font-family:var(--font-h); font-weight:700; font-size:10px; color:var(--muted); min-width:36px; padding-top:1px; }
-    .ev-dnf{color:#ff6666} .ev-pit{color:var(--gold)} .ev-weather{color:#88aaff} .ev-safety_car{color:var(--yellow)} .ev-safety_car_end{color:var(--green)} .ev-finish{color:var(--green);font-weight:700} .ev-penalty{color:#ff9944}
+    /* BOTTOM ROW */
+    .bottom-row { display:flex; gap:8px; }
+    @media(max-width:650px) { .bottom-row { flex-direction:column; } }
+    .events-panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; flex:1; }
+    .events-scroll { overflow-y:auto; max-height:160px; padding:4px 0; }
+    .ev { padding:3px 10px; font-size:11px; border-bottom:1px solid #10101a; display:flex; gap:6px; animation:fadeIn .25s; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:none} }
+    .ev-lap { font-family:var(--fh); font-weight:700; font-size:10px; color:var(--muted); min-width:32px; }
+    .ev-dnf{color:#ff6666} .ev-pit{color:var(--gold)} .ev-weather{color:#88aaff}
+    .ev-safety_car{color:var(--yellow)} .ev-safety_car_end{color:var(--green)}
+    .ev-finish{color:var(--green);font-weight:700} .ev-penalty{color:#ff9944}
 
-    /* STRATEGY */
-    .strat-list { padding:6px 10px; }
-    .strat-row { display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px solid #10101a; font-size:11px; }
-    .strat-name { font-family:var(--font-h); font-weight:700; font-size:12px; width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .cpill { font-family:var(--font-h); font-weight:700; font-size:9px; padding:2px 6px; border-radius:10px; background:rgba(255,255,255,.06); letter-spacing:.5px; }
+    .strat-panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; width:220px; flex-shrink:0; }
+    @media(max-width:650px) { .strat-panel { width:100%; } }
+    .strat-body { padding:6px 10px; }
+    .strat-row { display:flex; align-items:center; gap:5px; padding:3px 0; border-bottom:1px solid #10101a; }
+    .strat-name { font-family:var(--fh); font-weight:700; font-size:12px; width:72px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cpill { font-family:var(--fh); font-weight:700; font-size:9px; padding:1px 5px; border-radius:8px; background:rgba(255,255,255,.06); }
 
     /* RESULTS OVERLAY */
-    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; }
-    .res-card { background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--accent); border-radius:8px; width:100%; max-width:520px; max-height:88vh; overflow-y:auto; padding:20px; }
-    .res-title { font-family:var(--font-h); font-weight:900; font-size:26px; color:var(--accent); letter-spacing:3px; text-transform:uppercase; margin-bottom:2px; }
-    .res-sub { font-family:var(--font-h); font-size:13px; color:var(--muted); margin-bottom:16px; }
-    .res-row { display:grid; grid-template-columns:32px 26px 1fr 48px 58px; gap:6px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); }
-    .rpos { font-family:var(--font-h); font-weight:900; font-size:18px; color:var(--muted); }
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:200; display:flex; align-items:center; justify-content:center; padding:14px; }
+    .res-card { background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--accent); border-radius:8px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; padding:18px; }
+    .res-title { font-family:var(--fh); font-weight:900; font-size:24px; color:var(--accent); letter-spacing:3px; text-transform:uppercase; }
+    .res-sub   { font-family:var(--fh); font-size:12px; color:var(--muted); margin-bottom:14px; }
+    .res-row   { display:grid; grid-template-columns:30px 24px 1fr 46px 56px; gap:6px; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); }
+    .rpos { font-family:var(--fh); font-weight:900; font-size:17px; color:var(--muted); }
     .rpos.p1{color:var(--gold)} .rpos.p2{color:#c0c0c0} .rpos.p3{color:#cd7f32}
-    .rnum { font-family:var(--font-h); font-size:12px; color:var(--muted); }
-    .rname { font-family:var(--font-h); font-weight:700; font-size:14px; }
-    .rpts { font-family:var(--font-h); font-weight:700; font-size:15px; color:var(--gold); text-align:right; }
-    .rtime { font-family:var(--font-h); font-size:11px; color:var(--muted); text-align:right; }
-    .podium-row { background:rgba(255,215,0,.04); }
+    .rnum  { font-family:var(--fh); font-size:11px; color:var(--muted); }
+    .rname { font-family:var(--fh); font-weight:700; font-size:13px; }
+    .rpts  { font-family:var(--fh); font-weight:700; font-size:14px; color:var(--gold); text-align:right; }
+    .rtime { font-family:var(--fh); font-size:10px; color:var(--muted); text-align:right; }
+    .podium { background:rgba(255,215,0,.04); }
 
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
   </style>
 </head>
 <body>
 
+<!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">F1<span>Manager</span></div>
   <a href="index.html" class="nav-link">🏠 Équipe</a>
-  <a href="race.html" class="nav-link active">🏁 Course</a>
-  <a href="standings.html" class="nav-link">🏆 Championnat</a>
-  <div class="topbar-right">
-    <div class="lap-info">Tour <span id="tLap">0</span>/<span id="tTotal">—</span></div>
-    <div id="wBadge" class="weather-badge w-dry">☀️ SEC</div>
-    <div id="scBanner" class="sc-banner">🟡 SC</div>
+  <a href="race.html"  class="nav-link active">🏁 Course</a>
+  <a href="standings.html" class="nav-link">🏆 Champ.</a>
+  <div class="tb-right">
+    <div class="lap-pill" id="tLap">Tour <b>0</b>/<span id="tTotal">—</span></div>
+    <div id="wBadge" class="w-badge w-dry">☀️ SEC</div>
+    <div id="scPill" class="sc-pill">🟡 SC</div>
   </div>
 </div>
 
-<div class="layout">
+<!-- PAGE -->
+<div class="page">
 
   <!-- CONTROLS -->
-  <div class="controls panel">
-    <select id="circuitSel" class="sel"></select>
-    <button class="btn btn-primary" id="btnStart" onclick="startRace()">Démarrer</button>
-    <button class="btn btn-sec" id="btnPause" onclick="togglePause()" disabled>Pause</button>
+  <div class="controls">
+    <select id="circSel" class="sel"></select>
+    <button class="btn btn-red" id="btnStart" onclick="startRace()">▶ Démarrer</button>
+    <button class="btn btn-sec" id="btnPause" onclick="togglePause()" disabled>⏸ Pause</button>
     <button class="btn btn-gold" id="btnFast" onclick="toggleFast()">⚡</button>
-    <span class="speed-lbl" id="speedLbl">x1</span>
-    <button class="btn btn-sec" id="btnSkip" onclick="skipToEnd()" disabled>⏩ Fin</button>
+    <span class="spd" id="spdLbl">x1</span>
+    <button class="btn btn-sec" id="btnSkip" onclick="skipEnd()" disabled>⏩ Fin</button>
   </div>
 
-  <!-- CIRCUIT + CLASSEMENT -->
-  <div class="panel" style="display:flex;flex-direction:column;overflow:hidden;">
-    <!-- Circuit animé -->
-    <div class="ph"><div class="dot"></div> <span id="circuitLabel">Circuit</span></div>
-    <div class="circuit-wrap">
-      <svg id="circuitSvg" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-        <!-- Le tracé sera dessiné dynamiquement -->
-        <g id="trackGroup"></g>
-        <g id="carsGroup"></g>
-      </svg>
-      <div class="circuit-lap-overlay">Tour <span id="circLap">0</span> / <span id="circTotal">—</span></div>
-    </div>
-    <!-- Progress -->
-    <div class="progress-wrap">
-      <div class="progress-track"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
-      <div class="progress-lbl"><span id="progLaps">Tour 0 / —</span><span id="progDist">0 km</span></div>
-    </div>
-    <!-- Classement -->
-    <div class="ph"><div class="dot"></div> Classement</div>
-    <div class="s-header"><div>Pos</div><div>#</div><div></div><div>Pilote</div><div>Pneu</div><div>Gap</div><div>Dernier</div></div>
-    <div id="standBody" class="standings-wrap"></div>
-  </div>
+  <!-- MAIN ROW : circuit + classement -->
+  <div class="main-row">
 
-  <!-- RIGHT COL -->
-  <div class="right-col">
-    <div class="panel" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
-      <div class="ph"><div class="dot"></div> Radio & Événements</div>
-      <div id="eventsLog" class="events-log">
-        <div style="padding:12px;color:var(--muted);font-size:11px;text-align:center;">En attente du départ…</div>
+    <!-- CIRCUIT -->
+    <div class="circuit-panel">
+      <div class="panel-head"><div class="dot"></div> <span id="circLabel">Sélectionne un circuit</span></div>
+      <div class="svg-wrap">
+        <svg id="circSvg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <g id="trackG"></g>
+          <g id="carsG"></g>
+        </svg>
+        <div class="svg-overlay">Tour <span id="svgLap">0</span> / <span id="svgTotal">—</span></div>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
       </div>
     </div>
-    <div class="panel">
-      <div class="ph"><div class="dot"></div> Stratégie Top 5</div>
-      <div id="stratList" class="strat-list"><div style="padding:6px;color:var(--muted);font-size:11px;text-align:center;">—</div></div>
+
+    <!-- CLASSEMENT -->
+    <div class="stand-panel">
+      <div class="panel-head"><div class="dot"></div> Classement</div>
+      <div class="s-head"><div>Pos</div><div>#</div><div></div><div>Pilote</div><div>Pneu/Gap</div><div>Dernier</div></div>
+      <div id="standBody" class="stand-scroll"></div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW : events + stratégie -->
+  <div class="bottom-row">
+    <div class="events-panel">
+      <div class="panel-head"><div class="dot"></div> Radio & Événements</div>
+      <div id="evLog" class="events-scroll">
+        <div style="padding:10px;color:var(--muted);font-size:11px;text-align:center">En attente du départ…</div>
+      </div>
+    </div>
+    <div class="strat-panel">
+      <div class="panel-head"><div class="dot"></div> Stratégie Top 5</div>
+      <div id="stratBody" class="strat-body"><div style="color:var(--muted);font-size:11px;text-align:center">—</div></div>
     </div>
   </div>
 
@@ -202,11 +206,11 @@
 <div id="resOverlay" class="overlay" style="display:none">
   <div class="res-card">
     <div class="res-title">🏁 Résultats</div>
-    <div class="res-sub" id="resSub">Grand Prix</div>
+    <div class="res-sub" id="resSub"></div>
     <div id="resBody"></div>
-    <div style="margin-top:16px;display:flex;gap:8px;">
-      <button class="btn btn-primary" onclick="closeRes()">Fermer</button>
-      <button class="btn btn-sec" onclick="restartRace()">Nouvelle Course</button>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button class="btn btn-red" onclick="closeRes()">Fermer</button>
+      <button class="btn btn-sec" onclick="resetRace()">Nouvelle course</button>
     </div>
   </div>
 </div>
@@ -216,293 +220,290 @@
 <script src="js/race.js"></script>
 <script src="js/save.js"></script>
 <script>
-
-// ═══════════════════════════════════════════════════════════
-//  CIRCUITS SVG — tracés simplifiés mais reconnaissables
-// ═══════════════════════════════════════════════════════════
-const CIRCUIT_PATHS = {
+// ══════════════════════════════════════════════
+//  CIRCUITS — paths SVG ajustés pour remplir
+//  le viewBox 400×300 au maximum
+// ══════════════════════════════════════════════
+const TRACKS = {
   bahrain: {
-    // Tracé Bahreïn — forme caractéristique en S avec chicanes
-    path: "M 200 40 L 320 40 Q 360 40 360 80 L 360 120 Q 360 145 335 145 L 295 145 Q 270 145 270 168 L 270 185 Q 270 200 285 200 L 320 200 Q 340 200 340 220 L 340 240 Q 340 260 320 260 L 200 260 Q 170 260 155 240 L 140 210 Q 130 190 110 190 L 80 190 Q 55 190 55 165 L 55 130 Q 55 105 80 105 L 120 105 Q 145 105 145 82 L 145 55 Q 145 40 160 40 Z",
-    startLine: { x: 200, y: 40, angle: 0 },
-    width: 8,
+    d: "M60,40 L280,40 Q340,40 345,80 L345,100 Q345,120 325,120 L285,120 Q265,120 265,140 L265,160 Q265,178 282,178 L315,178 Q338,178 338,200 L338,228 Q338,258 308,260 L130,260 Q100,260 88,238 L75,210 Q64,190 44,190 L38,175 Q30,155 38,130 L38,100 Q38,60 60,40 Z",
+    sl: {x:60,y:40}, w:10
   },
   monaco: {
-    // Tracé Monaco — le circuit de rue emblématique
-    path: "M 180 30 L 300 30 Q 340 30 355 60 L 365 90 Q 372 115 355 130 L 320 145 Q 295 155 285 175 L 280 205 Q 278 230 260 240 L 200 255 Q 160 262 140 245 L 100 215 Q 70 195 65 165 L 60 130 Q 58 100 75 85 L 110 65 Q 135 50 155 50 L 165 30 Z",
-    startLine: { x: 180, y: 30, angle: 0 },
-    width: 6,
+    d: "M100,25 L295,25 Q350,25 362,65 L368,100 Q373,130 355,148 L318,162 Q295,172 288,195 L284,222 Q282,248 262,258 L175,268 Q140,272 118,252 L80,218 Q48,190 44,158 L40,115 Q36,68 72,45 L100,25 Z",
+    sl: {x:100,y:25}, w:8
   },
   silverstone: {
-    // Tracé Silverstone — circuit rapide avec Maggotts/Becketts
-    path: "M 150 35 L 280 35 Q 350 35 365 90 L 368 130 Q 370 165 345 180 L 310 192 Q 285 200 275 225 L 268 255 Q 260 275 235 278 L 180 280 Q 145 280 125 260 L 85 225 Q 60 200 58 165 L 55 120 Q 53 75 80 55 L 120 38 Z",
-    startLine: { x: 150, y: 35, angle: 0 },
-    width: 9,
+    d: "M80,30 L295,30 Q368,30 372,95 L374,140 Q376,178 348,195 L308,210 Q345,222 352,255 L354,272 Q356,288 330,290 L110,290 Q68,288 52,262 L36,228 Q20,195 22,155 L20,95 Q20,45 58,32 L80,30 Z",
+    sl: {x:80,y:30}, w:11
   },
   monza: {
-    // Tracé Monza — ovale avec chicanes
-    path: "M 160 30 L 250 30 Q 330 30 355 85 L 362 130 Q 368 165 348 188 L 315 208 Q 345 215 352 240 L 355 260 Q 357 278 335 280 L 200 280 Q 155 280 138 255 L 130 235 Q 120 215 148 208 L 118 192 Q 88 175 82 140 L 78 95 Q 75 45 120 32 Z",
-    startLine: { x: 160, y: 30, angle: 0 },
-    width: 10,
+    d: "M100,25 L270,25 Q355,25 368,82 L372,125 Q376,162 352,182 L388,195 Q395,215 382,235 L368,258 Q355,278 328,280 L108,280 Q68,278 52,252 L44,228 Q35,205 58,195 L30,178 Q12,158 14,122 L14,78 Q16,30 60,26 Z",
+    sl: {x:100,y:25}, w:11
   },
   spa: {
-    // Tracé Spa — Raidillon, Eau Rouge, Pouhon
-    path: "M 140 25 L 290 25 Q 355 25 368 75 L 372 120 Q 375 165 350 188 L 305 210 Q 340 222 355 252 L 358 268 Q 360 285 338 287 L 195 288 Q 148 287 130 265 L 90 230 Q 55 200 52 158 L 48 100 Q 46 50 90 32 Z",
-    startLine: { x: 140, y: 25, angle: 0 },
-    width: 9,
+    d: "M75,22 L285,22 Q360,22 375,75 L380,118 Q384,162 358,185 L318,205 Q355,220 368,255 L372,272 Q374,288 348,290 L95,290 Q52,288 36,260 L22,228 Q8,195 12,155 L10,88 Q12,38 52,24 L75,22 Z",
+    sl: {x:75,y:22}, w:11
   },
   suzuka: {
-    // Tracé Suzuka — le fameux 8 avec le pont
-    path: "M 155 28 L 265 28 Q 340 28 358 78 L 365 118 Q 370 155 348 172 L 310 186 Q 348 196 362 228 L 366 252 Q 368 275 342 280 L 195 281 Q 150 280 132 258 L 95 228 Q 62 200 60 162 L 56 108 Q 52 58 95 36 Z",
-    startLine: { x: 155, y: 28, angle: 0 },
-    width: 8,
+    d: "M90,25 L268,25 Q348,25 362,78 L368,118 Q372,155 350,172 L318,185 Q352,198 364,232 L368,255 Q370,278 344,282 L95,282 Q55,280 40,255 L28,225 Q15,195 18,158 L16,88 Q18,40 58,27 L90,25 Z",
+    sl: {x:90,y:25}, w:10
   },
 };
 
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  CIRCUIT RENDERER
-// ═══════════════════════════════════════════════════════════
-const CircuitRenderer = {
+// ══════════════════════════════════════════════
+const CR = {
   pathEl: null,
-  totalLength: 0,
-  carEls: [],
-  carPositions: [], // 0..1 pour chaque voiture
+  len: 0,
+  carEls: [], // éléments SVG par INDEX de grille (pas position)
+  raf: null,
+
+  // Fraction du tour parcourue par chaque voiture (0..1), par index de grille
+  fractions: [],
 
   init(circuitId) {
-    const data = CIRCUIT_PATHS[circuitId];
-    if (!data) return;
+    const t = TRACKS[circuitId];
+    if (!t) return;
 
-    const trackGroup = document.getElementById('trackGroup');
-    const carsGroup  = document.getElementById('carsGroup');
-    trackGroup.innerHTML = '';
-    carsGroup.innerHTML  = '';
-    this.carEls = [];
-    this.carPositions = [];
+    const tG = document.getElementById('trackG');
+    const cG = document.getElementById('carsG');
+    tG.innerHTML = '';
+    cG.innerHTML = '';
+    this.carEls  = [];
+    this.fractions = [];
+    if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
 
-    // Ombre / halo de la piste
-    const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    shadow.setAttribute('d', data.path);
-    shadow.setAttribute('fill', 'none');
-    shadow.setAttribute('stroke', 'rgba(255,255,255,0.06)');
-    shadow.setAttribute('stroke-width', data.width + 6);
-    shadow.setAttribute('stroke-linecap', 'round');
-    shadow.setAttribute('stroke-linejoin', 'round');
-    trackGroup.appendChild(shadow);
+    // Halo
+    const halo = this._path(t.d, 'none', 'rgba(255,255,255,0.05)', t.w + 8);
+    tG.appendChild(halo);
+    // Asphalte
+    const road = this._path(t.d, 'none', '#252535', t.w);
+    tG.appendChild(road);
+    // Pointillés centre
+    const dash = this._path(t.d, 'none', '#3a3a55', 1);
+    dash.setAttribute('stroke-dasharray', '7 5');
+    tG.appendChild(dash);
+    // Ligne départ
+    const sl = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    sl.setAttribute('x',  t.sl.x - 1.5);
+    sl.setAttribute('y',  t.sl.y - t.w / 2);
+    sl.setAttribute('width',  '3');
+    sl.setAttribute('height', t.w);
+    sl.setAttribute('fill','#ffffff');
+    tG.appendChild(sl);
 
-    // Piste principale
-    const track = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    track.setAttribute('d', data.path);
-    track.setAttribute('fill', 'none');
-    track.setAttribute('stroke', '#2a2a3e');
-    track.setAttribute('stroke-width', data.width);
-    track.setAttribute('stroke-linecap', 'round');
-    track.setAttribute('stroke-linejoin', 'round');
-    trackGroup.appendChild(track);
+    this.pathEl = road;
+    this.len    = road.getTotalLength();
 
-    // Ligne blanche au centre de la piste
-    const center = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    center.setAttribute('d', data.path);
-    center.setAttribute('fill', 'none');
-    center.setAttribute('stroke', '#3a3a55');
-    center.setAttribute('stroke-width', '1');
-    center.setAttribute('stroke-dasharray', '8 6');
-    center.setAttribute('stroke-linecap', 'round');
-    trackGroup.appendChild(center);
+    // Créer 1 élément SVG par voiture (triés par grille de départ)
+    if (!Race.state) return;
+    Race.state.grid.forEach((car, idx) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
 
-    // Ligne de départ
-    const sl = data.startLine;
-    const startLine = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    startLine.setAttribute('x', sl.x - 1);
-    startLine.setAttribute('y', sl.y - data.width / 2);
-    startLine.setAttribute('width', '3');
-    startLine.setAttribute('height', data.width);
-    startLine.setAttribute('fill', '#ffffff');
-    trackGroup.appendChild(startLine);
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('r','5');
+      c.setAttribute('fill', car.team.color);
+      c.setAttribute('stroke','#000');
+      c.setAttribute('stroke-width','1');
 
-    // Stocker le path pour getPointAtLength
-    this.pathEl = track;
-    this.totalLength = track.getTotalLength();
+      const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+      tx.setAttribute('text-anchor','middle');
+      tx.setAttribute('dominant-baseline','central');
+      tx.setAttribute('fill','#fff');
+      tx.setAttribute('font-size','3.5');
+      tx.setAttribute('font-family','Barlow Condensed,sans-serif');
+      tx.setAttribute('font-weight','700');
+      tx.setAttribute('pointer-events','none');
+      tx.textContent = car.driver.number;
 
-    // Créer les éléments voiture (cercles colorés)
-    if (Race.state) {
-      Race.state.grid.forEach((car, i) => {
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.appendChild(c);
+      g.appendChild(tx);
+      cG.appendChild(g);
 
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('r', '5');
-        circle.setAttribute('fill', car.team.color);
-        circle.setAttribute('stroke', '#fff');
-        circle.setAttribute('stroke-width', '1.2');
+      this.carEls.push(g);
 
-        // Numéro du pilote
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('dominant-baseline', 'middle');
-        text.setAttribute('fill', '#fff');
-        text.setAttribute('font-size', '4');
-        text.setAttribute('font-family', 'Barlow Condensed, sans-serif');
-        text.setAttribute('font-weight', '700');
-        text.textContent = car.driver.number;
-
-        g.appendChild(circle);
-        g.appendChild(text);
-        carsGroup.appendChild(g);
-
-        this.carEls.push(g);
-        // Position initiale étalée sur le circuit (grille de départ)
-        this.carPositions.push(i * (0.02)); // 2% d'écart entre chaque voiture
-      });
-
-      this.updateCarPositions();
-    }
-  },
-
-  // Met à jour les positions des voitures sur le tracé SVG
-  updateCarPositions() {
-    if (!this.pathEl || !Race.state) return;
-
-    const standings = Race.getStandings();
-    const totalLaps = Race.state.totalLaps;
-    const currentLap = Race.state.currentLap;
-
-    standings.forEach((car, i) => {
-      const el = this.carEls[i];
-      if (!el) return;
-
-      if (car.status === 'dnf') {
-        el.style.display = 'none';
-        return;
-      }
-
-      // Position sur le circuit : basée sur le gap au leader
-      // Leader = 0% d'avance, P2 = légèrement derrière, etc.
-      const leaderTime = standings[0].totalTime;
-      const lapTime    = Race.state.circuit.baseLapTime;
-
-      // Fraction de tour de retard
-      let behindFraction = 0;
-      if (i > 0 && standings[i].gap !== null) {
-        behindFraction = (standings[i].gap / lapTime) % 1;
-      }
-
-      // Position sur le tracé (0 = ligne de départ, 1 = tour complet)
-      let pos = ((currentLap / totalLaps) - behindFraction * (1 / totalLaps)) % 1;
-      if (pos < 0) pos += 1;
-
-      const length = pos * this.totalLength;
-      const point  = this.pathEl.getPointAtLength(length);
-
-      el.setAttribute('transform', `translate(${point.x}, ${point.y})`);
-      el.style.display = '';
+      // Position initiale sur la grille : espacées de 2% l'une de l'autre
+      // P1 est à 0, P2 à -2%, P3 à -4%, etc. (derrière la ligne)
+      this.fractions.push(1 - (idx * 0.02));
     });
   },
 
-  // Anime les voitures (interpolation fluide entre tours)
-  startAnimation() {
-    const animate = () => {
-      this.updateCarPositions();
-      this._animFrame = requestAnimationFrame(animate);
-    };
-    this._animFrame = requestAnimationFrame(animate);
+  _path(d, fill, stroke, sw) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg','path');
+    el.setAttribute('d', d);
+    el.setAttribute('fill', fill);
+    el.setAttribute('stroke', stroke);
+    el.setAttribute('stroke-width', sw);
+    el.setAttribute('stroke-linecap','round');
+    el.setAttribute('stroke-linejoin','round');
+    return el;
   },
 
-  stopAnimation() {
-    if (this._animFrame) cancelAnimationFrame(this._animFrame);
+  // Avancer les fractions des voitures selon la simulation
+  // Appelé à chaque tour de simulation
+  advanceLap() {
+    if (!Race.state || !this.pathEl) return;
+
+    const standings = Race.getStandings();
+    const totalLaps = Race.state.totalLaps;
+    const curLap    = Race.state.currentLap;
+    const lapTime   = Race.state.circuit.baseLapTime;
+
+    standings.forEach((car, rank) => {
+      // Retrouver l'index original dans la grille
+      const idx = Race.state.grid.indexOf(car);
+      if (idx < 0) return;
+      if (car.status === 'dnf') {
+        // Voitures DNF : on les cache
+        if (this.carEls[idx]) this.carEls[idx].style.display = 'none';
+        return;
+      }
+
+      // Fraction = progression totale en tours / totalLaps
+      // Le leader avance de 1 tour complet, les autres un peu moins selon le gap
+      const gapFraction = (car.gap || 0) / lapTime / totalLaps;
+      this.fractions[idx] = ((curLap / totalLaps) - gapFraction) % 1;
+      if (this.fractions[idx] < 0) this.fractions[idx] += 1;
+    });
+  },
+
+  // Animation RAF — interpolation fluide des points sur le tracé
+  startAnim() {
+    if (!this.pathEl) return;
+    let lastTime  = performance.now();
+
+    const loop = (now) => {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      if (Race.state && !Race.state.finished) {
+        const lapsPerSec = isFast ? 0.8 : 0.08; // vitesse d'animation visuelle
+        const lapTime    = Race.state.circuit.baseLapTime;
+
+        Race.state.grid.forEach((car, idx) => {
+          if (car.status === 'dnf') return;
+          // Avancer doucement vers la position cible
+          const target = this.fractions[idx] || 0;
+          let   cur    = this._displayFrac[idx] || target;
+
+          // Interpolation (lerp)
+          const diff = ((target - cur + 1.5) % 1) - 0.5;
+          cur = (cur + diff * Math.min(dt * lapsPerSec * 4, 1) + 1) % 1;
+          this._displayFrac[idx] = cur;
+
+          const pt = this.pathEl.getPointAtLength(cur * this.len);
+          if (this.carEls[idx]) {
+            this.carEls[idx].setAttribute('transform', `translate(${pt.x},${pt.y})`);
+            this.carEls[idx].style.display = '';
+          }
+        });
+      }
+
+      this.raf = requestAnimationFrame(loop);
+    };
+
+    this._displayFrac = [...this.fractions];
+    this.raf = requestAnimationFrame(loop);
+  },
+
+  stopAnim() {
+    if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
   },
 };
 
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  UI STATE
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 let simInterval = null;
 let isPaused    = false;
 let isFast      = false;
 let started     = false;
 
-// Init circuit select
-function initCircuitSel() {
-  const sel = document.getElementById('circuitSel');
+function initSel() {
+  const sel = document.getElementById('circSel');
   F1Data.circuits.forEach(c => {
     const o = document.createElement('option');
     o.value = c.id;
-    o.textContent = `${c.name} (${c.laps} tours)`;
+    o.textContent = `${c.name} (${c.laps} t.)`;
     sel.appendChild(o);
   });
 }
 
 function startRace() {
-  const cid = document.getElementById('circuitSel').value;
+  const cid = document.getElementById('circSel').value;
   if (!cid) { alert('Choisis un circuit !'); return; }
 
   Race.init(cid);
   started = true;
 
   const cir = Race.state.circuit;
-  document.getElementById('tTotal').textContent     = cir.laps;
-  document.getElementById('circTotal').textContent  = cir.laps;
-  document.getElementById('circuitLabel').textContent = cir.name.toUpperCase();
-  document.getElementById('btnStart').disabled      = true;
-  document.getElementById('btnPause').disabled      = false;
-  document.getElementById('btnSkip').disabled       = false;
-  document.getElementById('circuitSel').disabled    = true;
+  document.getElementById('tTotal').textContent   = cir.laps;
+  document.getElementById('svgTotal').textContent = cir.laps;
+  document.getElementById('circLabel').textContent= cir.name.toUpperCase();
+  document.getElementById('btnStart').disabled    = true;
+  document.getElementById('btnPause').disabled    = false;
+  document.getElementById('btnSkip').disabled     = false;
+  document.getElementById('circSel').disabled     = true;
 
-  // Init circuit SVG
-  CircuitRenderer.init(cid);
-  CircuitRenderer.startAnimation();
+  CR.init(cid);
+  CR.startAnim();
 
-  updateStandingsUI();
-  updateStratUI();
-  startSim();
+  renderStandings();
+  renderStrat();
+  runSim();
 }
 
-function startSim() {
+function runSim() {
   clearInterval(simInterval);
   simInterval = setInterval(() => {
-    if (isPaused) return;
-    if (!Race.state || Race.state.finished) {
-      clearInterval(simInterval);
-      setTimeout(showResults, 1000);
-      return;
-    }
-    const result = Race.simulateLap();
-    if (!result) return;
+    if (isPaused || !Race.state || Race.state.finished) return;
 
-    document.getElementById('tLap').textContent   = Race.state.currentLap;
-    document.getElementById('circLap').textContent = Race.state.currentLap;
+    const res = Race.simulateLap();
+    if (!res) return;
+
+    // Avancer les voitures sur le circuit
+    CR.advanceLap();
+
+    // Mise à jour UI
+    const lap = Race.state.currentLap;
+    document.getElementById('tLap').innerHTML     = `Tour <b>${lap}</b>/<span id="tTotal">${Race.state.totalLaps}</span>`;
+    document.getElementById('svgLap').textContent = lap;
+    document.getElementById('progFill').style.width = (lap / Race.state.totalLaps * 100) + '%';
+
     updateWeather();
-    updateStandingsUI();
-    updateEvents(result.events);
-    updateStratUI();
-    updateProgress();
+    renderStandings();
+    addEvents(res.events);
+    renderStrat();
 
     if (Race.state.finished) {
       clearInterval(simInterval);
-      setTimeout(showResults, 1200);
+      setTimeout(showResults, 1000);
     }
-  }, isFast ? 40 : 380);
+  }, isFast ? 35 : 350);
 }
 
 function togglePause() {
   isPaused = !isPaused;
-  document.getElementById('btnPause').textContent = isPaused ? '▶ Reprendre' : 'Pause';
+  document.getElementById('btnPause').textContent = isPaused ? '▶ Reprendre' : '⏸ Pause';
 }
 
 function toggleFast() {
   isFast = !isFast;
   document.getElementById('btnFast').classList.toggle('on', isFast);
-  document.getElementById('speedLbl').textContent = isFast ? 'x10' : 'x1';
-  if (started) startSim();
+  document.getElementById('spdLbl').textContent = isFast ? 'x10' : 'x1';
+  if (started) runSim();
 }
 
-function skipToEnd() {
+function skipEnd() {
   clearInterval(simInterval);
-  CircuitRenderer.stopAnimation();
   Race.simulateAll();
-  document.getElementById('tLap').textContent = Race.state.currentLap;
-  updateStandingsUI();
-  updateProgress();
-  updateEvents(Race.state.events.slice(-20));
-  CircuitRenderer.updateCarPositions();
+  CR.advanceLap();
+  document.getElementById('svgLap').textContent = Race.state.currentLap;
+  document.getElementById('progFill').style.width = '100%';
+  renderStandings();
+  addEvents(Race.state.events.slice(-15));
   showResults();
 }
 
@@ -510,163 +511,148 @@ function updateWeather() {
   if (!Race.state) return;
   const w = Race.state.weather;
   const b = document.getElementById('wBadge');
-  b.className = 'weather-badge';
-  if (w === 'dry')        { b.classList.add('w-dry');   b.textContent = '☀️ SEC'; }
-  if (w === 'light_rain') { b.classList.add('w-rain');  b.textContent = '🌧️ PLUIE'; }
-  if (w === 'heavy_rain') { b.classList.add('w-heavy'); b.textContent = '⛈️ FORT'; }
-  document.getElementById('scBanner').classList.toggle('on', Race.state.safetyCar.active);
+  b.className = 'w-badge';
+  if (w==='dry')        { b.classList.add('w-dry');   b.textContent='☀️ SEC'; }
+  if (w==='light_rain') { b.classList.add('w-rain');  b.textContent='🌧️ PLUIE'; }
+  if (w==='heavy_rain') { b.classList.add('w-heavy'); b.textContent='⛈️ FORT'; }
+  document.getElementById('scPill').classList.toggle('on', Race.state.safetyCar.active);
 }
 
-function updateStandingsUI() {
+function renderStandings() {
   if (!Race.state) return;
-  const standings = Race.getStandings();
   const body = document.getElementById('standBody');
   body.innerHTML = '';
 
-  standings.forEach(car => {
-    const tyre    = F1Data.tyres[car.tyre.compound];
-    const isDnf   = car.status === 'dnf';
-    const isLead  = car.position === 1;
-    const cond    = Math.round(car.tyre.condition * 100);
-    const condCol = cond > 60 ? '#00e676' : cond > 30 ? '#ffea00' : '#ff4444';
-    const lastLap = car.lapTimes.length > 0 ? fmtLap(car.lapTimes[car.lapTimes.length - 1]) : '—';
-    const gapTxt  = isLead
+  Race.getStandings().forEach(car => {
+    const tyre   = F1Data.tyres[car.tyre.compound];
+    const isDnf  = car.status === 'dnf';
+    const isLead = car.position === 1;
+    const cond   = Math.round(car.tyre.condition * 100);
+    const cc     = cond > 60 ? '#00e676' : cond > 30 ? '#ffea00' : '#ff4444';
+    const last   = car.lapTimes.length > 0 ? fmtLap(car.lapTimes[car.lapTimes.length-1]) : '—';
+    const gap    = isLead
       ? fmtTime(car.totalTime)
-      : car.gap !== null ? '+' + car.gap.toFixed(3) + 's' : 'DNF';
+      : car.gap !== null ? '+'+car.gap.toFixed(1)+'s' : 'DNF';
+
+    const badge = car.pitThisLap
+      ? '<span class="pit-b">PIT</span>'
+      : isDnf ? '<span class="dnf-b">DNF</span>' : '';
 
     const row = document.createElement('div');
-    row.className = `s-row${isLead ? ' lead' : ''}${isDnf ? ' dnf' : ''}`;
-    const pc = car.position <= 3 ? `pos p${car.position}` : 'pos';
-    const badge = car.pitThisLap
-      ? '<span class="pit-badge">PIT</span>'
-      : isDnf ? '<span class="dnf-badge">DNF</span>' : '';
-
+    row.className = `s-row${isLead?' lead':''}${isDnf?' dnf':''}`;
+    const pc = car.position<=3 ? `pos p${car.position}` : 'pos';
     row.innerHTML = `
       <div class="${pc}">${car.position}</div>
       <div class="dnum">${car.driver.number}</div>
       <div class="tbar" style="background:${car.team.color}"></div>
       <div>
-        <div class="dname">${car.driver.firstName[0]}. ${car.driver.name} ${badge}</div>
-        <div class="dteam">${car.team.shortName}</div>
+        <div class="dname">${car.driver.name} ${badge}</div>
+        <div class="dteam-s">${car.team.shortName}</div>
       </div>
-      <div class="tyre-info">
+      <div class="tyre-cell">
         <div class="tyre-dot" style="background:${tyre.color}"></div>
         <div>
-          <div style="color:${tyre.color};font-size:9px;font-family:var(--font-h);font-weight:700">${tyre.name[0]}</div>
-          <div class="tyre-bar-wrap"><div class="tyre-bar" style="width:${cond}%;background:${condCol}"></div></div>
+          <div class="tyre-cond"><div class="tyre-bar" style="width:${cond}%;background:${cc}"></div></div>
+          <div class="gap-cell ${isLead?'ldr':''}" style="margin-top:1px">${gap}</div>
         </div>
       </div>
-      <div class="gap-t ${isLead ? 'ldr' : ''}">${gapTxt}</div>
-      <div class="last-t">${lastLap}</div>
+      <div class="last-cell">${last}</div>
     `;
     body.appendChild(row);
   });
 }
 
-function updateEvents(events) {
-  if (!events || !events.length) return;
-  const log = document.getElementById('eventsLog');
+function addEvents(evs) {
+  if (!evs || !evs.length) return;
+  const log = document.getElementById('evLog');
   if (log.querySelector('div[style]')) log.innerHTML = '';
-  events.forEach(ev => {
+  evs.forEach(ev => {
     const d = document.createElement('div');
     d.className = `ev ev-${ev.type}`;
     d.innerHTML = `<span class="ev-lap">T.${ev.lap}</span><span>${ev.message}</span>`;
     log.insertBefore(d, log.firstChild);
   });
-  while (log.children.length > 60) log.removeChild(log.lastChild);
+  while (log.children.length > 50) log.removeChild(log.lastChild);
 }
 
-function updateStratUI() {
+function renderStrat() {
   if (!Race.state) return;
-  const top5 = Race.getStandings().slice(0, 5);
-  const list = document.getElementById('stratList');
-  list.innerHTML = '';
-  top5.forEach(car => {
+  const body = document.getElementById('stratBody');
+  body.innerHTML = '';
+  Race.getStandings().slice(0,5).forEach(car => {
     const row = document.createElement('div');
     row.className = 'strat-row';
-    const pills = car.strategy.compounds.map((c, i) => {
+    const pills = car.strategy.compounds.map((c,i) => {
       const t = F1Data.tyres[c];
       const active = i === car.currentCompoundIndex;
-      return `<span class="cpill" style="color:${t.color};border:1px solid ${active ? t.color : 'transparent'}">${t.name}</span>`;
+      return `<span class="cpill" style="color:${t.color};border:1px solid ${active?t.color:'transparent'}">${t.name}</span>`;
     }).join('');
-    row.innerHTML = `<div class="strat-name">${car.driver.name}</div>${pills}<div style="margin-left:auto;font-size:9px;color:var(--muted);font-family:var(--font-h)">${car.pitStops.length}arr.</div>`;
-    list.appendChild(row);
+    row.innerHTML = `<div class="strat-name">${car.driver.name}</div>${pills}`;
+    body.appendChild(row);
   });
 }
 
-function updateProgress() {
-  if (!Race.state) return;
-  const pct = (Race.state.currentLap / Race.state.totalLaps) * 100;
-  document.getElementById('progFill').style.width = pct + '%';
-  document.getElementById('progLaps').textContent = `Tour ${Race.state.currentLap} / ${Race.state.totalLaps}`;
-  document.getElementById('progDist').textContent = (Race.state.currentLap * Race.state.circuit.lapDistance).toFixed(0) + ' km';
-}
-
 function showResults() {
-  CircuitRenderer.stopAnimation();
+  CR.stopAnim();
   const results = Race.assignPoints();
   document.getElementById('resSub').textContent = `Grand Prix de ${Race.state.circuit.name}`;
   const body = document.getElementById('resBody');
   body.innerHTML = '';
-  results.forEach((r, i) => {
+  results.forEach((r,i) => {
     const row = document.createElement('div');
-    row.className = `res-row${i < 3 ? ' podium-row' : ''}`;
-    const pc = i < 3 ? `rpos p${i+1}` : 'rpos';
-    const timeText = r.status === 'dnf'
+    row.className = `res-row${i<3?' podium':''}`;
+    const pc = i<3 ? `rpos p${i+1}` : 'rpos';
+    const t  = r.status==='dnf'
       ? `DNF T.${r.dnfLap}`
-      : i === 0
-        ? fmtTime(r.totalTime)
-        : '+' + r.gap.toFixed(3) + 's';
+      : i===0 ? fmtTime(r.totalTime) : '+'+r.gap.toFixed(3)+'s';
     row.innerHTML = `
       <div class="${pc}">${r.position}</div>
       <div class="rnum">${r.driver.number}</div>
-      <div class="rname" style="color:${r.team.color}">${r.driver.firstName} ${r.driver.name}<div style="font-size:10px;color:var(--muted)">${r.team.name}</div></div>
-      <div class="rpts">${r.points > 0 ? r.points + ' pts' : '—'}</div>
-      <div class="rtime">${timeText}</div>
+      <div class="rname" style="color:${r.team.color}">${r.driver.firstName} ${r.driver.name}
+        <div style="font-size:9px;color:var(--muted)">${r.team.name}</div></div>
+      <div class="rpts">${r.points>0?r.points+' pts':'—'}</div>
+      <div class="rtime">${t}</div>
     `;
     body.appendChild(row);
   });
   document.getElementById('resOverlay').style.display = 'flex';
 }
 
-function closeRes() { document.getElementById('resOverlay').style.display = 'none'; }
+function closeRes() { document.getElementById('resOverlay').style.display='none'; }
 
-function restartRace() {
+function resetRace() {
   closeRes();
   clearInterval(simInterval);
-  CircuitRenderer.stopAnimation();
+  CR.stopAnim();
   started = isPaused = false;
-  document.getElementById('btnStart').disabled     = false;
-  document.getElementById('btnPause').disabled     = true;
-  document.getElementById('btnSkip').disabled      = true;
-  document.getElementById('circuitSel').disabled   = false;
-  document.getElementById('tLap').textContent      = '0';
-  document.getElementById('tTotal').textContent    = '—';
-  document.getElementById('circLap').textContent   = '0';
-  document.getElementById('circTotal').textContent = '—';
-  document.getElementById('standBody').innerHTML   = '';
-  document.getElementById('eventsLog').innerHTML   = '<div style="padding:12px;color:var(--muted);font-size:11px;text-align:center;">En attente du départ…</div>';
-  document.getElementById('stratList').innerHTML   = '<div style="padding:6px;color:var(--muted);font-size:11px;text-align:center;">—</div>';
-  document.getElementById('progFill').style.width  = '0%';
-  document.getElementById('trackGroup').innerHTML  = '';
-  document.getElementById('carsGroup').innerHTML   = '';
+  document.getElementById('btnStart').disabled  = false;
+  document.getElementById('btnPause').disabled  = true;
+  document.getElementById('btnSkip').disabled   = true;
+  document.getElementById('circSel').disabled   = false;
+  document.getElementById('tLap').innerHTML     = 'Tour <b>0</b>/<span id="tTotal">—</span>';
+  document.getElementById('svgLap').textContent = '0';
+  document.getElementById('svgTotal').textContent = '—';
+  document.getElementById('progFill').style.width = '0%';
+  document.getElementById('standBody').innerHTML  = '';
+  document.getElementById('evLog').innerHTML = '<div style="padding:10px;color:var(--muted);font-size:11px;text-align:center">En attente du départ…</div>';
+  document.getElementById('stratBody').innerHTML  = '<div style="color:var(--muted);font-size:11px;text-align:center">—</div>';
+  document.getElementById('trackG').innerHTML = '';
+  document.getElementById('carsG').innerHTML  = '';
+  document.getElementById('circLabel').textContent = 'Sélectionne un circuit';
 }
 
+// ── UTILS ─────────────────────────────────────
 function fmtTime(s) {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = (s % 60).toFixed(0);
-  if (h > 0) return `${h}h${String(m).padStart(2,'0')}m${String(sec).padStart(2,'0')}s`;
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.floor(s%60);
+  if(h>0) return `${h}h${String(m).padStart(2,'0')}m${String(sec).padStart(2,'0')}s`;
   return `${m}m${String(sec).padStart(2,'0')}s`;
 }
-
 function fmtLap(s) {
-  const m = Math.floor(s / 60);
-  const sec = (s % 60).toFixed(3);
+  const m = Math.floor(s/60), sec = (s%60).toFixed(3);
   return `${m}:${String(parseFloat(sec).toFixed(3)).padStart(6,'0')}`;
 }
 
-initCircuitSel();
+initSel();
 </script>
 </body>
 </html>
