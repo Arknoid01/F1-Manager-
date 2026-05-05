@@ -2,643 +2,96 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>F1 Manager — Pilotes</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>F1 Manager - Pilotes & Contrats</title>
   <style>
-    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-    :root {
-      --bg:#0a0a0f; --surface:#12121a; --surface2:#1a1a26; --border:#2a2a3e;
-      --text:#e8e8f0; --muted:#6a6a8a; --accent:#e8003d; --gold:#ffd700;
-      --green:#00e676; --blue:#2979ff; --orange:#ff9944;
-      --fh:'Barlow Condensed',sans-serif; --fb:'Barlow',sans-serif;
-    }
-    html,body { min-height:100%; background:var(--bg); color:var(--text); font-family:var(--fb); font-size:14px; }
-
-    /* TOPBAR */
-    .topbar { background:var(--surface); border-bottom:2px solid var(--accent); padding:0 14px; height:50px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
-    .logo { font-family:var(--fh); font-weight:900; font-size:20px; color:var(--accent); letter-spacing:2px; }
-    .logo span { color:var(--text); }
-    .nav-link { font-family:var(--fh); font-size:13px; font-weight:700; color:var(--muted); text-decoration:none; letter-spacing:1px; text-transform:uppercase; padding:4px 8px; }
-    .nav-link:hover,.nav-link.active { color:var(--accent); }
-    .tb-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
-    .season-badge { font-family:var(--fh); font-weight:700; font-size:14px; color:var(--gold); background:#1a1a00; border:1px solid #3a3a00; padding:4px 12px; border-radius:4px; }
-    .budget-badge { font-family:var(--fh); font-weight:700; font-size:14px; color:var(--green); background:#001a0a; border:1px solid #003a18; padding:4px 12px; border-radius:4px; }
-
-    /* PAGE */
-    .page { padding:12px; display:flex; flex-direction:column; gap:12px; }
-
-    /* PANELS */
-    .panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
-    .ph { background:var(--surface2); border-bottom:1px solid var(--border); padding:8px 14px; font-family:var(--fh); font-weight:700; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; }
-    .ph .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); }
-    .ph .ml { margin-left:auto; }
-
-    /* TABS */
-    .tab-bar { display:flex; background:var(--surface2); border-bottom:1px solid var(--border); overflow-x:auto; }
-    .tab-btn { font-family:var(--fh); font-weight:700; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; padding:9px 16px; background:none; border:none; color:var(--muted); cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; }
-    .tab-btn:hover { color:var(--text); }
-    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
-    .tab-pane { display:none; }
-    .tab-pane.active { display:block; }
-
-    /* BTNS */
-    .btn { font-family:var(--fh); font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:6px 14px; border:none; border-radius:4px; cursor:pointer; transition:all .15s; white-space:nowrap; }
-    .btn-red  { background:var(--accent); color:#fff; }
-    .btn-red:hover { background:#ff1a52; }
-    .btn-red:disabled { background:#3a1a22; color:#664; cursor:not-allowed; }
-    .btn-sec { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
-    .btn-sec:hover { border-color:var(--accent); color:var(--accent); }
-    .btn-green { background:#001a0a; color:var(--green); border:1px solid #003a18; }
-    .btn-green:hover { background:#002a14; }
-    .btn-gold { background:#1a1a00; color:var(--gold); border:1px solid #3a3a00; }
-
-    /* DRIVER CARDS */
-    .drivers-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:10px; padding:12px; }
-    .driver-card { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:12px; position:relative; transition:border-color .2s; }
-    .driver-card:hover { border-color:var(--accent); }
-    .driver-card.my-team { border-color:var(--gold); }
-    .driver-card.retired { opacity:.4; }
-    .driver-card.free { border-color:#2979ff33; }
-
-    .dc-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-    .dc-number { font-family:var(--fh); font-weight:900; font-size:30px; min-width:44px; text-align:center; }
-    .dc-info { flex:1; }
-    .dc-name { font-family:var(--fh); font-weight:700; font-size:17px; }
-    .dc-team { font-family:var(--fh); font-size:11px; color:var(--muted); margin-top:1px; }
-    .dc-badges { display:flex; gap:5px; flex-wrap:wrap; margin-top:4px; }
-
-    .badge { font-family:var(--fh); font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; letter-spacing:.5px; }
-    .badge-age  { background:var(--surface); border:1px solid var(--border); }
-    .badge-trait { background:var(--surface); border:1px solid var(--border); }
-
-    /* STATS BARS */
-    .dc-stats { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
-    .stat-row { display:flex; align-items:center; gap:6px; }
-    .stat-lbl { font-family:var(--fh); font-size:10px; color:var(--muted); width:70px; letter-spacing:.5px; text-transform:uppercase; }
-    .stat-bar-wrap { flex:1; height:5px; background:#0a0a14; border-radius:3px; overflow:hidden; }
-    .stat-bar { height:100%; border-radius:3px; transition:width .5s; }
-    .stat-val { font-family:var(--fh); font-weight:700; font-size:12px; width:26px; text-align:right; }
-
-    /* SCORE GLOBAL */
-    .dc-score { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-    .score-val { font-family:var(--fh); font-weight:900; font-size:28px; }
-    .score-lbl { font-family:var(--fh); font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
-    .potential-bar-wrap { flex:1; margin:0 10px; }
-    .potential-label { font-family:var(--fh); font-size:10px; color:var(--muted); margin-bottom:2px; }
-    .potential-bar { height:4px; background:#0a0a14; border-radius:2px; overflow:hidden; margin-bottom:4px; }
-    .potential-fill { height:100%; border-radius:2px; }
-
-    /* BOUTONS ACTION */
-    .dc-actions { display:flex; gap:6px; flex-wrap:wrap; }
-
-    /* SALARY */
-    .dc-salary { font-family:var(--fh); font-size:11px; color:var(--muted); margin-left:auto; }
-
-    /* FIN DE SAISON */
-    .end-season-box { padding:14px; display:flex; flex-direction:column; gap:12px; }
-    .end-season-info { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:12px; }
-    .end-title { font-family:var(--fh); font-weight:900; font-size:16px; color:var(--gold); margin-bottom:6px; }
-    .end-item { font-family:var(--fh); font-size:13px; padding:3px 0; border-bottom:1px solid var(--border); }
-    .end-item:last-child { border-bottom:0; }
-
-    /* GÉNÉRATION */
-    .gen-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:8px; padding:12px; }
-    .gen-card { background:var(--surface2); border:1px solid #2979ff33; border-radius:5px; padding:10px; }
-    .gen-name { font-family:var(--fh); font-weight:700; font-size:15px; color:var(--blue); }
-    .gen-meta { font-family:var(--fh); font-size:11px; color:var(--muted); margin:3px 0 8px; }
-    .gen-stats { display:grid; grid-template-columns:1fr 1fr; gap:3px; margin-bottom:8px; }
-    .gen-stat { font-family:var(--fh); font-size:11px; color:var(--muted); }
-    .gen-stat span { color:var(--text); font-weight:700; }
-
-    /* TOAST */
-    .toast { position:fixed; bottom:20px; right:20px; background:var(--surface2); border:1px solid var(--border); border-left:3px solid var(--green); border-radius:5px; padding:12px 16px; font-family:var(--fh); font-size:13px; z-index:500; transform:translateX(120%); transition:transform .3s; max-width:300px; }
-    .toast.show { transform:translateX(0); }
-    .toast.error { border-left-color:var(--accent); }
-
-    /* MODAL */
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; }
-    .modal-card { background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--accent); border-radius:8px; width:100%; max-width:420px; padding:20px; }
-    .modal-title { font-family:var(--fh); font-weight:900; font-size:20px; color:var(--accent); margin-bottom:4px; }
-    .modal-sub { font-family:var(--fh); font-size:12px; color:var(--muted); margin-bottom:16px; }
-    .modal-btns { display:flex; gap:8px; margin-top:16px; }
-
-    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&display=swap');
+    :root{--bg:#06060b;--surface:#11111a;--surface2:#181824;--border:#2a2a3a;--text:#f2f2f6;--muted:#8a8a9a;--accent:#e8003d;--gold:#ffd700;--green:#00e676;--orange:#ff9944;--fh:'Barlow Condensed',sans-serif}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#050508,#0b0b14);color:var(--text);font-family:Arial,sans-serif;min-height:100vh}.topbar{height:54px;background:#0a0a12;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:12px;position:sticky;top:0;z-index:20}.logo{font-family:var(--fh);font-weight:900;font-size:24px;letter-spacing:-1px}.logo span{color:var(--accent)}.nav-link{font-family:var(--fh);font-weight:700;font-size:14px;color:var(--muted);text-decoration:none;padding:7px 12px;border-radius:4px;text-transform:uppercase;letter-spacing:.8px}.nav-link:hover,.nav-link.active{background:var(--surface2);color:var(--text)}.tb-right{margin-left:auto;display:flex;gap:8px}.season-badge,.budget-badge{font-family:var(--fh);font-weight:700;font-size:13px;padding:6px 12px;border-radius:4px;background:var(--surface2);border:1px solid var(--border)}.budget-badge{color:var(--gold)}.page{max-width:1280px;margin:0 auto;padding:18px;display:flex;flex-direction:column;gap:14px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}.ph{height:38px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;font-family:var(--fh);font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:1px}.dot{width:3px;height:16px;background:var(--accent);border-radius:2px}.intro{padding:14px;color:var(--muted);font-family:var(--fh);font-size:15px;line-height:1.6}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;padding:12px}.driver-card{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:13px}.driver-card.mine{border-color:var(--gold)}.dc-head{display:flex;justify-content:space-between;gap:8px}.dc-name{font-family:var(--fh);font-size:23px;font-weight:900}.dc-team{font-family:var(--fh);font-size:12px;color:var(--muted);margin-top:2px}.score{font-family:var(--fh);font-size:28px;font-weight:900;color:var(--gold)}.badges{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.badge{font-family:var(--fh);font-size:11px;font-weight:700;padding:3px 7px;border-radius:3px;background:#101018;border:1px solid var(--border);color:var(--muted)}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0 10px}.stat{text-align:center;background:#101018;border-radius:4px;padding:5px 3px}.stat b{display:block;font-family:var(--fh);font-size:17px}.stat span{font-family:var(--fh);font-size:10px;color:var(--muted)}.offer{border-top:1px solid var(--border);padding-top:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.field label{display:block;font-family:var(--fh);font-size:11px;color:var(--muted);margin-bottom:3px;text-transform:uppercase}.field input,.field select{width:100%;background:#0d0d15;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px;font-family:var(--fh);font-size:14px}.chance{grid-column:1/-1;font-family:var(--fh);font-size:13px;color:var(--muted);line-height:1.5;background:#101018;border:1px solid var(--border);border-radius:4px;padding:8px}.actions{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap}.btn{font-family:var(--fh);font-weight:800;font-size:12px;letter-spacing:.8px;text-transform:uppercase;padding:7px 12px;border:none;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}.btn-red{background:var(--accent);color:white}.btn-red:disabled{opacity:.35;cursor:not-allowed}.btn-sec{background:var(--surface);color:var(--text);border:1px solid var(--border)}.btn-green{background:#003c22;color:var(--green);border:1px solid #006b3b}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border)}.toolbar input,.toolbar select{background:#101018;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-family:var(--fh);font-size:14px}.toast{position:fixed;right:20px;bottom:20px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:5px;padding:12px 16px;font-family:var(--fh);font-size:14px;transform:translateX(130%);transition:.25s;z-index:50;max-width:360px}.toast.show{transform:translateX(0)}.toast.error{border-left-color:var(--accent)}.empty{padding:28px;text-align:center;color:var(--muted);font-family:var(--fh);font-size:18px}.counter{color:var(--orange)}
   </style>
 </head>
 <body>
-
 <div class="topbar">
   <div class="logo">F1<span>Manager</span></div>
-  <a href="index.html"    class="nav-link">🏠 Équipe</a>
-  <a href="race.html"     class="nav-link">🏁 Course</a>
-  <a href="standings.html"class="nav-link">🏆 Champ.</a>
-  <a href="drivers.html"  class="nav-link active">👤 Pilotes</a>
-  <a href="contracts.html" class="nav-link">📝 Contrats</a>
-  <div class="tb-right">
-    <div class="season-badge" id="seasonBadge">Saison 2025</div>
-    <div class="budget-badge" id="budgetBadge">—</div>
-  </div>
+  <a href="index.html" class="nav-link">🏠 Équipe</a>
+  <a href="race.html" class="nav-link">🏁 Course</a>
+  <a href="standings.html" class="nav-link">🏆 Champ.</a>
+  <a href="drivers.html" class="nav-link active">👤 Pilotes & Contrats</a>
+  <div class="tb-right"><div class="season-badge" id="seasonBadge">Saison —</div><div class="budget-badge" id="budgetBadge">—</div></div>
 </div>
-
-<div class="page">
-
-  <!-- TABS -->
+<div class="page" id="page">
   <div class="panel">
-    <div class="tab-bar">
-      <button class="tab-btn active" onclick="showTab('tab-my')">🏎️ Mon équipe</button>
-      <button class="tab-btn" onclick="showTab('tab-market')">🛒 Marché</button>
-      <button class="tab-btn" onclick="showTab('tab-all')">📋 Tous les pilotes</button>
-      <button class="tab-btn" onclick="showTab('tab-season')">📅 Fin de saison</button>
-    </div>
-
-    <!-- MON ÉQUIPE -->
-    <div class="tab-pane active" id="tab-my">
-      <div class="drivers-grid" id="myTeamDrivers"></div>
-    </div>
-
-    <!-- MARCHÉ : pilotes libres + jeunes talents -->
-    <div class="tab-pane" id="tab-market">
-      <div style="padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--surface2);border-bottom:1px solid var(--border)">
-        <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">Filtrer :</span>
-        <button class="btn btn-sec" onclick="filterMarket('all')"   id="fAll"  >Tous</button>
-        <button class="btn btn-sec" onclick="filterMarket('free')"  id="fFree" >Libres</button>
-        <button class="btn btn-sec" onclick="filterMarket('young')" id="fYoung">Jeunes (≤24)</button>
-        <button class="btn btn-sec" onclick="filterMarket('top')"   id="fTop"  >Top talents</button>
-      </div>
-      <div class="drivers-grid" id="marketDrivers"></div>
-    </div>
-
-    <!-- TOUS LES PILOTES -->
-    <div class="tab-pane" id="tab-all">
-      <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border)">
-        <input id="searchInput" type="text" placeholder="🔍 Rechercher un pilote…" oninput="renderAll()"
-          style="background:#101018;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:var(--fh);font-size:13px;width:100%;outline:none">
-      </div>
-      <div class="drivers-grid" id="allDrivers"></div>
-    </div>
-
-    <!-- FIN DE SAISON -->
-    <div class="tab-pane" id="tab-season">
-      <div class="end-season-box">
-        <div style="font-family:var(--fh);font-size:11px;color:var(--muted);line-height:1.6">
-          La fin de saison vieillira tous les pilotes, génèrera de nouveaux talents,
-          libèrera certains pilotes peu performants, et passera à la saison suivante.
-          <br>⚠️ Cette action est irréversible.
-        </div>
-
-        <div class="end-season-info" id="seasonPreview">
-          <div class="end-title">📊 Aperçu de ta saison</div>
-          <div id="seasonPreviewContent"></div>
-        </div>
-
-        <button class="btn btn-red" onclick="confirmEndSeason()" style="font-size:14px;padding:10px 24px;align-self:flex-start">
-          🏁 Terminer la saison et passer à la suivante
-        </button>
-
-        <div class="end-season-info" id="lastEndSeasonReport" style="display:none">
-          <div class="end-title">📋 Rapport de fin de saison</div>
-          <div id="lastReportContent"></div>
-        </div>
-      </div>
-    </div>
-
+    <div class="ph"><div class="dot"></div> Centre pilotes & contrats</div>
+    <div class="intro">Chaque offre tient compte du salaire, du rôle, de la durée, de la réputation de ton équipe, du classement constructeur et de la personnalité du pilote. Un refus rend le pilote plus difficile à convaincre jusqu'à la saison suivante.</div>
   </div>
-
-</div>
-
-<!-- MODAL CONFIRMATION -->
-<div class="modal-overlay" id="modalOverlay" style="display:none">
-  <div class="modal-card">
-    <div class="modal-title" id="modalTitle">Confirmer</div>
-    <div class="modal-sub"   id="modalSub"></div>
-    <div id="modalBody"></div>
-    <div class="modal-btns">
-      <button class="btn btn-red"   id="modalConfirm" onclick="modalConfirmAction()">Confirmer</button>
-      <button class="btn btn-sec"   onclick="closeModal()">Annuler</button>
+  <div class="panel">
+    <div class="ph"><div class="dot"></div> Mes pilotes — contrats & gestion</div>
+    <div class="grid" id="myGrid"></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><div class="dot"></div> Marché des pilotes</div>
+    <div class="toolbar"><input id="search" placeholder="Rechercher…" oninput="renderMarket()"><select id="filter" onchange="renderMarket()"><option value="all">Tous</option><option value="free">Agents libres</option><option value="young">Jeunes ≤24</option><option value="top">Top score ≥85</option></select></div>
+    <div class="grid" id="marketGrid"></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><div class="dot"></div> Fin de saison</div>
+    <div class="intro" id="seasonPreview">Termine la saison actuelle : les statistiques, classements et courses seront réinitialisés, les contrats seront réduits d'un an, et le mercato IA sera appliqué.</div>
+    <div style="padding:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-red" onclick="confirmEndSeason()">📅 Terminer la saison</button>
     </div>
+    <div class="intro" id="seasonReport" style="display:none"></div>
   </div>
 </div>
-
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
-
-<script src="js/data.js"></script>
-<script src="js/save.js"></script>
-<script src="js/events.js"></script>
-<script src="js/career.js"></script>
+<script src="js/data.js"></script><script src="js/save.js"></script><script src="js/events.js"></script><script src="js/career.js"></script>
 <script>
+let save=null;
+function restoreDrivers(){
+  if(save.generatedDrivers?.length){save.generatedDrivers.forEach(gd=>{if(!F1Data.drivers.find(d=>d.id===gd.id))F1Data.drivers.push(gd);});}
+  if(save.driverStates){F1Data.drivers.forEach(d=>{const st=save.driverStates[d.id]; if(st) Object.assign(d,st);});}
+  F1Data.drivers.forEach(d=>{if(!d.age)d.age=25;if(!d.potential)d.potential=Math.max(d.pace||70,d.consistency||70)+5;if(!d.trait)d.trait='consistent';if(d.retired===undefined)d.retired=false;});
+}
+function init(){save=Save.load(); if(!save||!save.playerTeamId){document.getElementById('page').innerHTML='<div class="empty">Aucune carrière trouvée<br><br><a class="btn btn-red" href="index.html">Créer une carrière</a></div>';return;} restoreDrivers(); Career.ensureContractSystem(save); Save.save(save); updateTop(); renderMy(); renderMarket(); renderSeasonPreview();}
+function updateTop(){document.getElementById('seasonBadge').textContent=`Saison ${save.season||2025}`;document.getElementById('budgetBadge').textContent=`💰 ${save.budget||0}M €`;}
+function driverTeam(d){return d.teamId?F1Data.teams.find(t=>t.id===d.teamId):null}
+function roleLabel(r){return r==='pilote1'?'Pilote 1':r==='egal'?'Statut égal':'Pilote 2'}
+function buildCard(d,isMine){const team=driverTeam(d),score=Career.getDriverScore(d),p=Career.getPotentialLabel(d.potential||80),pers=Career.getPersonalityInfo(d),c=save.contracts[d.id]||{},prefix=isMine?'renew':'sign';const defaultSalary=Math.max(1,Math.ceil((d.salary||1)*(isMine?1.05:1.15)));const playerDrivers=F1Data.drivers.filter(x=>x.teamId===save.playerTeamId&&!x.retired);const replaceOptions=playerDrivers.map(x=>`<option value="${x.id}">Prendre la place de ${x.firstName} ${x.name}</option>`).join('');const mustReplace=playerDrivers.length>=2;
+  const div=document.createElement('div');div.className='driver-card'+(isMine?' mine':'');div.innerHTML=`<div class="dc-head"><div><div class="dc-name">${d.firstName||''} ${d.name}</div><div class="dc-team">${team?team.name:'Agent libre'} · ${d.age||'?'} ans · Contrat: ${c.years||0} an(s)</div></div><div class="score">${score}</div></div><div class="badges"><span class="badge">${pers.icon} ${pers.label}</span><span class="badge" style="color:${p.color}">Potentiel ${p.label}</span><span class="badge">💰 ${d.salary||1}M€/an</span>${c.refus?`<span class="badge counter">${c.refus} refus</span>`:''}</div><div class="stats"><div class="stat"><b>${d.pace}</b><span>Pace</span></div><div class="stat"><b>${d.consistency}</b><span>Rég.</span></div><div class="stat"><b>${d.wetSkill}</b><span>Pluie</span></div><div class="stat"><b>${d.overtaking}</b><span>Att.</span></div><div class="stat"><b>${d.defending}</b><span>Déf.</span></div></div><div class="chance">${pers.desc}<br><span id="${prefix}-eval-${d.id}">Ajuste l'offre pour voir les chances.</span></div><div class="offer"><div class="field"><label>Salaire / an</label><input id="${prefix}-sal-${d.id}" type="number" min="1" value="${defaultSalary}" oninput="refreshEval('${d.id}','${prefix}')"></div><div class="field"><label>Durée</label><select id="${prefix}-years-${d.id}" onchange="refreshEval('${d.id}','${prefix}')"><option value="1">1 an</option><option value="2" selected>2 ans</option><option value="3">3 ans</option><option value="4">4 ans</option></select></div><div class="field"><label>Rôle</label><select id="${prefix}-role-${d.id}" onchange="refreshEval('${d.id}','${prefix}')"><option value="pilote2">Pilote 2</option><option value="egal">Statut égal</option><option value="pilote1">Pilote 1</option></select></div><div class="field"><label>Prime signature</label><input id="${prefix}-bonus-${d.id}" type="number" min="0" value="${isMine?0:Math.max(1,Math.round((d.salary||1)*0.5))}" oninput="refreshEval('${d.id}','${prefix}')"></div>${!isMine?`<div class="field" style="grid-column:1/-1"><label>${mustReplace?'Siège à remplacer':'Siège cible'}</label><select id="${prefix}-replace-${d.id}">${mustReplace?'':'<option value="">Ajouter sur un siège libre</option>'}${replaceOptions}</select></div>`:''}<div class="actions"><button class="btn btn-green" onclick="sendOffer('${d.id}','${prefix}')">${isMine?'Prolonger':'Faire une offre'}</button><button class="btn btn-sec" onclick="quickOffer('${d.id}','${prefix}','safe')">Offre prudente</button><button class="btn btn-sec" onclick="quickOffer('${d.id}','${prefix}','big')">Offre forte</button>${isMine?`<button class="btn btn-sec" onclick="releaseMyDriver('${d.id}')">Libérer</button>`:''}</div></div>`;setTimeout(()=>refreshEval(d.id,prefix),0);return div;}
+function getOffer(id,prefix){return{salary:Number(document.getElementById(`${prefix}-sal-${id}`).value)||1,years:Number(document.getElementById(`${prefix}-years-${id}`).value)||2,role:document.getElementById(`${prefix}-role-${id}`).value,bonus:Number(document.getElementById(`${prefix}-bonus-${id}`).value)||0,replaceDriverId:document.getElementById(`${prefix}-replace-${id}`)?.value||''};}
+function refreshEval(id,prefix){const ev=Career.evaluateContractOffer(save,id,getOffer(id,prefix));const el=document.getElementById(`${prefix}-eval-${id}`);if(!el||!ev.ok)return;el.innerHTML=`Chance estimée : <b style="color:${ev.chance>=65?'var(--green)':ev.chance>=40?'var(--gold)':'var(--accent)'}">${ev.chance}%</b> · Rang équipe: P${ev.teamRank}<br>Demande probable : ${ev.demand.salary}M€/an, ${ev.demand.years} an(s), rôle ${roleLabel(ev.demand.role)}.`;}
+function quickOffer(id,prefix,type){const d=F1Data.drivers.find(x=>x.id===id);if(!d)return;const mult=type==='big'?1.35:1.12;document.getElementById(`${prefix}-sal-${id}`).value=Math.ceil((d.salary||1)*mult);document.getElementById(`${prefix}-bonus-${id}`).value=type==='big'?Math.round((d.salary||1)*1.1):Math.round((d.salary||1)*0.4);document.getElementById(`${prefix}-role-${id}`).value=type==='big'?'pilote1':'egal';document.getElementById(`${prefix}-years-${id}`).value=type==='big'?'3':'2';refreshEval(id,prefix);}
+function sendOffer(id,prefix){const res=Career.makeContractOffer(save,id,getOffer(id,prefix));save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderMarket();renderSeasonPreview(); if(res.counter){toast(`↪️ ${res.msg} Contre-offre: ${res.counter.salary}M€/an, ${res.counter.years} an(s).`,true);} else toast((res.accepted?'✅ ':'❌ ')+res.msg,!res.accepted);}
+function renderMy(){const grid=document.getElementById('myGrid');grid.innerHTML='';const mine=F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);if(!mine.length){grid.innerHTML='<div class="empty">Aucun pilote dans ton équipe.</div>';return;}mine.forEach(d=>grid.appendChild(buildCard(d,true)));}
+function renderMarket(){const grid=document.getElementById('marketGrid');grid.innerHTML='';let arr=F1Data.drivers.filter(d=>!d.retired&&d.teamId!==save.playerTeamId);const q=(document.getElementById('search')?.value||'').toLowerCase();const f=document.getElementById('filter')?.value||'all';if(q)arr=arr.filter(d=>(`${d.firstName} ${d.name}`).toLowerCase().includes(q));if(f==='free')arr=arr.filter(d=>!d.teamId);if(f==='young')arr=arr.filter(d=>(d.age||25)<=24);if(f==='top')arr=arr.filter(d=>Career.getDriverScore(d)>=85);arr.sort((a,b)=>Career.getDriverScore(b)-Career.getDriverScore(a));if(!arr.length){grid.innerHTML='<div class="empty">Aucun pilote trouvé.</div>';return;}arr.forEach(d=>grid.appendChild(buildCard(d,false)));}
 
-let save = null;
-let marketFilter = 'all';
-let modalAction  = null;
-
-// ── INIT ──────────────────────────────────────────────────
-function init() {
-  save = Save.load();
-  if (!save || !save.playerTeamId) {
-    document.querySelector('.page').innerHTML = `
-      <div style="padding:40px;text-align:center;color:var(--muted);font-family:var(--fh)">
-        <div style="font-size:24px;margin-bottom:12px">Aucune carrière trouvée</div>
-        <a href="index.html" class="btn btn-red">Créer une carrière</a>
-      </div>`;
-    return;
-  }
-
-  // ── Patcher les pilotes existants sans age/potential/trait ──
-  // Restaurer d'abord les états sauvegardés si disponibles
-  if (save.driverStates) {
-    F1Data.drivers.forEach(d => {
-      const state = save.driverStates[d.id];
-      if (state) {
-        d.age         = state.age         ?? d.age;
-        d.pace        = state.pace        ?? d.pace;
-        d.consistency = state.consistency ?? d.consistency;
-        d.wetSkill    = state.wetSkill    ?? d.wetSkill;
-        d.overtaking  = state.overtaking  ?? d.overtaking;
-        d.defending   = state.defending   ?? d.defending;
-        d.salary      = state.salary      ?? d.salary;
-        d.trait       = state.trait       ?? d.trait;
-        d.potential   = state.potential   ?? d.potential;
-        d.retired     = state.retired     ?? false;
-        d.teamId      = Object.prototype.hasOwnProperty.call(state, 'teamId') ? state.teamId : d.teamId;
-        d.seasons     = state.seasons     ?? 0;
-      }
-    });
-  }
-
-  // Restaurer les pilotes générés
-  if (save.generatedDrivers?.length) {
-    save.generatedDrivers.forEach(gd => {
-      if (!F1Data.drivers.find(d => d.id === gd.id)) {
-        F1Data.drivers.push(gd);
-      } else {
-        // Mettre à jour si déjà présent
-        const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
-        if (save.driverStates?.[gd.id]) {
-          Object.assign(F1Data.drivers[idx], save.driverStates[gd.id]);
-        }
-      }
-    });
-  }
-
-  F1Data.drivers.forEach(d => {
-    // Âge : estimer depuis le salary/pace si manquant
-    if (!d.age) {
-      const score = (d.pace || 70) + (d.consistency || 70) + (d.wetSkill || 70);
-      if (score >= 270)      d.age = 26 + Math.floor(Math.random() * 8); // top pilote = 26-33
-      else if (score >= 240) d.age = 22 + Math.floor(Math.random() * 8); // bon = 22-29
-      else                   d.age = 20 + Math.floor(Math.random() * 6); // junior = 20-25
-    }
-    // Potentiel : basé sur le pace max + marge de progression selon l'âge
-    if (!d.potential) {
-      const best = Math.max(d.pace || 70, d.consistency || 70, d.wetSkill || 70);
-      const youngBonus = d.age <= 24 ? 10 : d.age <= 27 ? 5 : 0;
-      d.potential = Math.min(99, best + youngBonus + Math.floor(Math.random() * 5));
-    }
-    // Trait : dériver des stats si manquant
-    if (!d.trait) {
-      const pace = d.pace || 70, wet = d.wetSkill || 70;
-      const ov = d.overtaking || 70, def = d.defending || 70, cons = d.consistency || 70;
-      if (wet >= 90)       d.trait = 'rain_master';
-      else if (def >= 90)  d.trait = 'defender';
-      else if (ov >= 88)   d.trait = 'overtaker';
-      else if (pace >= 92) d.trait = 'qualifier';
-      else if (cons >= 88) d.trait = 'consistent';
-      else                 d.trait = 'aggressive';
-    }
-    if (d.retired === undefined) d.retired = false;
-    if (d.seasons === undefined) d.seasons = 0;
-  });
-
-  document.getElementById('seasonBadge').textContent = `Saison ${save.season || 2025}`;
-  document.getElementById('budgetBadge').textContent = `💰 ${save.budget || 0}M €`;
-
-  renderMyTeam();
-  renderMarket();
-  renderAll();
-  renderSeasonPreview();
+function releaseMyDriver(id){
+  const d=F1Data.drivers.find(x=>x.id===id); if(!d)return;
+  const penalty=Math.round((d.salary||1)*0.5);
+  if(!confirm(`Libérer ${d.firstName||''} ${d.name} ?\nIndemnité: ${penalty}M€.\nLe pilote deviendra agent libre.`))return;
+  const res=Career.releaseDriver(save,id);
+  save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderMarket();renderSeasonPreview();
+  toast((res.ok?'✅ ':'❌ ')+res.msg,!res.ok);
+}
+function renderSeasonPreview(){
+  const el=document.getElementById('seasonPreview'); if(!el)return;
+  const mine=F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
+  const races=(save.raceResults||[]).length;
+  const remaining=Math.max(0,(F1Data.calendar?.length||0)-races);
+  el.innerHTML=`Saison ${save.season||2025} · ${races} course(s) disputée(s), ${remaining} restante(s).<br>Mes pilotes : ${mine.map(d=>`${d.firstName||''} ${d.name} (${save.contracts?.[d.id]?.years??0} an(s))`).join(', ')||'—'}<br>Budget : ${save.budget||0}M€.`;
+}
+function confirmEndSeason(){
+  if(!confirm(`Terminer la saison ${save.season||2025} ?\nLes statistiques de saison seront remises à zéro.`))return;
+  const report=Career.endOfSeason(save);
+  save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderMarket();renderSeasonPreview();
+  const box=document.getElementById('seasonReport');
+  let html=`✅ Bienvenue en saison ${save.season}.`;
+  if(report.retired?.length) html+=`<br>🏁 Retraites : ${report.retired.map(d=>(d.firstName||'')+' '+d.name).join(', ')}`;
+  if(report.released?.length) html+=`<br>🔄 Libérés : ${report.released.map(d=>(d.firstName||'')+' '+d.name).join(', ')}`;
+  if(report.newTalents?.length) html+=`<br>✨ Nouveaux talents : ${report.newTalents.map(d=>(d.firstName||'')+' '+d.name).join(', ')}`;
+  box.innerHTML=html; box.style.display='block'; toast('✅ Saison terminée',false);
 }
 
-// ── TAB ──────────────────────────────────────────────────
-function showTab(id) {
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(id)?.classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    if (b.getAttribute('onclick') === `showTab('${id}')`) b.classList.add('active');
-  });
-}
-
-// ── MON ÉQUIPE ────────────────────────────────────────────
-function renderMyTeam() {
-  const grid = document.getElementById('myTeamDrivers');
-  const team = F1Data.teams.find(t => t.id === save.playerTeamId);
-  const myDrivers = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
-
-  grid.innerHTML = '';
-
-  if (!myDrivers.length) {
-    grid.innerHTML = '<div style="padding:20px;color:var(--muted);font-family:var(--fh);grid-column:1/-1">Aucun pilote dans ton équipe. Va sur le Marché pour en recruter.</div>';
-    return;
-  }
-
-  myDrivers.forEach(driver => {
-    grid.appendChild(buildDriverCard(driver, team, 'my-team', true));
-  });
-}
-
-// ── MARCHÉ ────────────────────────────────────────────────
-function filterMarket(f) {
-  marketFilter = f;
-  ['All','Free','Young','Top'].forEach(x => {
-    const btn = document.getElementById('f'+x);
-    if (btn) btn.classList.toggle('btn-red', f === x.toLowerCase());
-  });
-  renderMarket();
-}
-
-function renderMarket() {
-  const grid = document.getElementById('marketDrivers');
-  grid.innerHTML = '';
-
-  // Tous les pilotes sauf mon équipe et retraités
-  let drivers = F1Data.drivers.filter(d => !d.retired && d.teamId !== save.playerTeamId);
-
-  if (marketFilter === 'free')  drivers = drivers.filter(d => !d.teamId);
-  if (marketFilter === 'young') drivers = drivers.filter(d => (d.age || 25) <= 24);
-  if (marketFilter === 'top')   drivers = drivers.filter(d => Career.getDriverScore(d) >= 85);
-
-  if (!drivers.length) {
-    grid.innerHTML = '<div style="padding:20px;color:var(--muted);font-family:var(--fh);grid-column:1/-1">Aucun pilote disponible pour ce filtre.</div>';
-    return;
-  }
-
-  drivers.sort((a, b) => Career.getDriverScore(b) - Career.getDriverScore(a));
-
-  drivers.forEach(driver => {
-    const team = driver.teamId ? F1Data.teams.find(t => t.id === driver.teamId) : null;
-    grid.appendChild(buildDriverCard(driver, team, driver.teamId ? '' : 'free', false));
-  });
-}
-
-// ── TOUS LES PILOTES ─────────────────────────────────────
-function renderAll() {
-  const grid = document.getElementById('allDrivers');
-  const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
-  grid.innerHTML = '';
-
-  let drivers = F1Data.drivers.filter(d => !d.retired);
-  if (search) {
-    drivers = drivers.filter(d =>
-      d.name.toLowerCase().includes(search) ||
-      d.firstName.toLowerCase().includes(search) ||
-      (d.teamId || '').toLowerCase().includes(search)
-    );
-  }
-
-  drivers.sort((a, b) => Career.getDriverScore(b) - Career.getDriverScore(a));
-
-  drivers.forEach(driver => {
-    const team = driver.teamId ? F1Data.teams.find(t => t.id === driver.teamId) : null;
-    const isMyTeam = driver.teamId === save.playerTeamId;
-    grid.appendChild(buildDriverCard(driver, team, isMyTeam ? 'my-team' : '', false));
-  });
-}
-
-// ── BUILD DRIVER CARD ─────────────────────────────────────
-function buildDriverCard(driver, team, extraClass, showActions) {
-  const score      = Career.getDriverScore(driver);
-  const potLabel   = Career.getPotentialLabel(driver.potential);
-  const agePhase   = Career.getAgePhase(driver.age);
-  const traitData  = F1Data.traits?.[driver.trait] || { label: 'Standard', icon: '🏎️' };
-  const teamColor  = team?.color || '#6a6a8a';
-  const isMyTeam   = driver.teamId === save.playerTeamId;
-  const isFree     = !driver.teamId;
-  const signingFee = Math.round((driver.salary || 1) * 1.5);
-  const age        = driver.age || 25;
-  const potential  = driver.potential || 80;
-  const seasons    = driver.seasons || 0;
-
-  const stats = [
-    { lbl:'Pace',       val:driver.pace,        color:'#e8003d' },
-    { lbl:'Régularité', val:driver.consistency,  color:'#ffd700' },
-    { lbl:'Pluie',      val:driver.wetSkill,     color:'#4488ff' },
-    { lbl:'Dépassement',val:driver.overtaking,   color:'#00e676' },
-    { lbl:'Défense',    val:driver.defending,    color:'#ff9944' },
-  ];
-
-  const card = document.createElement('div');
-  card.className = `driver-card ${extraClass}`;
-
-  const scoreColor = score >= 90 ? '#ffd700' : score >= 80 ? '#00e676' : score >= 70 ? '#2979ff' : '#6a6a8a';
-
-  card.innerHTML = `
-    <div class="dc-header">
-      <div class="dc-number" style="color:${teamColor}">${driver.number || '?'}</div>
-      <div class="dc-info">
-        <div class="dc-name">${driver.firstName || ''} ${driver.name}</div>
-        <div class="dc-team">${team ? team.name : isFree ? '🆓 Agent libre' : '—'}</div>
-        <div class="dc-badges">
-          <span class="badge badge-age" style="color:${agePhase.color}">${agePhase.icon} ${age} ans · ${agePhase.label}</span>
-          <span class="badge badge-trait">${traitData.icon} ${traitData.label}</span>
-          ${isMyTeam ? '<span class="badge" style="background:#1a1a00;color:var(--gold);border:1px solid #3a3a00">👑 Mon équipe</span>' : ''}
-          ${driver.generated ? '<span class="badge" style="background:#001a2a;color:#4488ff;border:1px solid #004488">✨ Nouveau talent</span>' : ''}
-        </div>
-      </div>
-    </div>
-
-    <div class="dc-score">
-      <div>
-        <div class="score-val" style="color:${scoreColor}">${score}</div>
-        <div class="score-lbl">Score global</div>
-      </div>
-      <div class="potential-bar-wrap">
-        <div class="potential-label">Potentiel : <span style="color:${potLabel.color}">${potLabel.label}</span> (${potential})</div>
-        <div class="potential-bar"><div class="potential-fill" style="width:${potential}%;background:${potLabel.color}"></div></div>
-        <div style="font-family:var(--fh);font-size:10px;color:var(--muted)">Saison ${seasons + 1} en F1</div>
-      </div>
-    </div>
-
-    <div class="dc-stats">
-      ${stats.map(s => `
-        <div class="stat-row">
-          <div class="stat-lbl">${s.lbl}</div>
-          <div class="stat-bar-wrap"><div class="stat-bar" style="width:${s.val}%;background:${s.color}"></div></div>
-          <div class="stat-val" style="color:${s.color}">${s.val}</div>
-        </div>
-      `).join('')}
-    </div>
-
-    <div class="dc-actions">
-      <div class="dc-salary">💰 ${driver.salary}M€/an</div>
-      ${!isMyTeam && !driver.retired ? `
-        <a class="btn btn-green" href="contracts.html">
-          📝 Négocier
-        </a>
-      ` : ''}
-      ${isMyTeam ? `
-        <a class="btn btn-sec" href="contracts.html">
-          ❌ Libérer
-        </a>
-      ` : ''}
-    </div>
-  `;
-
-  return card;
-}
-
-// ── APERÇU FIN DE SAISON ──────────────────────────────────
-function renderSeasonPreview() {
-  const content = document.getElementById('seasonPreviewContent');
-  if (!content) return;
-
-  const myDrivers = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
-  const season    = save.season || 2025;
-  const races     = (save.raceResults || []).length;
-  const points    = Object.values(save.driverStandings || {}).reduce((s, p) => s + p, 0);
-
-  const retirementRisks = F1Data.drivers
-    .filter(d => !d.retired && (d.age || 25) >= 36)
-    .map(d => `${d.firstName} ${d.name} (${d.age} ans)`);
-
-  content.innerHTML = `
-    <div class="end-item">📅 Saison ${season} · ${races} courses disputées</div>
-    <div class="end-item">🏆 Points totaux gagnés : ${points}</div>
-    <div class="end-item">💰 Budget actuel : ${save.budget || 0}M€</div>
-    <div class="end-item">🎟️ Tokens : ${save.tokens || 0}</div>
-    <div class="end-item">👤 Mes pilotes : ${myDrivers.map(d => `${d.firstName} ${d.name} (${d.age} ans)`).join(', ') || '—'}</div>
-    ${retirementRisks.length ? `<div class="end-item" style="color:var(--orange)">⚠️ Risque retraite : ${retirementRisks.join(', ')}</div>` : ''}
-    <div class="end-item" style="color:var(--green)">✨ 2-4 nouveaux jeunes talents seront générés</div>
-    <div class="end-item" style="color:var(--gold)">🎟️ +5 tokens R&D offerts</div>
-  `;
-}
-
-// ── FIN DE SAISON ─────────────────────────────────────────
-function confirmEndSeason() {
-  if (!confirm(`Terminer la saison ${save.season || 2025} et passer à la suivante ?\n\nCette action est irréversible.`)) return;
-
-  const report = Career.endOfSeason(save);
-  save = Save.load(); // Recharger
-
-  document.getElementById('seasonBadge').textContent = `Saison ${save.season}`;
-  document.getElementById('budgetBadge').textContent = `💰 ${save.budget}M €`;
-
-  // Afficher le rapport
-  const box = document.getElementById('lastEndSeasonReport');
-  const cnt = document.getElementById('lastReportContent');
-  box.style.display = 'block';
-
-  let html = `<div class="end-item" style="color:var(--gold)">✅ Bienvenue en saison ${save.season} !</div>`;
-
-  if (report.retired?.length) {
-    html += `<div class="end-item" style="color:var(--orange)">🏁 Retraites : ${report.retired.map(d => d.firstName + ' ' + d.name).join(', ')}</div>`;
-  }
-  if (report.released?.length) {
-    html += `<div class="end-item">🔄 Libérés : ${report.released.map(d => d.firstName + ' ' + d.name).join(', ')}</div>`;
-  }
-  if (report.newTalents?.length) {
-    html += `<div class="end-item" style="color:var(--green)">✨ Nouveaux talents :<br>${report.newTalents.map(d => {
-      const p = Career.getPotentialLabel(d.potential);
-      return `&nbsp;&nbsp;• ${d.firstName} ${d.name} — ${d.age} ans · Score: ${Career.getDriverScore(d)} · Potentiel: <span style="color:${p.color}">${p.label}</span>`;
-    }).join('<br>')}</div>`;
-  }
-
-  html += `<div class="end-item">💰 Budget : ${save.budget}M€ · 🎟️ Tokens : ${save.tokens}</div>`;
-  cnt.innerHTML = html;
-
-  // Re-render
-  renderMyTeam();
-  renderMarket();
-  renderAll();
-  renderSeasonPreview();
-
-  toast('✅ Saison terminée ! Bienvenue en ' + save.season, false);
-}
-
-// ── MODALS ────────────────────────────────────────────────
-function openSignModal(driverId) {
-  const driver = F1Data.drivers.find(d => d.id === driverId);
-  if (!driver) return;
-
-  const fee  = Math.round(driver.salary * 1.5);
-  const team = driver.teamId ? F1Data.teams.find(t => t.id === driver.teamId) : null;
-  const pot  = Career.getPotentialLabel(driver.potential || 80);
-
-  document.getElementById('modalTitle').textContent = `Recruter ${driver.firstName} ${driver.name}`;
-  document.getElementById('modalSub').textContent   = `${driver.age} ans · Score : ${Career.getDriverScore(driver)} · Potentiel : ${pot.label}`;
-  document.getElementById('modalBody').innerHTML    = `
-    <div style="font-family:var(--fh);font-size:13px;color:var(--muted);line-height:1.8">
-      <div>💰 Frais de transfert : <strong style="color:var(--gold)">${fee}M€</strong></div>
-      <div>📅 Salaire annuel : <strong>${driver.salary}M€/an</strong></div>
-      ${team ? `<div>🏎️ Équipe actuelle : <strong style="color:${team.color}">${team.name}</strong></div>` : '<div>🆓 Agent libre</div>'}
-      <div>Budget restant : <strong style="color:${(save.budget||0) >= fee ? 'var(--green)':'var(--accent)'}">${((save.budget||0) - fee).toFixed(1)}M€</strong></div>
-      ${(save.budget||0) < fee ? '<div style="color:var(--accent)">⚠️ Budget insuffisant !</div>' : ''}
-    </div>
-  `;
-
-  modalAction = () => {
-    const result = Career.signDriver(save, driverId, 'auto');
-    if (result.ok) {
-      save = Save.load();
-      document.getElementById('budgetBadge').textContent = `💰 ${save.budget}M €`;
-      renderMyTeam(); renderMarket(); renderAll();
-      toast(`✅ ${result.msg}`, false);
-    } else {
-      toast(`❌ ${result.msg}`, true);
-    }
-    closeModal();
-  };
-
-  document.getElementById('modalConfirm').disabled = (save.budget || 0) < fee;
-  document.getElementById('modalOverlay').style.display = 'flex';
-}
-
-function openReleaseModal(driverId) {
-  const driver = F1Data.drivers.find(d => d.id === driverId);
-  if (!driver) return;
-
-  const penalty = Math.round(driver.salary * 0.5);
-
-  document.getElementById('modalTitle').textContent = `Libérer ${driver.firstName} ${driver.name}`;
-  document.getElementById('modalSub').textContent   = 'Cette action est irréversible pour cette saison.';
-  document.getElementById('modalBody').innerHTML    = `
-    <div style="font-family:var(--fh);font-size:13px;color:var(--muted);line-height:1.8">
-      <div>💸 Indemnité de licenciement : <strong style="color:var(--accent)">${penalty}M€</strong></div>
-      <div>Le pilote devient agent libre et peut être recruté par d'autres équipes.</div>
-    </div>
-  `;
-
-  modalAction = () => {
-    const result = Career.releaseDriver(save, driverId);
-    if (result.ok) {
-      save = Save.load();
-      document.getElementById('budgetBadge').textContent = `💰 ${save.budget}M €`;
-      renderMyTeam(); renderMarket(); renderAll();
-      toast(`✅ ${result.msg}`, false);
-    } else {
-      toast(`❌ ${result.msg}`, true);
-    }
-    closeModal();
-  };
-
-  document.getElementById('modalConfirm').disabled = false;
-  document.getElementById('modalOverlay').style.display = 'flex';
-}
-
-function modalConfirmAction() { if (modalAction) modalAction(); }
-function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; modalAction = null; }
-
-// ── TOAST ────────────────────────────────────────────────
-function toast(msg, isError = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className   = `toast${isError ? ' error' : ''}`;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
+function toast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(err?' error':'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4200)}
 init();
 </script>
 </body>

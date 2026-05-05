@@ -22,8 +22,7 @@
   <a href="index.html" class="nav-link">🏠 Équipe</a>
   <a href="race.html" class="nav-link">🏁 Course</a>
   <a href="standings.html" class="nav-link active">🏆 Championnat</a>
-  <a href="drivers.html" class="nav-link">👤 Pilotes</a>
-  <a href="contracts.html" class="nav-link">📝 Contrats</a>
+  <a href="drivers.html" class="nav-link">👤 Pilotes & Contrats</a>
   <div class="topbar-right"><div class="season-badge" id="seasonBadge">Saison 2025</div></div>
 </div>
 <div class="page">
@@ -59,15 +58,15 @@ function render() {
     <div class="card"><div class="label">Tokens</div><div class="value">${save.tokens || 0}</div></div>
     <div class="card"><div class="label">Prochain GP</div><div class="value">${nextCircuit.name}</div></div>`;
 
-  const driverRows = [...F1Data.drivers].sort((a,b)=>pts(save.driverStandings,b.id)-pts(save.driverStandings,a.id));
+  const driverRows = F1Data.drivers.filter(d=>!d.retired && (d.teamId || pts(save.driverStandings,d.id) > 0)).sort((a,b)=>pts(save.driverStandings,b.id)-pts(save.driverStandings,a.id));
   document.getElementById('driversTable').innerHTML = '<div class="row header"><div>Pos</div><div>Pilote</div><div style="text-align:right">Pts</div></div>' + driverRows.map((d,i)=>{
     const t=F1Data.teams.find(x=>x.id===d.teamId);
-    return `<div class="row"><div class="pos">${i+1}</div><div><div class="name" style="color:${t.color}">${d.firstName} ${d.name}</div><div class="team">${t.name}</div></div><div class="pts">${pts(save.driverStandings,d.id)}</div></div>`;
+    return `<div class="row"><div class="pos">${i+1}</div><div><div class="name" style="color:${t?.color || '#fff'}">${d.firstName} ${d.name}</div><div class="team">${t?.name || 'Agent libre'}</div></div><div class="pts">${pts(save.driverStandings,d.id)}</div></div>`;
   }).join('');
 
   const teamRows = [...F1Data.teams].sort((a,b)=>pts(save.teamStandings,b.id)-pts(save.teamStandings,a.id));
   document.getElementById('teamsTable').innerHTML = '<div class="row header"><div>Pos</div><div>Équipe</div><div style="text-align:right">Pts</div></div>' + teamRows.map((t,i)=>
-    `<div class="row"><div class="pos">${i+1}</div><div><div class="name" style="color:${t.color}">${t.name}</div><div class="team">${t.shortName}</div></div><div class="pts">${pts(save.teamStandings,t.id)}</div></div>`
+    `<div class="row"><div class="pos">${i+1}</div><div><div class="name" style="color:${t?.color || '#fff'}">${t.name}</div><div class="team">${t.shortName}</div></div><div class="pts">${pts(save.teamStandings,t.id)}</div></div>`
   ).join('');
 
   const currentRaceIndex = Number(save.race) || 0;
