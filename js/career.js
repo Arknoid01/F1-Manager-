@@ -346,23 +346,30 @@ const Career = {
 
   // ── STATS AFFICHABLES ───────────────────────────────────
   getDriverScore(driver) {
-    return Math.round((driver.pace * 0.35 + driver.consistency * 0.25 + driver.wetSkill * 0.15 + driver.overtaking * 0.15 + driver.defending * 0.10));
+    const pace        = driver.pace        || 70;
+    const consistency = driver.consistency || 70;
+    const wetSkill    = driver.wetSkill    || 70;
+    const overtaking  = driver.overtaking  || 70;
+    const defending   = driver.defending   || 70;
+    return Math.round(pace * 0.35 + consistency * 0.25 + wetSkill * 0.15 + overtaking * 0.15 + defending * 0.10);
   },
 
   getPotentialLabel(potential) {
-    if (potential >= 97) return { label: 'Légendaire', color: '#ff6600' };
-    if (potential >= 93) return { label: 'Champion',   color: '#ffd700' };
-    if (potential >= 88) return { label: 'Excellent',  color: '#00e676' };
-    if (potential >= 83) return { label: 'Solide',     color: '#2979ff' };
-    if (potential >= 78) return { label: 'Correct',    color: '#6a6a8a' };
-    return                      { label: 'Limité',     color: '#444' };
+    const p = potential || 80;
+    if (p >= 97) return { label: 'Légendaire', color: '#ff6600' };
+    if (p >= 93) return { label: 'Champion',   color: '#ffd700' };
+    if (p >= 88) return { label: 'Excellent',  color: '#00e676' };
+    if (p >= 83) return { label: 'Solide',     color: '#2979ff' };
+    if (p >= 78) return { label: 'Correct',    color: '#6a6a8a' };
+    return              { label: 'Limité',     color: '#444'    };
   },
 
   getAgePhase(age) {
-    if (age <= 22) return { label: 'Jeune talent', color: '#00e676', icon: '🌱' };
-    if (age <= 28) return { label: 'Prime',        color: '#ffd700', icon: '⭐' };
-    if (age <= 33) return { label: 'Expérimenté',  color: '#2979ff', icon: '🔵' };
-    if (age <= 37) return { label: 'Déclin',       color: '#ff9944', icon: '📉' };
-    return                { label: 'Vétéran',      color: '#ff4444', icon: '⚠️' };
+    const a = age || 25;
+    if (a <= 22) return { label: 'Jeune talent', color: '#00e676', icon: '🌱' };
+    if (a <= 28) return { label: 'Prime',        color: '#ffd700', icon: '⭐' };
+    if (a <= 33) return { label: 'Expérimenté',  color: '#2979ff', icon: '🔵' };
+    if (a <= 37) return { label: 'Déclin',       color: '#ff9944', icon: '📉' };
+    return              { label: 'Vétéran',      color: '#ff4444', icon: '⚠️' };
   },
 };
