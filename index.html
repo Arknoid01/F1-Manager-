@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F1 Manager — Équipe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0a0a0f;
+      --surface:  #12121a;
+      --surface2: #1a1a26;
+      --border:   #2a2a3e;
+      --text:     #e8e8f0;
+      --muted:    #6a6a8a;
+      --accent:   #e8003d;
+      --gold:     #ffd700;
+      --green:    #00e676;
+      --blue:     #2979ff;
+      --font-h:   'Barlow Condensed', sans-serif;
+      --font-b:   'Barlow', sans-serif;
+    }
+    html, body { min-height:100%; background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; }
+
+    /* TOPBAR */
+    .topbar { background:var(--surface); border-bottom:2px solid var(--accent); padding:0 14px; height:50px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
+    .logo { font-family:var(--font-h); font-weight:900; font-size:20px; color:var(--accent); letter-spacing:2px; text-transform:uppercase; }
+    .logo span { color:var(--text); }
+    .nav-link { font-family:var(--font-h); font-size:13px; font-weight:700; color:var(--muted); text-decoration:none; letter-spacing:1px; text-transform:uppercase; padding:4px 8px; border-radius:3px; transition:color .15s; }
+    .nav-link:hover { color:var(--text); }
+    .nav-link.active { color:var(--accent); }
+    .topbar-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+    .season-badge { font-family:var(--font-h); font-weight:700; font-size:14px; color:var(--gold); background:#1a1a00; border:1px solid #3a3a00; padding:4px 12px; border-radius:4px; }
+    .budget-badge { font-family:var(--font-h); font-weight:700; font-size:14px; color:var(--green); background:#001a0a; border:1px solid #003a18; padding:4px 12px; border-radius:4px; }
+
+    /* LAYOUT */
+    .page { padding:14px; display:flex; flex-direction:column; gap:14px; }
+
+    /* TEAM SELECTION (first visit) */
+    .team-select-screen { display:flex; flex-direction:column; align-items:center; gap:20px; padding:20px 0; }
+    .select-title { font-family:var(--font-h); font-weight:900; font-size:32px; color:var(--text); letter-spacing:3px; text-transform:uppercase; text-align:center; }
+    .select-sub { font-family:var(--font-h); font-size:15px; color:var(--muted); text-align:center; }
+    .teams-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; width:100%; max-width:700px; }
+    .team-card { background:var(--surface); border:2px solid var(--border); border-radius:8px; padding:14px; cursor:pointer; transition:all .2s; display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .team-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+    .team-card.selected { border-color:var(--gold); background:var(--surface2); }
+    .team-color-bar { width:40px; height:5px; border-radius:3px; }
+    .team-card-name { font-family:var(--font-h); font-weight:700; font-size:14px; text-align:center; }
+    .team-card-perf { font-family:var(--font-h); font-size:12px; color:var(--muted); }
+    .team-card-budget { font-family:var(--font-h); font-size:11px; color:var(--gold); }
+    .difficulty-badge { font-family:var(--font-h); font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; }
+    .diff-easy { background:#001a0a; color:var(--green); border:1px solid #00400a; }
+    .diff-medium { background:#1a1a00; color:var(--gold); border:1px solid #3a3a00; }
+    .diff-hard { background:#1a0000; color:#ff6666; border:1px solid #3a0000; }
+
+    /* DASHBOARD */
+    .dashboard { display:none; flex-direction:column; gap:14px; }
+
+    /* PANELS */
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+    .ph { background:var(--surface2); border-bottom:1px solid var(--border); padding:8px 14px; font-family:var(--font-h); font-weight:700; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; }
+    .ph .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); }
+    .ph .ml { margin-left:auto; }
+
+    /* GRID 2 COL */
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+    @media(max-width:600px) { .grid2,.grid3 { grid-template-columns:1fr; } }
+
+    /* TEAM OVERVIEW */
+    .team-overview { padding:16px; }
+    .team-header { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+    .team-color-block { width:6px; height:50px; border-radius:3px; }
+    .team-name-big { font-family:var(--font-h); font-weight:900; font-size:26px; letter-spacing:1px; }
+    .team-name-sub { font-family:var(--font-h); font-size:13px; color:var(--muted); }
+    .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .stat-item { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:10px; text-align:center; }
+    .stat-val { font-family:var(--font-h); font-weight:900; font-size:22px; }
+    .stat-lbl { font-family:var(--font-h); font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+    .stat-bar-wrap { height:3px; background:#1a1a2a; border-radius:2px; margin-top:5px; overflow:hidden; }
+    .stat-bar { height:100%; border-radius:2px; transition:width .5s; }
+
+    /* PILOTES */
+    .driver-cards { padding:12px; display:flex; flex-direction:column; gap:8px; }
+    .driver-card { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:12px; display:flex; align-items:center; gap:12px; }
+    .driver-number { font-family:var(--font-h); font-weight:900; font-size:28px; min-width:44px; text-align:center; }
+    .driver-info { flex:1; }
+    .driver-fullname { font-family:var(--font-h); font-weight:700; font-size:17px; }
+    .driver-contract { font-family:var(--font-h); font-size:11px; color:var(--muted); }
+    .driver-stats { display:flex; gap:10px; margin-top:6px; }
+    .dstat { display:flex; flex-direction:column; align-items:center; }
+    .dstat-val { font-family:var(--font-h); font-weight:700; font-size:14px; }
+    .dstat-lbl { font-family:var(--font-h); font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+    .driver-salary { font-family:var(--font-h); font-size:12px; color:var(--gold); text-align:right; }
+
+    /* DÉVELOPPEMENT */
+    .dev-section { padding:14px; display:flex; flex-direction:column; gap:12px; }
+    .dev-component { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:12px; }
+    .dev-comp-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .dev-comp-name { font-family:var(--font-h); font-weight:700; font-size:14px; }
+    .dev-comp-level { font-family:var(--font-h); font-size:12px; color:var(--gold); }
+    .dev-bar-wrap { height:8px; background:#0a0a14; border-radius:4px; overflow:hidden; margin-bottom:8px; }
+    .dev-bar { height:100%; border-radius:4px; transition:width .5s; }
+    .dev-actions { display:flex; gap:6px; align-items:center; }
+    .dev-cost { font-family:var(--font-h); font-size:11px; color:var(--muted); }
+    .btn { font-family:var(--font-h); font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:5px 12px; border:none; border-radius:4px; cursor:pointer; transition:all .15s; }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary:hover { background:#ff1a52; }
+    .btn-primary:disabled { background:#3a1a22; color:#664; cursor:not-allowed; }
+    .btn-sec { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+    .btn-sec:hover { border-color:var(--accent); color:var(--accent); }
+    .btn-gold { background:#1a1a00; color:var(--gold); border:1px solid #3a3a00; }
+    .btn-gold:hover { background:#2a2a00; }
+    .btn-gold:disabled { opacity:.4; cursor:not-allowed; }
+
+    /* FINANCES */
+    .finance-section { padding:14px; display:flex; flex-direction:column; gap:10px; }
+    .finance-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); }
+    .finance-label { font-family:var(--font-h); font-size:13px; color:var(--muted); }
+    .finance-val { font-family:var(--font-h); font-weight:700; font-size:14px; }
+    .finance-val.positive { color:var(--green); }
+    .finance-val.negative { color:#ff4444; }
+    .finance-val.neutral  { color:var(--text); }
+    .budget-total { font-family:var(--font-h); font-weight:900; font-size:22px; color:var(--gold); }
+
+    /* SPONSORS */
+    .sponsor-list { padding:12px; display:flex; flex-direction:column; gap:8px; }
+    .sponsor-item { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+    .sponsor-name { font-family:var(--font-h); font-weight:700; font-size:13px; flex:1; }
+    .sponsor-value { font-family:var(--font-h); font-size:12px; color:var(--green); }
+    .sponsor-condition { font-family:var(--font-h); font-size:11px; color:var(--muted); flex:2; text-align:right; }
+    .sponsor-progress { display:flex; align-items:center; gap:6px; }
+    .sponsor-bar-wrap { width:60px; height:4px; background:#1a1a2a; border-radius:2px; overflow:hidden; }
+    .sponsor-bar { height:100%; border-radius:2px; background:var(--green); transition:width .5s; }
+
+    /* NEXT RACE */
+    .next-race { padding:14px; display:flex; align-items:center; gap:14px; }
+    .next-race-info { flex:1; }
+    .next-race-name { font-family:var(--font-h); font-weight:900; font-size:20px; color:var(--gold); }
+    .next-race-detail { font-family:var(--font-h); font-size:12px; color:var(--muted); margin-top:2px; }
+    .next-race-pos { font-family:var(--font-h); font-size:11px; color:var(--muted); margin-top:8px; }
+    .champ-standing { display:flex; gap:16px; }
+    .champ-item { font-family:var(--font-h); font-size:13px; }
+    .champ-val { font-size:20px; font-weight:900; color:var(--gold); }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:20px; right:20px; background:var(--surface2); border:1px solid var(--border); border-left:3px solid var(--green); border-radius:5px; padding:12px 16px; font-family:var(--font-h); font-size:13px; z-index:500; transform:translateX(120%); transition:transform .3s; max-width:280px; }
+    .toast.show { transform:translateX(0); }
+    .toast.error { border-left-color:var(--accent); }
+
+    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">F1<span>Manager</span></div>
+  <a href="index.html" class="nav-link active">🏠 Équipe</a>
+  <a href="race.html" class="nav-link">🏁 Course</a>
+  <a href="standings.html" class="nav-link">🏆 Championnat</a>
+  <div class="topbar-right">
+    <div class="season-badge" id="seasonBadge">Saison 2025</div>
+    <div class="budget-badge" id="budgetBadge">—</div>
+  </div>
+</div>
+
+<div class="page" id="mainPage">
+
+  <!-- TEAM SELECTION -->
+  <div class="team-select-screen" id="teamSelectScreen">
+    <div class="select-title">Choisissez votre équipe</div>
+    <div class="select-sub">Chaque équipe a son budget, ses performances et ses ambitions</div>
+    <div class="teams-grid" id="teamsGrid"></div>
+    <button class="btn btn-primary" id="btnConfirmTeam" onclick="confirmTeam()" style="font-size:15px;padding:10px 32px;display:none;">
+      ✅ Confirmer mon équipe
+    </button>
+  </div>
+
+  <!-- DASHBOARD (hidden until team selected) -->
+  <div class="dashboard" id="dashboard">
+
+    <!-- NEXT RACE + STANDINGS -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="ph"><div class="dot"></div> Prochain Grand Prix</div>
+        <div class="next-race">
+          <div class="next-race-info">
+            <div class="next-race-name" id="nextRaceName">—</div>
+            <div class="next-race-detail" id="nextRaceDetail">—</div>
+            <div class="next-race-pos" id="nextRacePos"></div>
+          </div>
+          <a href="race.html" class="btn btn-primary">🏁 Courir</a>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="dot"></div> Championnat</div>
+        <div style="padding:14px;">
+          <div class="champ-standing">
+            <div class="champ-item">
+              <div class="champ-val" id="champDriverPos">—</div>
+              <div style="font-family:var(--font-h);font-size:11px;color:var(--muted);">PILOTE N°1</div>
+            </div>
+            <div class="champ-item">
+              <div class="champ-val" id="champTeamPos">—</div>
+              <div style="font-family:var(--font-h);font-size:11px;color:var(--muted);">CONSTRUCTEURS</div>
+            </div>
+            <div class="champ-item">
+              <div class="champ-val" id="champPoints">0</div>
+              <div style="font-family:var(--font-h);font-size:11px;color:var(--muted);">POINTS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEAM INFO + DRIVERS -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="ph"><div class="dot"></div> Mon Équipe</div>
+        <div class="team-overview" id="teamOverview"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="dot"></div> Pilotes</div>
+        <div class="driver-cards" id="driverCards"></div>
+      </div>
+    </div>
+
+    <!-- CAR DEVELOPMENT -->
+    <div class="panel">
+      <div class="ph">
+        <div class="dot"></div> Développement Voiture
+        <span class="ml" style="font-family:var(--font-h);font-size:11px;color:var(--muted);">
+          Tokens dispo : <span id="tokenCount" style="color:var(--gold);font-weight:700">8</span>
+        </span>
+      </div>
+      <div class="dev-section" id="devSection"></div>
+    </div>
+
+    <!-- FINANCES + SPONSORS -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="ph"><div class="dot"></div> Finances</div>
+        <div class="finance-section" id="financeSection"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="dot"></div> Sponsors</div>
+        <div class="sponsor-list" id="sponsorList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script>
+
+// ═══════════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════════
+let gameState = null;
+let selectedTeamId = null;
+
+// Composants de développement voiture
+const CAR_COMPONENTS = [
+  { id: 'aero',       name: 'Aérodynamique',    icon: '🌊', stat: 'aero',    baseCost: 30, tokenCost: 2 },
+  { id: 'chassis',    name: 'Châssis',           icon: '🏗️', stat: 'chassis', baseCost: 40, tokenCost: 3 },
+  { id: 'engine',     name: 'Moteur / ERS',      icon: '⚡', stat: 'engine',  baseCost: 50, tokenCost: 3 },
+  { id: 'suspension', name: 'Suspensions',       icon: '🔧', stat: null,      baseCost: 20, tokenCost: 1 },
+  { id: 'pitstop',    name: 'Pit Stop Speed',    icon: '⏱️', stat: null,      baseCost: 15, tokenCost: 1 },
+];
+
+// Sponsors par défaut selon niveau équipe
+const SPONSORS_POOL = [
+  { name: 'TechVision',    value: 25, condition: 'Top 5 Constructeurs',       target: 5,  progress: 0 },
+  { name: 'VelocityFuel',  value: 18, condition: 'Terminer 10 courses',       target: 10, progress: 0 },
+  { name: 'ApexGear',      value: 12, condition: 'Un podium cette saison',    target: 1,  progress: 0 },
+  { name: 'GridStar',      value: 8,  condition: 'Top 10 dans 15 courses',    target: 15, progress: 0 },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+function init() {
+  const saved = Save.load();
+  if (saved && saved.playerTeamId) {
+    gameState = saved;
+    showDashboard();
+  } else {
+    showTeamSelection();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SÉLECTION D'ÉQUIPE
+// ═══════════════════════════════════════════════════════════
+function showTeamSelection() {
+  document.getElementById('teamSelectScreen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+
+  const grid = document.getElementById('teamsGrid');
+  grid.innerHTML = '';
+
+  // Trier les équipes par performance
+  const sorted = [...F1Data.teams].sort((a, b) => b.performance - a.performance);
+
+  sorted.forEach(team => {
+    const perf = team.performance;
+    let diff, diffClass;
+    if (perf >= 88)      { diff = 'Top Team';   diffClass = 'diff-hard'; }
+    else if (perf >= 72) { diff = 'Midfield';   diffClass = 'diff-medium'; }
+    else                 { diff = 'Underdog';   diffClass = 'diff-easy'; }
+
+    const card = document.createElement('div');
+    card.className = 'team-card';
+    card.onclick = () => selectTeam(team.id, card);
+    card.innerHTML = `
+      <div class="team-color-bar" style="background:${team.color}"></div>
+      <div class="team-card-name">${team.name}</div>
+      <div class="team-card-perf">Perf. <strong>${team.performance}</strong>/100</div>
+      <div class="team-card-budget">💰 ${team.budget}M €</div>
+      <div class="difficulty-badge ${diffClass}">${diff}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function selectTeam(teamId, cardEl) {
+  selectedTeamId = teamId;
+  document.querySelectorAll('.team-card').forEach(c => c.classList.remove('selected'));
+  cardEl.classList.add('selected');
+  document.getElementById('btnConfirmTeam').style.display = 'block';
+}
+
+function confirmTeam() {
+  if (!selectedTeamId) return;
+
+  const team    = F1Data.teams.find(t => t.id === selectedTeamId);
+  const drivers = F1Data.drivers.filter(d => d.teamId === selectedTeamId);
+
+  // Initialiser le dev de voiture à partir des stats de l'équipe
+  const carDev = {};
+  CAR_COMPONENTS.forEach(comp => {
+    carDev[comp.id] = {
+      level: comp.stat ? team[comp.stat] : 70,
+      upgrades: 0,
+    };
+  });
+
+  gameState = {
+    version: 1,
+    season: 2025,
+    race: 0,
+    playerTeamId: selectedTeamId,
+    tokens: 8,
+    budget: team.budget,
+    carDev,
+    driverStandings: {},
+    teamStandings: {},
+    raceResults: [],
+    sponsors: JSON.parse(JSON.stringify(SPONSORS_POOL)),
+    finances: {
+      income:   team.budget * 0.4,  // revenus annuels de base
+      expenses: drivers.reduce((s, d) => s + d.salary, 0) + 80, // salaires + opérations
+    },
+  };
+
+  Save.save(gameState);
+  showToast(`✅ Bienvenue chez ${team.name} !`, false);
+  showDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function showDashboard() {
+  document.getElementById('teamSelectScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'flex';
+
+  const team    = F1Data.teams.find(t => t.id === gameState.playerTeamId);
+  const drivers = F1Data.drivers.filter(d => d.teamId === gameState.playerTeamId);
+
+  // Topbar
+  document.getElementById('budgetBadge').textContent = `💰 ${gameState.budget}M €`;
+
+  // Next race
+  const circuits = F1Data.circuits;
+  const nextCircuit = circuits[gameState.race % circuits.length];
+  document.getElementById('nextRaceName').textContent   = nextCircuit.fullName;
+  document.getElementById('nextRaceDetail').textContent = `${nextCircuit.laps} tours · ${nextCircuit.lapDistance} km/tour`;
+
+  // Team overview
+  renderTeamOverview(team);
+
+  // Drivers
+  renderDrivers(drivers);
+
+  // Dev
+  renderDev(team);
+
+  // Finances
+  renderFinances();
+
+  // Sponsors
+  renderSponsors();
+}
+
+function renderTeamOverview(team) {
+  const el = document.getElementById('teamOverview');
+  const stats = [
+    { label: 'Aéro',     val: team.aero,        color: '#2979ff' },
+    { label: 'Châssis',  val: team.chassis,      color: '#e8003d' },
+    { label: 'Moteur',   val: team.engine,       color: '#ff8800' },
+    { label: 'Fiabilité',val: team.reliability,  color: '#00e676' },
+    { label: 'Global',   val: team.performance,  color: '#ffd700' },
+  ];
+
+  el.innerHTML = `
+    <div class="team-header">
+      <div class="team-color-block" style="background:${team.color}"></div>
+      <div>
+        <div class="team-name-big">${team.name}</div>
+        <div class="team-name-sub">Budget annuel : ${team.budget}M €</div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      ${stats.map(s => `
+        <div class="stat-item">
+          <div class="stat-val" style="color:${s.color}">${s.val}</div>
+          <div class="stat-lbl">${s.label}</div>
+          <div class="stat-bar-wrap"><div class="stat-bar" style="width:${s.val}%;background:${s.color}"></div></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderDrivers(drivers) {
+  const el = document.getElementById('driverCards');
+  el.innerHTML = '';
+
+  drivers.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'driver-card';
+    card.innerHTML = `
+      <div class="driver-number" style="color:${F1Data.teams.find(t=>t.id===d.teamId).color}">${d.number}</div>
+      <div class="driver-info">
+        <div class="driver-fullname">${d.firstName} ${d.name}</div>
+        <div class="driver-contract">Contrat : 2 ans restants</div>
+        <div class="driver-stats">
+          <div class="dstat"><div class="dstat-val">${d.pace}</div><div class="dstat-lbl">Pace</div></div>
+          <div class="dstat"><div class="dstat-val">${d.consistency}</div><div class="dstat-lbl">Consis.</div></div>
+          <div class="dstat"><div class="dstat-val">${d.wetSkill}</div><div class="dstat-lbl">Pluie</div></div>
+          <div class="dstat"><div class="dstat-val">${d.overtaking}</div><div class="dstat-lbl">Dépas.</div></div>
+        </div>
+      </div>
+      <div class="driver-salary">${d.salary}M€/an</div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function renderDev(team) {
+  const el = document.getElementById('devSection');
+  el.innerHTML = '';
+
+  document.getElementById('tokenCount').textContent = gameState.tokens;
+
+  CAR_COMPONENTS.forEach(comp => {
+    const devData = gameState.carDev[comp.id];
+    const level   = devData.level;
+    const cost    = comp.baseCost + devData.upgrades * 8;
+    const canAfford  = gameState.budget >= cost;
+    const hasTokens  = gameState.tokens >= comp.tokenCost;
+    const maxed      = level >= 99;
+
+    const div = document.createElement('div');
+    div.className = 'dev-component';
+    div.innerHTML = `
+      <div class="dev-comp-header">
+        <div class="dev-comp-name">${comp.icon} ${comp.name}</div>
+        <div class="dev-comp-level">Niv. ${level}/100</div>
+      </div>
+      <div class="dev-bar-wrap">
+        <div class="dev-bar" style="width:${level}%;background:${level>=90?'#ffd700':level>=75?'#2979ff':'#e8003d'}"></div>
+      </div>
+      <div class="dev-actions">
+        <button class="btn btn-gold" onclick="upgradeComponent('${comp.id}')"
+          ${(!canAfford || !hasTokens || maxed) ? 'disabled' : ''}>
+          ⬆ Upgrade
+        </button>
+        <span class="dev-cost">
+          ${maxed ? '✅ MAX' : `💰 ${cost}M · 🎟 ${comp.tokenCost} token${comp.tokenCost>1?'s':''}`}
+        </span>
+      </div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function upgradeComponent(compId) {
+  const comp    = CAR_COMPONENTS.find(c => c.id === compId);
+  const devData = gameState.carDev[compId];
+  const cost    = comp.baseCost + devData.upgrades * 8;
+
+  if (gameState.budget < cost) { showToast('❌ Budget insuffisant !', true); return; }
+  if (gameState.tokens < comp.tokenCost) { showToast('❌ Pas assez de tokens !', true); return; }
+
+  gameState.budget -= cost;
+  gameState.tokens -= comp.tokenCost;
+  devData.level    = Math.min(100, devData.level + Math.floor(Math.random() * 3) + 2);
+  devData.upgrades++;
+
+  // Mettre à jour les stats de l'équipe joueur dans F1Data
+  const team = F1Data.teams.find(t => t.id === gameState.playerTeamId);
+  if (comp.stat && team) {
+    team[comp.stat] = devData.level;
+    team.performance = Math.round((team.aero + team.chassis + team.engine) / 3);
+  }
+
+  Save.save(gameState);
+  showToast(`✅ ${comp.name} amélioré ! Niveau ${devData.level}`, false);
+
+  document.getElementById('budgetBadge').textContent = `💰 ${gameState.budget}M €`;
+  renderDev(team || F1Data.teams.find(t => t.id === gameState.playerTeamId));
+}
+
+function renderFinances() {
+  const el = document.getElementById('financeSection');
+  const f  = gameState.finances;
+  const balance = f.income - f.expenses;
+
+  el.innerHTML = `
+    <div class="finance-row">
+      <span class="finance-label">Budget actuel</span>
+      <span class="finance-val neutral budget-total">${gameState.budget}M €</span>
+    </div>
+    <div class="finance-row">
+      <span class="finance-label">Revenus annuels</span>
+      <span class="finance-val positive">+${f.income}M €</span>
+    </div>
+    <div class="finance-row">
+      <span class="finance-label">Dépenses (salaires + ops)</span>
+      <span class="finance-val negative">-${f.expenses}M €</span>
+    </div>
+    <div class="finance-row">
+      <span class="finance-label">Balance annuelle</span>
+      <span class="finance-val ${balance >= 0 ? 'positive' : 'negative'}">${balance >= 0 ? '+' : ''}${balance}M €</span>
+    </div>
+    <div class="finance-row">
+      <span class="finance-label">Prix de la course suivante</span>
+      <span class="finance-val neutral">5M €</span>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="btn btn-primary" onclick="addBudget()" style="width:100%">💰 Chercher un sponsor (+20M)</button>
+    </div>
+  `;
+}
+
+function addBudget() {
+  gameState.budget += 20;
+  Save.save(gameState);
+  document.getElementById('budgetBadge').textContent = `💰 ${gameState.budget}M €`;
+  renderFinances();
+  showToast('💰 +20M € de sponsor trouvé !', false);
+}
+
+function renderSponsors() {
+  const el = document.getElementById('sponsorList');
+  el.innerHTML = '';
+  gameState.sponsors.forEach(sp => {
+    const pct = Math.min(100, (sp.progress / sp.target) * 100);
+    const div = document.createElement('div');
+    div.className = 'sponsor-item';
+    div.innerHTML = `
+      <div class="sponsor-name">${sp.name}</div>
+      <div class="sponsor-value">+${sp.value}M€</div>
+      <div style="flex:2;text-align:right;">
+        <div class="sponsor-condition">${sp.condition}</div>
+        <div class="sponsor-progress" style="justify-content:flex-end;margin-top:4px;">
+          <div class="sponsor-bar-wrap"><div class="sponsor-bar" style="width:${pct}%"></div></div>
+          <span style="font-family:var(--font-h);font-size:10px;color:var(--muted)">${sp.progress}/${sp.target}</span>
+        </div>
+      </div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = `toast${isError ? ' error' : ''}`;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
