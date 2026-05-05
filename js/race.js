@@ -59,6 +59,9 @@ const Race = {
         pitThisLap:  false,
         dnfLap:      null,
         currentPace: 0,
+        orderMode: 'normal',
+        forcePit: false,
+        requestedCompound: null,
       });
     });
 
@@ -92,6 +95,7 @@ const Race = {
       safetyCar:  { active: false, remainingLaps: 0 },
       finished:   false,
       events:     [],
+      playerTeamId: (typeof Save !== 'undefined' && Save.load && Save.load()) ? Save.load().playerTeamId : null,
     };
 
     return this.state;
@@ -158,9 +162,10 @@ const Race = {
       }
 
       // ── Pit stop ─────────────────────────────────────────────
-      const pitDecision = Engine.shouldPit(
+      let pitDecision = Engine.shouldPit(
         car.tyre, lap, s.totalLaps, car.strategy, someoneJustPitted, s.weather
       );
+      if (car.forcePit) pitDecision = { pit: true, reason: 'team_order' };
 
       if (pitDecision.pit && lap < s.totalLaps - 2) {
         car.pitThisLap = true;
@@ -171,7 +176,7 @@ const Race = {
           car.strategy.compounds.length - 1
         );
 
-        let nextCompound = car.strategy.compounds[car.currentCompoundIndex];
+        let nextCompound = car.requestedCompound || car.strategy.compounds[car.currentCompoundIndex];
         if (s.weather === 'heavy_rain')      nextCompound = 'WET';
         else if (s.weather === 'light_rain') nextCompound = 'INTER';
         else if (['INTER', 'WET'].includes(car.tyre.compound)) nextCompound = 'MEDIUM';
@@ -184,6 +189,8 @@ const Race = {
         });
 
         car.tyre = { compound: nextCompound, condition: 1.0, age: 0 };
+        car.forcePit = false;
+        car.requestedCompound = null;
         car.totalTime += cir.pitLoss; // ← correction : cir et non circuit
 
         lapEvents.push({
@@ -196,7 +203,7 @@ const Race = {
       // ── Temps au tour ─────────────────────────────────────────
       const fuelLoad = Engine.calcFuelLoad(cir, lap);
       let lapTime    = Engine.calcLapTime(
-        car.driver, car.team, cir, car.tyre, fuelLoad, s.weather, lap
+        car.driver, car.team, cir, car.tyre, fuelLoad, s.weather, lap, car.orderMode || 'normal'
       );
 
       // Safety Car : tout le monde à ~135% du temps de base
@@ -211,7 +218,7 @@ const Race = {
       car.currentLap   = lap;
 
       if (!car.pitThisLap) {
-        car.tyre = Engine.degradeTyre(car.tyre, cir, car.driver, s.weather);
+        car.tyre = Engine.degradeTyre(car.tyre, cir, car.driver, s.weather, car.orderMode || 'normal');
       }
     });
 
@@ -271,6 +278,27 @@ const Race = {
       if (onLapComplete) onLapComplete(result, this.state);
     }
     return this.getStandings();
+  },
+
+
+  // ── ORDRES MANUELS ÉQUIPE JOUEUR ─────────────────────────
+  setDriverMode(driverId, mode) {
+    if (!this.state) return false;
+    const car = this.state.grid.find(c => c.driver.id === driverId);
+    if (!car || car.status !== 'racing') return false;
+    car.orderMode = ['attack','normal','save'].includes(mode) ? mode : 'normal';
+    this.state.events.push({ lap: this.state.currentLap, type: 'team_order', message: `📻 ${car.driver.name} reçoit l'ordre : ${car.orderMode === 'attack' ? 'attaque' : car.orderMode === 'save' ? 'économie pneus' : 'rythme normal'}` });
+    return true;
+  },
+
+  forcePitStop(driverId, compound = 'MEDIUM') {
+    if (!this.state) return false;
+    const car = this.state.grid.find(c => c.driver.id === driverId);
+    if (!car || car.status !== 'racing') return false;
+    car.forcePit = true;
+    car.requestedCompound = compound;
+    this.state.events.push({ lap: this.state.currentLap, type: 'team_order', message: `📻 ${car.driver.name} appelé aux stands pour ${F1Data.tyres[compound]?.name || compound}` });
+    return true;
   },
 
   // ── POINTS ────────────────────────────────────────────────

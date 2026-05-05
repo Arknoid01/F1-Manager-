@@ -11,7 +11,7 @@
 const Engine = {
 
   // ── CALCUL TEMPS AU TOUR ──────────────────────────────────
-  calcLapTime(driver, team, circuit, tyreState, fuelLoad, weather = 'dry', lap = 1) {
+  calcLapTime(driver, team, circuit, tyreState, fuelLoad, weather = 'dry', lap = 1, orderMode = 'normal') {
     const tyre = F1Data.tyres[tyreState.compound];
 
     // 1. Base circuit — tout le monde part de là
@@ -61,19 +61,26 @@ const Engine = {
       if (tyreState.compound !== 'WET') lapTime += 16.0;
     }
 
-    // 10. Variabilité très faible (± 0.10s — F1 est extrêmement consistent)
+    // 10. Ordres pilote joueur : attaque plus rapide mais use davantage les pneus
+    if (orderMode === 'attack') lapTime -= 0.28;
+    if (orderMode === 'save')   lapTime += 0.22;
+
+    // 11. Variabilité très faible (± 0.10s — F1 est extrêmement consistent)
     lapTime += (Math.random() - 0.5) * 0.20;
 
     return Math.max(lapTime, circuit.baseLapTime * 0.990);
   },
 
   // ── DÉGRADATION PNEUS ─────────────────────────────────────
-  degradeTyre(tyreState, circuit, driver, weather = 'dry') {
+  degradeTyre(tyreState, circuit, driver, weather = 'dry', orderMode = 'normal') {
     const tyre = F1Data.tyres[tyreState.compound];
     let rate = tyre.degradationRate * circuit.tyreDegradation;
 
     const aggressionFactor = 1 + (driver.overtaking - 80) * 0.003;
     rate *= aggressionFactor;
+
+    if (orderMode === 'attack') rate *= 1.28;
+    if (orderMode === 'save')   rate *= 0.72;
 
     if (weather === 'light_rain') rate *= 0.70;
     if (weather === 'heavy_rain') rate *= 0.50;

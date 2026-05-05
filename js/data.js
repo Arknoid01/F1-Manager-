@@ -29,6 +29,26 @@ const F1Data = {
       drsZones: 2,
       fuelPerLap: 1.8,           // kg/tour
     },
+
+    {
+      id: 'jeddah', name: 'Jeddah', fullName: 'Jeddah Corniche Circuit', laps: 50, lapDistance: 6.174, baseLapTime: 90.5, pitLoss: 21, overtakingDifficulty: 0.42, tyreDegradation: 0.95, drsZones: 3, fuelPerLap: 2.1,
+    },
+    { id: 'melbourne', name: 'Australie', fullName: 'Albert Park Circuit', laps: 58, lapDistance: 5.278, baseLapTime: 80.8, pitLoss: 20, overtakingDifficulty: 0.55, tyreDegradation: 1.0, drsZones: 4, fuelPerLap: 1.8 },
+    { id: 'imola', name: 'Imola', fullName: 'Autodromo Enzo e Dino Ferrari', laps: 63, lapDistance: 4.909, baseLapTime: 78.5, pitLoss: 25, overtakingDifficulty: 0.72, tyreDegradation: 0.9, drsZones: 1, fuelPerLap: 1.6 },
+    { id: 'miami', name: 'Miami', fullName: 'Miami International Autodrome', laps: 57, lapDistance: 5.412, baseLapTime: 91.1, pitLoss: 22, overtakingDifficulty: 0.5, tyreDegradation: 1.15, drsZones: 3, fuelPerLap: 1.9 },
+    { id: 'canada', name: 'Canada', fullName: 'Circuit Gilles-Villeneuve', laps: 70, lapDistance: 4.361, baseLapTime: 74.0, pitLoss: 19, overtakingDifficulty: 0.35, tyreDegradation: 1.05, drsZones: 3, fuelPerLap: 1.55 },
+    { id: 'barcelona', name: 'Espagne', fullName: 'Circuit de Barcelona-Catalunya', laps: 66, lapDistance: 4.657, baseLapTime: 78.8, pitLoss: 22, overtakingDifficulty: 0.62, tyreDegradation: 1.35, drsZones: 2, fuelPerLap: 1.7 },
+    { id: 'austria', name: 'Autriche', fullName: 'Red Bull Ring', laps: 71, lapDistance: 4.318, baseLapTime: 66.4, pitLoss: 19, overtakingDifficulty: 0.28, tyreDegradation: 1.05, drsZones: 3, fuelPerLap: 1.45 },
+    { id: 'hungary', name: 'Hongrie', fullName: 'Hungaroring', laps: 70, lapDistance: 4.381, baseLapTime: 78.0, pitLoss: 21, overtakingDifficulty: 0.82, tyreDegradation: 1.25, drsZones: 1, fuelPerLap: 1.55 },
+    { id: 'zandvoort', name: 'Pays-Bas', fullName: 'Circuit Zandvoort', laps: 72, lapDistance: 4.259, baseLapTime: 71.5, pitLoss: 20, overtakingDifficulty: 0.75, tyreDegradation: 1.18, drsZones: 2, fuelPerLap: 1.45 },
+    { id: 'baku', name: 'Azerbaïdjan', fullName: 'Baku City Circuit', laps: 51, lapDistance: 6.003, baseLapTime: 103.0, pitLoss: 20, overtakingDifficulty: 0.25, tyreDegradation: 0.82, drsZones: 2, fuelPerLap: 2.0 },
+    { id: 'singapore', name: 'Singapour', fullName: 'Marina Bay Street Circuit', laps: 62, lapDistance: 4.94, baseLapTime: 95.0, pitLoss: 27, overtakingDifficulty: 0.78, tyreDegradation: 1.28, drsZones: 3, fuelPerLap: 1.75 },
+    { id: 'qatar', name: 'Qatar', fullName: 'Lusail International Circuit', laps: 57, lapDistance: 5.419, baseLapTime: 84.0, pitLoss: 24, overtakingDifficulty: 0.58, tyreDegradation: 1.55, drsZones: 1, fuelPerLap: 1.85 },
+    { id: 'cota', name: 'États-Unis', fullName: 'Circuit of the Americas', laps: 56, lapDistance: 5.513, baseLapTime: 97.0, pitLoss: 22, overtakingDifficulty: 0.48, tyreDegradation: 1.2, drsZones: 2, fuelPerLap: 1.9 },
+    { id: 'mexico', name: 'Mexique', fullName: 'Autódromo Hermanos Rodríguez', laps: 71, lapDistance: 4.304, baseLapTime: 78.8, pitLoss: 20, overtakingDifficulty: 0.38, tyreDegradation: 0.95, drsZones: 3, fuelPerLap: 1.5 },
+    { id: 'brazil', name: 'Brésil', fullName: 'Interlagos', laps: 71, lapDistance: 4.309, baseLapTime: 71.6, pitLoss: 20, overtakingDifficulty: 0.33, tyreDegradation: 1.2, drsZones: 2, fuelPerLap: 1.45 },
+    { id: 'vegas', name: 'Las Vegas', fullName: 'Las Vegas Strip Circuit', laps: 50, lapDistance: 6.201, baseLapTime: 94.0, pitLoss: 21, overtakingDifficulty: 0.32, tyreDegradation: 0.78, drsZones: 2, fuelPerLap: 2.05 },
+    { id: 'abu-dhabi', name: 'Abu Dhabi', fullName: 'Yas Marina Circuit', laps: 58, lapDistance: 5.281, baseLapTime: 86.1, pitLoss: 22, overtakingDifficulty: 0.45, tyreDegradation: 1.02, drsZones: 2, fuelPerLap: 1.8 },
     {
       id: 'monaco',
       name: 'Monaco',
@@ -262,6 +282,22 @@ const F1Data = {
     { id: 'ZHO', name: 'Zhou',       firstName: 'Guanyu',    teamId: 'sauber',      number: 24, pace: 75, consistency: 74, wetSkill: 72, overtaking: 72, defending: 73, salary: 2  },
     { id: 'TSU', name: 'Tsunoda',    firstName: 'Yuki',      teamId: 'racingbulls', number: 22, pace: 83, consistency: 78, wetSkill: 79, overtaking: 81, defending: 75, salary: 3  },
     { id: 'RIC', name: 'Ricciardo',  firstName: 'Daniel',    teamId: 'racingbulls', number: 3,  pace: 84, consistency: 79, wetSkill: 81, overtaking: 86, defending: 78, salary: 5  },
+  ],
+
+  // ── SPONSORS RÉELS / FICTIFS UTILISABLES EN CARRIÈRE ─────────────
+  sponsorBrands: [
+    'Oracle', 'Heineken 0.0', 'DHL', 'Pirelli', 'Rolex', 'Qatar Airways',
+    'AWS', 'Aramco', 'Santander', 'Shell', 'Petronas', 'Castore',
+    'Monster Energy', 'Google Chrome', 'OKX', 'BWT'
+  ],
+
+  staffPool: [
+    { id:'newey', name:'Adrian Newey', role:'Directeur technique', bonus:'aero', level:98, salary:25, cost:45 },
+    { id:'wache', name:'Pierre Waché', role:'Technique', bonus:'chassis', level:91, salary:12, cost:28 },
+    { id:'allison', name:'James Allison', role:'Technique', bonus:'chassis', level:93, salary:15, cost:32 },
+    { id:'seidl', name:'Andreas Seidl', role:'Opérations', bonus:'pitstop', level:86, salary:8, cost:18 },
+    { id:'wheatley', name:'Jonathan Wheatley', role:'Sportif', bonus:'reliability', level:88, salary:8, cost:20 },
+    { id:'stella', name:'Andrea Stella', role:'Team principal', bonus:'consistency', level:90, salary:10, cost:24 }
   ],
 
   // ── POINTS F1 ─────────────────────────────────────────────
