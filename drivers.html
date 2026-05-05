@@ -346,13 +346,16 @@ function renderAll() {
 // ── BUILD DRIVER CARD ─────────────────────────────────────
 function buildDriverCard(driver, team, extraClass, showActions) {
   const score      = Career.getDriverScore(driver);
-  const potLabel   = Career.getPotentialLabel(driver.potential || 80);
-  const agePhase   = Career.getAgePhase(driver.age || 25);
-  const traitData  = F1Data.traits[driver.trait] || { label: '—', icon: '?' };
+  const potLabel   = Career.getPotentialLabel(driver.potential);
+  const agePhase   = Career.getAgePhase(driver.age);
+  const traitData  = F1Data.traits?.[driver.trait] || { label: 'Standard', icon: '🏎️' };
   const teamColor  = team?.color || '#6a6a8a';
   const isMyTeam   = driver.teamId === save.playerTeamId;
   const isFree     = !driver.teamId;
-  const signingFee = Math.round(driver.salary * 1.5);
+  const signingFee = Math.round((driver.salary || 1) * 1.5);
+  const age        = driver.age || 25;
+  const potential  = driver.potential || 80;
+  const seasons    = driver.seasons || 0;
 
   const stats = [
     { lbl:'Pace',       val:driver.pace,        color:'#e8003d' },
@@ -369,12 +372,12 @@ function buildDriverCard(driver, team, extraClass, showActions) {
 
   card.innerHTML = `
     <div class="dc-header">
-      <div class="dc-number" style="color:${teamColor}">${driver.number}</div>
+      <div class="dc-number" style="color:${teamColor}">${driver.number || '?'}</div>
       <div class="dc-info">
-        <div class="dc-name">${driver.firstName} ${driver.name}</div>
+        <div class="dc-name">${driver.firstName || ''} ${driver.name}</div>
         <div class="dc-team">${team ? team.name : isFree ? '🆓 Agent libre' : '—'}</div>
         <div class="dc-badges">
-          <span class="badge badge-age" style="color:${agePhase.color}">${agePhase.icon} ${driver.age} ans · ${agePhase.label}</span>
+          <span class="badge badge-age" style="color:${agePhase.color}">${agePhase.icon} ${age} ans · ${agePhase.label}</span>
           <span class="badge badge-trait">${traitData.icon} ${traitData.label}</span>
           ${isMyTeam ? '<span class="badge" style="background:#1a1a00;color:var(--gold);border:1px solid #3a3a00">👑 Mon équipe</span>' : ''}
           ${driver.generated ? '<span class="badge" style="background:#001a2a;color:#4488ff;border:1px solid #004488">✨ Nouveau talent</span>' : ''}
@@ -388,9 +391,9 @@ function buildDriverCard(driver, team, extraClass, showActions) {
         <div class="score-lbl">Score global</div>
       </div>
       <div class="potential-bar-wrap">
-        <div class="potential-label">Potentiel : <span style="color:${potLabel.color}">${potLabel.label}</span> (${driver.potential})</div>
-        <div class="potential-bar"><div class="potential-fill" style="width:${driver.potential}%;background:${potLabel.color}"></div></div>
-        <div style="font-family:var(--fh);font-size:10px;color:var(--muted)">Saison ${(driver.seasons||0)+1} en F1</div>
+        <div class="potential-label">Potentiel : <span style="color:${potLabel.color}">${potLabel.label}</span> (${potential})</div>
+        <div class="potential-bar"><div class="potential-fill" style="width:${potential}%;background:${potLabel.color}"></div></div>
+        <div style="font-family:var(--fh);font-size:10px;color:var(--muted)">Saison ${seasons + 1} en F1</div>
       </div>
     </div>
 
