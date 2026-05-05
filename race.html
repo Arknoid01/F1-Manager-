@@ -274,6 +274,7 @@ const CR = {
     cG.innerHTML = '';
     this.carEls  = [];
     this.fractions = [];
+    this.targetFrac = [];
     if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
 
     // Halo
@@ -326,8 +327,9 @@ const CR = {
       this.carEls.push(g);
 
       // Position initiale sur la grille : espacées de 2% l'une de l'autre
-      // P1 est à 0, P2 à -2%, P3 à -4%, etc. (derrière la ligne)
-      this.fractions.push(1 - (idx * 0.02));
+      const startFrac = 1 - (idx * 0.02);
+      this.fractions.push(startFrac);
+      this.targetFrac.push(startFrac);
     });
   },
 
@@ -342,14 +344,15 @@ const CR = {
     return el;
   },
 
-  // Avancer les fractions des voitures selon la simulation
-  // Appelé à chaque tour de simulation
+  // Met à jour les fractions cibles après chaque tour simulé
   advanceLap() {
     if (!Race.state || !this.pathEl) return;
 
     const standings = Race.getStandings();
     const lapTime   = Race.state.circuit.baseLapTime;
 
+    // Le leader est à fraction 0 (vient de franchir la ligne)
+    // Chaque voiture est derrière selon son gap en fraction de tour
     standings.forEach((car) => {
       const idx = Race.state.grid.indexOf(car);
       if (idx < 0) return;
@@ -357,15 +360,12 @@ const CR = {
         if (this.carEls[idx]) this.carEls[idx].style.display = 'none';
         return;
       }
-
-      // CORRECTION : fraction = position dans le tour ACTUEL (0..1)
-      // Le leader est à 0 (vient de finir le tour = début du suivant)
-      // Les autres sont derrière selon leur gap en secondes / durée d'un tour
-      const gapInTour = ((car.gap || 0) / lapTime) % 1;
-      // On soustrait depuis 0 → une voiture avec +0.5s de retard est à 0.5 tour derrière
-      let frac = (1 - gapInTour) % 1;
-      if (frac < 0) frac += 1;
-      this.fractions[idx] = frac;
+      // gap en fraction de tour (ex: +5s sur lap de 93s = 0.054 de tour derrière)
+      const gapFrac = ((car.gap || 0) / lapTime) % 1;
+      // fraction = 0 pour le leader, négatif (= derrière) pour les autres
+      // On stocke comme valeur absolue 0..1 sur le tracé
+      // Le leader est à 0.0, P2 à (1 - gapFrac), etc.
+      this.targetFrac[idx] = (1.0 - gapFrac + 1) % 1;
     });
   },
 
@@ -379,20 +379,26 @@ const CR = {
       lastTime = now;
 
       if (Race.state) {
-        // Vitesse visuelle CONSTANTE basée sur le temps réel d'un tour F1
-        // Un tour F1 ≈ 90s réelles → on veut que ça soit fluide visuellement
-        // En mode lent  : 3s simulé/tour → 1 tour visuel en 3s → lapsPerSec = 0.333
-        // En mode normal: 1.2s simulé/tour → lapsPerSec = 0.833
-        // En mode rapide: 0.08s simulé/tour → lapsPerSec = 12.5
-        // → les voitures TOURNENT EN CONTINU, jamais d'arrêt
         const lapsPerSec = 1 / (getInterval() / 1000);
 
         Race.state.grid.forEach((car, idx) => {
           if (car.status === 'dnf') return;
 
-          // Avancer en continu selon la vitesse
-          let cur = this._displayFrac[idx] !== undefined ? this._displayFrac[idx] : (this.fractions[idx] || 0);
+          // Position actuelle affichée
+          let cur = this._displayFrac[idx] !== undefined
+            ? this._displayFrac[idx]
+            : (this.targetFrac[idx] || 0);
+
+          // Avancer en continu
           cur = (cur + dt * lapsPerSec) % 1;
+
+          // Correction douce vers la cible (snap progressif)
+          // Cela permet aux dépassements d'être visibles progressivement
+          const target = this.targetFrac[idx] !== undefined ? this.targetFrac[idx] : cur;
+          const diff   = ((target - cur + 1.5) % 1) - 0.5;
+          // Snap à 5% par seconde → dépassement visible sur ~1-2 tours
+          cur = (cur + diff * dt * 0.4 + 1) % 1;
+
           this._displayFrac[idx] = cur;
 
           const pt = this.pathEl.getPointAtLength(cur * this.len);
@@ -407,6 +413,7 @@ const CR = {
     };
 
     this._displayFrac = [...this.fractions];
+    this.targetFrac   = [...this.fractions];
     this.raf = requestAnimationFrame(loop);
   },
 
@@ -425,7 +432,7 @@ let isSlow      = false;
 let started     = false;
 
 // Intervalles en ms par tour simulé
-const SPEEDS = { slow: 3000, normal: 1200, fast: 80 };
+const SPEEDS = { slow: 6000, normal: 2500, fast: 80 };
 
 function getInterval() {
   if (isSlow) return SPEEDS.slow;
