@@ -31,7 +31,7 @@ const Race = {
   },
 
   // ── INITIALISATION ────────────────────────────────────────
-  init(circuitId, weather = 'dry') {
+  init(circuitId, weather = 'dry', playerStrategies = {}) {
     const circuit = F1Data.circuits.find(c => c.id === circuitId);
     if (!circuit) throw new Error('Circuit introuvable : ' + circuitId);
 
@@ -40,7 +40,10 @@ const Race = {
     F1Data.drivers.forEach(driver => {
       const baseTeam = F1Data.teams.find(t => t.id === driver.teamId);
       const team     = this.getEffectiveTeam(baseTeam);
-      const strategy = Engine.generateStrategy(circuit, team.performance, weather);
+      let strategy = Engine.generateStrategy(circuit, team.performance, weather);
+      if (playerStrategies && playerStrategies[driver.id]) {
+        strategy = Engine.normalizeStrategy(playerStrategies[driver.id], circuit, weather);
+      }
 
       grid.push({
         driver,
@@ -62,6 +65,8 @@ const Race = {
         orderMode: 'normal',
         forcePit: false,
         requestedCompound: null,
+        autoPitWeather: true,
+        autoPitSafetyCar: true,
       });
     });
 
@@ -163,9 +168,12 @@ const Race = {
 
       // ── Pit stop ─────────────────────────────────────────────
       let pitDecision = Engine.shouldPit(
-        car.tyre, lap, s.totalLaps, car.strategy, someoneJustPitted, s.weather
+        car.tyre, lap, s.totalLaps, car.strategy, someoneJustPitted, s.weather, s.safetyCar.active
       );
       if (car.forcePit) pitDecision = { pit: true, reason: 'team_order' };
+      if (car.autoPitSafetyCar && s.safetyCar.active && !pitDecision.pit && car.strategy?.pitLaps?.some(pl => Math.abs(pl - lap) <= 4)) {
+        pitDecision = { pit: true, reason: 'safety_car_opportunity' };
+      }
 
       if (pitDecision.pit && lap < s.totalLaps - 2) {
         car.pitThisLap = true;
@@ -196,7 +204,7 @@ const Race = {
         lapEvents.push({
           lap,
           type:    'pit',
-          message: `🔧 ${car.driver.name} — Pit stop → ${F1Data.tyres[nextCompound].name}`,
+          message: `🔧 ${car.driver.name} — Pit stop → ${F1Data.tyres[nextCompound].name}${pitDecision.reason === 'safety_car_opportunity' ? ' sous Safety Car' : ''}`,
         });
       }
 

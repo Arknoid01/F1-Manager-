@@ -100,7 +100,7 @@ const Engine = {
   },
 
   // ── DÉCISION PIT STOP ─────────────────────────────────────
-  shouldPit(tyreState, lap, totalLaps, strategy, someoneJustPitted = false, weather = 'dry') {
+  shouldPit(tyreState, lap, totalLaps, strategy, someoneJustPitted = false, weather = 'dry', safetyCarActive = false) {
     if (tyreState.condition < 0.12) return { pit: true, reason: 'tyre_dead' };
 
     if ((weather === 'light_rain' || weather === 'heavy_rain') &&
@@ -116,6 +116,7 @@ const Engine = {
     if (strategy && strategy.pitLaps) {
       for (const pitLap of strategy.pitLaps) {
         if (lap === pitLap) return { pit: true, reason: 'planned' };
+        if (safetyCarActive && Math.abs(lap - pitLap) <= 3) return { pit: true, reason: 'safety_car_opportunity' };
         if (someoneJustPitted && lap >= pitLap - 2 && lap < pitLap) {
           return { pit: true, reason: 'undercut' };
         }
@@ -156,6 +157,25 @@ const Engine = {
 
     const pool = strategies[stops] || strategies[1];
     return pool[Math.floor(Math.random() * pool.length)];
+  },
+
+
+  // ── STRATÉGIE PERSONNALISÉE ───────────────────────────────
+  normalizeStrategy(raw, circuit, weather = 'dry') {
+    const valid = ['SOFT','MEDIUM','HARD','INTER','WET'];
+    if (!raw || !circuit) return this.generateStrategy(circuit, 80, weather);
+    let compounds = Array.isArray(raw.compounds) ? raw.compounds.filter(c => valid.includes(c)) : [];
+    if (!compounds.length) compounds = weather === 'heavy_rain' ? ['WET'] : weather === 'light_rain' ? ['INTER','MEDIUM'] : ['MEDIUM','HARD'];
+    if (compounds.length === 1 && weather === 'dry') compounds.push(compounds[0] === 'HARD' ? 'MEDIUM' : 'HARD');
+    let pitLaps = Array.isArray(raw.pitLaps) ? raw.pitLaps.map(n => parseInt(n,10)).filter(n => Number.isFinite(n)) : [];
+    pitLaps = pitLaps
+      .map(n => Math.max(2, Math.min(circuit.laps - 3, n)))
+      .sort((a,b) => a-b)
+      .slice(0, Math.max(0, compounds.length - 1));
+    while (pitLaps.length < compounds.length - 1) {
+      pitLaps.push(Math.round(circuit.laps * ((pitLaps.length + 1) / compounds.length)));
+    }
+    return { compounds, pitLaps };
   },
 
   // ── INCIDENTS ─────────────────────────────────────────────
