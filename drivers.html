@@ -245,6 +245,72 @@ function init() {
     return;
   }
 
+  // ── Patcher les pilotes existants sans age/potential/trait ──
+  // Restaurer d'abord les états sauvegardés si disponibles
+  if (save.driverStates) {
+    F1Data.drivers.forEach(d => {
+      const state = save.driverStates[d.id];
+      if (state) {
+        d.age         = state.age         ?? d.age;
+        d.pace        = state.pace        ?? d.pace;
+        d.consistency = state.consistency ?? d.consistency;
+        d.wetSkill    = state.wetSkill    ?? d.wetSkill;
+        d.overtaking  = state.overtaking  ?? d.overtaking;
+        d.defending   = state.defending   ?? d.defending;
+        d.salary      = state.salary      ?? d.salary;
+        d.trait       = state.trait       ?? d.trait;
+        d.potential   = state.potential   ?? d.potential;
+        d.retired     = state.retired     ?? false;
+        d.teamId      = state.teamId      ?? d.teamId;
+        d.seasons     = state.seasons     ?? 0;
+      }
+    });
+  }
+
+  // Restaurer les pilotes générés
+  if (save.generatedDrivers?.length) {
+    save.generatedDrivers.forEach(gd => {
+      if (!F1Data.drivers.find(d => d.id === gd.id)) {
+        F1Data.drivers.push(gd);
+      } else {
+        // Mettre à jour si déjà présent
+        const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
+        if (save.driverStates?.[gd.id]) {
+          Object.assign(F1Data.drivers[idx], save.driverStates[gd.id]);
+        }
+      }
+    });
+  }
+
+  F1Data.drivers.forEach(d => {
+    // Âge : estimer depuis le salary/pace si manquant
+    if (!d.age) {
+      const score = (d.pace || 70) + (d.consistency || 70) + (d.wetSkill || 70);
+      if (score >= 270)      d.age = 26 + Math.floor(Math.random() * 8); // top pilote = 26-33
+      else if (score >= 240) d.age = 22 + Math.floor(Math.random() * 8); // bon = 22-29
+      else                   d.age = 20 + Math.floor(Math.random() * 6); // junior = 20-25
+    }
+    // Potentiel : basé sur le pace max + marge de progression selon l'âge
+    if (!d.potential) {
+      const best = Math.max(d.pace || 70, d.consistency || 70, d.wetSkill || 70);
+      const youngBonus = d.age <= 24 ? 10 : d.age <= 27 ? 5 : 0;
+      d.potential = Math.min(99, best + youngBonus + Math.floor(Math.random() * 5));
+    }
+    // Trait : dériver des stats si manquant
+    if (!d.trait) {
+      const pace = d.pace || 70, wet = d.wetSkill || 70;
+      const ov = d.overtaking || 70, def = d.defending || 70, cons = d.consistency || 70;
+      if (wet >= 90)       d.trait = 'rain_master';
+      else if (def >= 90)  d.trait = 'defender';
+      else if (ov >= 88)   d.trait = 'overtaker';
+      else if (pace >= 92) d.trait = 'qualifier';
+      else if (cons >= 88) d.trait = 'consistent';
+      else                 d.trait = 'aggressive';
+    }
+    if (d.retired === undefined) d.retired = false;
+    if (d.seasons === undefined) d.seasons = 0;
+  });
+
   document.getElementById('seasonBadge').textContent = `Saison ${save.season || 2025}`;
   document.getElementById('budgetBadge').textContent = `💰 ${save.budget || 0}M €`;
 
@@ -296,21 +362,18 @@ function renderMarket() {
   const grid = document.getElementById('marketDrivers');
   grid.innerHTML = '';
 
-  let drivers = F1Data.drivers.filter(d => !d.retired);
+  // Tous les pilotes sauf mon équipe et retraités
+  let drivers = F1Data.drivers.filter(d => !d.retired && d.teamId !== save.playerTeamId);
 
   if (marketFilter === 'free')  drivers = drivers.filter(d => !d.teamId);
   if (marketFilter === 'young') drivers = drivers.filter(d => (d.age || 25) <= 24);
   if (marketFilter === 'top')   drivers = drivers.filter(d => Career.getDriverScore(d) >= 85);
-
-  // Exclure ceux déjà dans mon équipe
-  drivers = drivers.filter(d => d.teamId !== save.playerTeamId);
 
   if (!drivers.length) {
     grid.innerHTML = '<div style="padding:20px;color:var(--muted);font-family:var(--fh);grid-column:1/-1">Aucun pilote disponible pour ce filtre.</div>';
     return;
   }
 
-  // Trier par score décroissant
   drivers.sort((a, b) => Career.getDriverScore(b) - Career.getDriverScore(a));
 
   drivers.forEach(driver => {
