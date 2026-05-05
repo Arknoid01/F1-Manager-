@@ -366,40 +366,30 @@ const Career = {
       return { ok: false, msg: `Budget insuffisant (frais : ${signingFee}M€)` };
     }
 
-    // Libérer l'ancien pilote du slot
     const team = F1Data.teams.find(t => t.id === save.playerTeamId);
     if (!team) return { ok: false, msg: 'Équipe joueur introuvable' };
 
-    const teamDrivers = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
-
-    if (slot === 'replace' && teamDrivers.length >= 2) {
-      // Remplacer le moins bon
-      const worst = teamDrivers.sort((a, b) =>
-        ((a.pace + a.consistency) / 2) - ((b.pace + b.consistency) / 2)
-      )[0];
-      worst.teamId = null;
-    } else if (teamDrivers.length >= 2) {
-      return { ok: false, msg: 'L\'équipe a déjà 2 pilotes. Libérez un siège d\'abord.' };
-    }
-
-    // Libérer l'ancien employeur du pilote
     const oldTeam = driver.teamId;
+    const transfer = this.replacePlayerDriver(save, driver, slot === 'replace' ? '' : slot, {
+      salary: driver.salary,
+      years: 2,
+      role: 'pilote2',
+    });
+    if (!transfer.ok) return transfer;
 
-    driver.teamId = save.playerTeamId;
-    save.budget   = Math.round((save.budget - signingFee) * 10) / 10;
+    save.budget = Math.round((save.budget - signingFee) * 10) / 10;
 
-    // Log dans les news
     if (typeof CareerEvents !== 'undefined') {
       CareerEvents.log(save, {
         phase: 'mercato',
         title: 'Transfert signé',
-        text:  `${driver.firstName} ${driver.name} rejoint l'équipe${oldTeam ? ` depuis ${oldTeam}` : ''} pour ${signingFee}M€.`,
+        text: `${driver.firstName} ${driver.name} rejoint l'équipe${oldTeam ? ` depuis ${oldTeam}` : ''} pour ${signingFee}M€.${transfer.replaced ? ` ${transfer.replaced.firstName} ${transfer.replaced.name} devient agent libre.` : ''}`,
       });
     }
 
     this.persistDriverStates(save);
     Save.save(save);
-    return { ok: true, msg: `${driver.name} recruté pour ${signingFee}M€ !`, signingFee };
+    return { ok: true, msg: `${driver.name} recruté pour ${signingFee}M€${transfer.replaced ? `, ${transfer.replaced.name} devient agent libre` : ''} !`, signingFee };
   },
 
 
@@ -531,6 +521,59 @@ const Career = {
     return { ok:true, chance, isRenewal, score, teamRank, demand:{ salary:demandSalary, bonus:demandBonus, years:demandYears, role: score >= 86 ? 'pilote1' : 'egal' } };
   },
 
+  replacePlayerDriver(save, incomingDriver, replaceDriverId, contractData = {}) {
+    if (!save || !incomingDriver) return { ok:false, msg:'Transfert impossible.' };
+
+    const playerTeamId = save.playerTeamId;
+    const teamDrivers = F1Data.drivers.filter(x => x.teamId === playerTeamId && !x.retired);
+    let replaced = null;
+
+    // Si l'équipe a déjà 2 pilotes, le joueur doit choisir le siège à remplacer.
+    if (teamDrivers.length >= 2) {
+      if (!replaceDriverId) return { ok:false, msg:'Choisis le pilote de ton équipe à remplacer.' };
+      replaced = F1Data.drivers.find(x => x.id === replaceDriverId && x.teamId === playerTeamId && !x.retired);
+      if (!replaced) return { ok:false, msg:'Le pilote à remplacer est introuvable dans ton équipe.' };
+      if (replaced.id === incomingDriver.id) return { ok:false, msg:'Ce pilote est déjà dans ton équipe.' };
+    }
+
+    const oldTeamId = incomingDriver.teamId || null;
+
+    // L'ancien pilote du joueur devient agent libre.
+    if (replaced) {
+      replaced.teamId = null;
+      replaced.contractYears = 0;
+      save.contracts = save.contracts || {};
+      save.contracts[replaced.id] = {
+        ...(save.contracts[replaced.id] || {}),
+        years: 0,
+        status: 'agent libre',
+        satisfaction: Math.max(25, (save.contracts[replaced.id]?.satisfaction ?? 50) - 12),
+      };
+    }
+
+    // Le nouveau pilote prend exactement ce siège.
+    incomingDriver.teamId = playerTeamId;
+    incomingDriver.salary = Number(contractData.salary ?? incomingDriver.salary ?? 1);
+    incomingDriver.contractYears = Number(contractData.years ?? 1);
+    save.contracts[incomingDriver.id] = {
+      ...(save.contracts[incomingDriver.id] || {}),
+      years: Number(contractData.years ?? 1),
+      salary: Number(contractData.salary ?? incomingDriver.salary ?? 1),
+      status: contractData.role || 'pilote2',
+      refus: 0,
+      cooldownUntilSeason: 0,
+      satisfaction: Math.min(95, (save.contracts[incomingDriver.id]?.satisfaction ?? 58) + 10),
+    };
+
+    // Si le pilote recruté venait d'une autre équipe, l'IA peut combler le siège vide.
+    // Cela permet notamment à l'ancien pilote du joueur d'être recruté ailleurs.
+    if (oldTeamId && oldTeamId !== playerTeamId) {
+      this.fillEmptySeats(save);
+    }
+
+    return { ok:true, replaced, oldTeamId };
+  },
+
   makeContractOffer(save, driverId, offer = {}) {
     const evalResult = this.evaluateContractOffer(save, driverId, offer);
     if (!evalResult.ok) return evalResult;
@@ -546,25 +589,22 @@ const Career = {
     const roll = Math.floor(Math.random() * 100) + 1;
     const c = save.contracts[d.id] || {};
     if (roll <= evalResult.chance) {
+      let transfer = { ok:true, replaced:null, oldTeamId:d.teamId || null };
       if (!isRenewal) {
-        const teamDrivers = F1Data.drivers.filter(x => x.teamId === save.playerTeamId && !x.retired);
-        if (teamDrivers.length >= 2 && !offer.replaceDriverId) return { ok:false, msg:'Tu as déjà 2 pilotes. Choisis un pilote à remplacer.' };
-        if (offer.replaceDriverId) {
-          const old = F1Data.drivers.find(x=>x.id===offer.replaceDriverId && x.teamId===save.playerTeamId);
-          if (old) old.teamId = null;
-        }
-        d.teamId = save.playerTeamId;
+        transfer = this.replacePlayerDriver(save, d, offer.replaceDriverId, { salary, years, role });
+        if (!transfer.ok) return transfer;
+      } else {
+        d.salary = salary;
+        d.contractYears = years;
+        save.contracts[d.id] = { ...c, years, salary, status: role, refus:0, cooldownUntilSeason:0, satisfaction: Math.min(95, (c.satisfaction ?? 58) + 10) };
       }
-      d.salary = salary;
-      d.contractYears = years;
-      save.contracts[d.id] = { ...c, years, salary, status: role, refus:0, cooldownUntilSeason:0, satisfaction: Math.min(95, (c.satisfaction ?? 58) + 10) };
       save.budget = Math.round(((save.budget || 0) - upfront) * 10) / 10;
       save.finances = save.finances || { income:0, expenses:0 };
       save.finances.expenses = Math.round(F1Data.drivers.filter(x=>x.teamId===save.playerTeamId&&!x.retired).reduce((sum,x)=>sum+(Number(x.salary)||0),0)*10)/10;
       this.persistDriverStates(save);
-      if (typeof CareerEvents !== 'undefined') CareerEvents.log(save, { phase:'contrats', title: isRenewal ? 'Prolongation signée' : 'Contrat signé', text:`${d.firstName} ${d.name} signe ${years} an(s), ${salary}M€/an.` });
+      if (typeof CareerEvents !== 'undefined') CareerEvents.log(save, { phase:'contrats', title: isRenewal ? 'Prolongation signée' : 'Contrat signé', text:`${d.firstName} ${d.name} signe ${years} an(s), ${salary}M€/an.${transfer?.replaced ? ' Il remplace '+transfer.replaced.firstName+' '+transfer.replaced.name+', désormais agent libre.' : ''}` });
       Save.save(save);
-      return { ok:true, accepted:true, msg:`${d.firstName} ${d.name} accepte l'offre !`, cost:upfront, chance:evalResult.chance };
+      return { ok:true, accepted:true, replaced:transfer?.replaced?.id || null, msg:`${d.firstName} ${d.name} accepte l'offre !${transfer?.replaced ? ' '+transfer.replaced.firstName+' '+transfer.replaced.name+' devient agent libre.' : ''}`, cost:upfront, chance:evalResult.chance };
     }
 
     save.contracts[d.id] = { ...c, refus:(c.refus||0)+1, cooldownUntilSeason:(save.season || 2025) + 1, salary:c.salary || d.salary, years:c.years || 0, status:c.status || 'pilote2', satisfaction: Math.max(15, (c.satisfaction ?? 50) - 6) };
