@@ -35,9 +35,12 @@ const Race = {
     const circuit = F1Data.circuits.find(c => c.id === circuitId);
     if (!circuit) throw new Error('Circuit introuvable : ' + circuitId);
 
+    try { if (typeof CareerEvents !== 'undefined') { const save = Save.load(); CareerEvents.applyAiDevelopment(save); } } catch(e) {}
+
     const grid = [];
 
-    F1Data.drivers.forEach(driver => {
+    F1Data.drivers.forEach(baseDriver => {
+      const driver = (typeof CareerEvents !== 'undefined') ? CareerEvents.effectiveDriver(baseDriver) : baseDriver;
       const baseTeam = F1Data.teams.find(t => t.id === driver.teamId);
       const team     = this.getEffectiveTeam(baseTeam);
       let strategy = Engine.generateStrategy(circuit, team.performance, weather);

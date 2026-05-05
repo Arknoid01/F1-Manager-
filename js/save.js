@@ -21,6 +21,11 @@ const Save = {
       sponsors: [],
       staff: [],
       completedSeasons: [],
+      news: [],
+      reputation: 50,
+      driverEffects: {},
+      contracts: {},
+      aiDevelopment: {},
 
       // Championnat
       driverStandings: {},   // { driverId: points }
@@ -78,12 +83,14 @@ const Save = {
   // ── ENREGISTRER UNE COURSE DANS LA CARRIÈRE ───────────────
   recordRaceResults(raceState, results) {
     const save = this.load();
+    if (typeof CareerEvents !== 'undefined') CareerEvents.ensure(save || {});
     if (!save || !save.playerTeamId || !raceState || !results || !results.length) {
       console.warn('[Save] Course non enregistrée : sauvegarde/carrière introuvable ou résultats vides.');
       return null;
     }
 
     const circuit = raceState.circuit;
+    if (typeof CareerEvents !== 'undefined') { CareerEvents.triggerPostRace(save, { results }); }
     const playerTeamId = save.playerTeamId;
 
     save.driverStandings = save.driverStandings || {};
@@ -116,7 +123,12 @@ const Save = {
     });
 
     const currentRaceIndex = Number(save.race) || 0;
-    save.budget = Math.round(((Number(save.budget) || 0) + reward + sponsorBonus) * 10) / 10;
+    
+    // Économie plus profonde : frais fixes par GP + salaires annualisés + budget cap simplifié.
+    const annualExpenses = Number(save.finances?.expenses) || 0;
+    const gpOperatingCost = Math.round((2.5 + annualExpenses / Math.max(1, F1Data.circuits.length)) * 10) / 10;
+    save.budget = Math.round(((Number(save.budget) || 0) + reward + sponsorBonus - gpOperatingCost) * 10) / 10;
+    if (save.budget < 0) { save.reputation = Math.max(0, (save.reputation || 50) - 3); save.budget = 0; }
     save.tokens = (Number(save.tokens) || 0) + tokens;
     save.race   = currentRaceIndex + 1;
 
@@ -127,6 +139,7 @@ const Save = {
       circuitName: circuit ? circuit.name : 'Circuit inconnu',
       date: new Date().toISOString(),
       reward: reward + sponsorBonus,
+      operatingCost: gpOperatingCost,
       baseReward: reward,
       sponsorBonus,
       tokens,
@@ -163,7 +176,8 @@ const Save = {
     }
 
     const ok = this.save(save);
-    return ok ? { reward: reward + sponsorBonus, baseReward: reward, sponsorBonus, tokens, save } : null;
+    return ok ? { reward: reward + sponsorBonus,
+      operatingCost: gpOperatingCost, baseReward: reward, sponsorBonus, tokens, save } : null;
   },
 
   // ── AUTOSAVE ─────────────────────────────────────────────
