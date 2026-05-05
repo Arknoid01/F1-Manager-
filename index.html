@@ -138,6 +138,11 @@
     .staff-card { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:10px; }
     .staff-name { font-family:var(--font-h); font-weight:800; font-size:14px; }
     .staff-role { font-family:var(--font-h); color:var(--muted); font-size:11px; margin:2px 0 8px; }
+    .news-list,.market-list,.rnd-list { padding:12px; display:flex; flex-direction:column; gap:8px; }
+    .news-item,.market-card,.rnd-card { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:10px 12px; }
+    .news-title,.market-name,.rnd-title { font-family:var(--font-h); font-weight:800; font-size:14px; }
+    .news-text,.market-meta,.rnd-meta { font-family:var(--font-h); color:var(--muted); font-size:11px; margin-top:3px; }
+    .rep-badge { font-family:var(--font-h); color:var(--gold); font-weight:800; }
 
     /* NEXT RACE */
     .next-race { padding:14px; display:flex; align-items:center; gap:14px; }
@@ -248,6 +253,25 @@
       <div class="staff-list" id="staffSection"></div>
     </div>
 
+
+    <!-- MERCATO + R&D AVANCÉE -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="ph"><div class="dot"></div> Mercato pilotes & contrats <span class="ml rep-badge" id="repBadge">Réputation 50</span></div>
+        <div class="market-list" id="marketList"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="dot"></div> R&D avancée / IA adverse</div>
+        <div class="rnd-list" id="rndList"></div>
+      </div>
+    </div>
+
+    <!-- NEWS -->
+    <div class="panel">
+      <div class="ph"><div class="dot"></div> Centre d’actualités & événements aléatoires</div>
+      <div class="news-list" id="newsList"></div>
+    </div>
+
     <!-- FINANCES + SPONSORS -->
     <div class="grid2">
       <div class="panel">
@@ -268,6 +292,7 @@
 
 <script src="js/data.js"></script>
 <script src="js/save.js"></script>
+<script src="js/events.js"></script>
 <script>
 
 // ═══════════════════════════════════════════════════════════
@@ -314,6 +339,9 @@ function migrateSave(save) {
   save.sponsors = (save.sponsors && save.sponsors.length && save.sponsors[0].type) ? save.sponsors : JSON.parse(JSON.stringify(SPONSORS_POOL));
   save.staff = save.staff || [];
   save.completedSeasons = save.completedSeasons || [];
+  if (typeof CareerEvents !== 'undefined') CareerEvents.ensure(save);
+  // Contrats de base : deux ans restants pour les pilotes de l’équipe
+  F1Data.drivers.filter(d=>d.teamId===save.playerTeamId).forEach(d=>{ save.contracts[d.id] = save.contracts[d.id] || { years: 2, salaryDemand: d.salary + 2 }; });
   save.finances = save.finances || { income: 0, expenses: 0 };
   if (!save.carDev.reliability) save.carDev.reliability = { level: F1Data.teams.find(t=>t.id===save.playerTeamId)?.reliability || 75, upgrades: 0 };
   Save.save(save);
@@ -391,9 +419,10 @@ function confirmTeam() {
     staff: [],
     completedSeasons: [],
     finances: {
-      income:   team.budget * 0.4,  // revenus annuels de base
-      expenses: drivers.reduce((s, d) => s + d.salary, 0) + 80, // salaires + opérations
+      income:   team.budget * 0.4,
+      expenses: drivers.reduce((s, d) => s + d.salary, 0) + 80,
     },
+    news: [], reputation: 50, driverEffects: {}, contracts: {}, aiDevelopment: {},
   };
 
   Save.save(gameState);
@@ -435,6 +464,9 @@ function showDashboard() {
   // Sponsors
   renderSponsors();
   renderStaff();
+  renderMarket();
+  renderRnd();
+  renderNews();
   updateChampionshipSummary();
 }
 
@@ -513,7 +545,7 @@ function renderDrivers(drivers) {
       <div class="driver-number" style="color:${F1Data.teams.find(t=>t.id===d.teamId).color}">${d.number}</div>
       <div class="driver-info">
         <div class="driver-fullname">${d.firstName} ${d.name}</div>
-        <div class="driver-contract">Contrat : 2 ans restants</div>
+        <div class="driver-contract">Contrat : ${(gameState.contracts?.[d.id]?.years ?? 2)} an(s) · ${gameState.driverEffects?.[d.id]?.label ? '⚠ '+gameState.driverEffects[d.id].label : 'OK'}</div>
         <div class="driver-stats">
           <div class="dstat"><div class="dstat-val">${d.pace}</div><div class="dstat-lbl">Pace</div></div>
           <div class="dstat"><div class="dstat-val">${d.consistency}</div><div class="dstat-lbl">Consis.</div></div>
@@ -689,6 +721,39 @@ function renderSponsors() {
     `;
     el.appendChild(div);
   });
+}
+
+
+function renderMarket() {
+  const el = document.getElementById('marketList'); if (!el) return;
+  gameState.contracts = gameState.contracts || {};
+  const own = F1Data.drivers.filter(d=>d.teamId===gameState.playerTeamId);
+  const prospects = F1Data.drivers.filter(d=>d.teamId!==gameState.playerTeamId)
+    .sort((a,b)=>(b.pace+b.consistency)-(a.pace+a.consistency)).slice(0,5);
+  el.innerHTML = own.map(d=>{
+    const c=gameState.contracts[d.id]||{years:2,salaryDemand:d.salary+2};
+    const signCost=Math.round((c.salaryDemand||d.salary+2)*1.5);
+    return `<div class="market-card"><div class="market-name">${d.firstName} ${d.name}</div><div class="market-meta">Contrat : ${c.years} an(s) · demande salariale ${c.salaryDemand || d.salary+2}M€/an</div><button class="btn btn-gold" onclick="renewDriver('${d.id}')" ${gameState.budget < signCost ? 'disabled' : ''}>Prolonger ${signCost}M€</button></div>`;
+  }).join('') + `<div class="market-card"><div class="market-name">Marché observé</div><div class="market-meta">${prospects.map(d=>`${d.firstName} ${d.name} (${d.salary}M€/an, pace ${d.pace})`).join(' · ')}</div></div>`;
+  document.getElementById('repBadge').textContent = `Réputation ${gameState.reputation ?? 50}/100`;
+}
+function renewDriver(id) {
+  const res = CareerEvents.renewDriver(gameState, id);
+  if (!res.ok) { showToast('❌ '+res.msg, true); return; }
+  Save.save(gameState); showToast('✅ '+res.msg, false); showDashboard();
+}
+function renderRnd() {
+  const el=document.getElementById('rndList'); if(!el) return;
+  const rivals=[...F1Data.teams].filter(t=>t.id!==gameState.playerTeamId).sort((a,b)=>b.performance-a.performance).slice(0,5);
+  el.innerHTML = `<div class="rnd-card"><div class="rnd-title">Développement avancé</div><div class="rnd-meta">Les upgrades coûtent plus cher avec le temps, la fiabilité réduit les DNF, et le staff améliore sa spécialité. Les événements peuvent ajouter des délais, bonus ou malus.</div></div>`+
+    `<div class="rnd-card"><div class="rnd-title">IA adverse</div><div class="rnd-meta">${rivals.map(t=>`${t.name} perf. ${t.performance}`).join(' · ')}</div></div>`+
+    `<div class="rnd-card"><div class="rnd-title">Budget cap simplifié</div><div class="rnd-meta">Chaque GP retire une partie des frais fixes. Un budget à zéro pénalise la réputation.</div></div>`;
+}
+function renderNews() {
+  const el=document.getElementById('newsList'); if(!el) return;
+  const news=gameState.news || [];
+  if(!news.length){ el.innerHTML='<div class="news-item"><div class="news-title">Aucune actualité majeure</div><div class="news-text">Des événements aléatoires réalistes peuvent arriver avant ou après les courses.</div></div>'; return; }
+  el.innerHTML = news.slice(0,10).map(n=>`<div class="news-item"><div class="news-title">${n.title}</div><div class="news-text">Saison ${n.season}, GP ${Number(n.race||0)+1} · ${n.text}</div></div>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════

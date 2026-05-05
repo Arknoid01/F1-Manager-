@@ -254,6 +254,7 @@
 <script src="js/engine.js"></script>
 <script src="js/race.js"></script>
 <script src="js/save.js"></script>
+<script src="js/events.js"></script>
 <script>
 // ══════════════════════════════════════════════
 //  CIRCUITS — paths SVG ajustés pour remplir
@@ -552,6 +553,7 @@ function initSel() {
 
 function startRace() {
   const cid = document.getElementById('circSel').value;
+  try { const s = Save.load(); if (s && typeof CareerEvents !== 'undefined') { const ev = CareerEvents.triggerPreRace(s); Save.save(s); if (ev) alert('Événement avant-course : '+ev.title+'\n'+ev.text); } } catch(e) { console.warn(e); }
   if (!cid) { alert('Choisis un circuit !'); return; }
 
   Race.init(cid, 'dry', collectPreRaceStrategies());
@@ -834,7 +836,7 @@ function showResults() {
   try { results = Race.assignPoints(); } catch(e) { console.error('[Race] Erreur assignPoints', e); }
   try { persistRaceResults(results); } catch(e) { console.error('[Race] Erreur sauvegarde résultats', e); }
   const careerReward = Race.state?._careerReward;
-  document.getElementById('resSub').textContent = `Grand Prix de ${Race.state.circuit.name}` + (careerReward ? ` · Gains équipe : +${careerReward.reward}M € · +${careerReward.tokens} token${careerReward.tokens > 1 ? 's' : ''}` : '');
+  document.getElementById('resSub').textContent = `Grand Prix de ${Race.state.circuit.name}` + (careerReward ? ` · Gains équipe : +${careerReward.reward}M € · Frais GP : -${careerReward.operatingCost || 0}M € · +${careerReward.tokens} token${careerReward.tokens > 1 ? 's' : ''}` : '');
   const body = document.getElementById('resBody');
   body.innerHTML = '';
   results.forEach((r,i) => {
