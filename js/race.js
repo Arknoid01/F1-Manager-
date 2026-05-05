@@ -11,6 +11,25 @@ const Race = {
 
   state: null,
 
+  // ── APPLIQUER LES AMÉLIORATIONS JOUEUR ───────────────────
+  getEffectiveTeam(team) {
+    const effective = { ...team };
+    try {
+      const save = (typeof Save !== 'undefined' && Save.load) ? Save.load() : null;
+      if (save && save.playerTeamId === team.id && save.carDev) {
+        ['aero', 'chassis', 'engine', 'reliability'].forEach(stat => {
+          if (save.carDev[stat] && Number.isFinite(save.carDev[stat].level)) {
+            effective[stat] = Math.max(1, Math.min(100, save.carDev[stat].level));
+          }
+        });
+        effective.performance = Math.round((effective.aero + effective.chassis + effective.engine) / 3);
+      }
+    } catch (e) {
+      console.warn('[Race] Impossible d’appliquer le développement joueur', e);
+    }
+    return effective;
+  },
+
   // ── INITIALISATION ────────────────────────────────────────
   init(circuitId, weather = 'dry') {
     const circuit = F1Data.circuits.find(c => c.id === circuitId);
@@ -19,7 +38,8 @@ const Race = {
     const grid = [];
 
     F1Data.drivers.forEach(driver => {
-      const team     = F1Data.teams.find(t => t.id === driver.teamId);
+      const baseTeam = F1Data.teams.find(t => t.id === driver.teamId);
+      const team     = this.getEffectiveTeam(baseTeam);
       const strategy = Engine.generateStrategy(circuit, team.performance, weather);
 
       grid.push({
