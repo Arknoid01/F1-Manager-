@@ -134,6 +134,25 @@
     .player-name { min-width:92px; font-family:var(--fh); font-weight:700; }
     .mini-sel { background:#101018; color:var(--text); border:1px solid var(--border); border-radius:4px; padding:5px; font-family:var(--fh); }
 
+
+    /* TELEMETRY TABS */
+    .telem-panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+    .tab-bar { display:flex; background:var(--surface2); border-bottom:1px solid var(--border); overflow-x:auto; }
+    .tab-btn { font-family:var(--fh); font-weight:700; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; padding:8px 14px; background:none; border:none; color:var(--muted); cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; transition:all .15s; }
+    .tab-btn:hover { color:var(--text); }
+    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .tab-pane { display:none; padding:10px; }
+    .tab-pane.active { display:block; }
+    .chart-wrap canvas { width:100% !important; height:175px !important; display:block; }
+    .chart-legend { display:flex; gap:10px; flex-wrap:wrap; padding:4px 0 5px; }
+    .legend-item { display:flex; align-items:center; gap:5px; font-family:var(--fh); font-size:11px; color:var(--muted); }
+    .legend-dot  { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .chart-hint  { font-family:var(--fh); font-size:10px; color:var(--muted); margin-top:4px; }
+    .strat-row-t { display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom:1px solid var(--border); }
+    .strat-pos-t { font-family:var(--fh); font-weight:900; font-size:13px; color:var(--muted); width:22px; text-align:center; }
+    .strat-name-t { font-family:var(--fh); font-weight:700; font-size:12px; width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .strat-stops { font-family:var(--fh); font-size:10px; color:var(--muted); margin-left:auto; }
+
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
     /* FEUX DE DÉPART */
@@ -236,6 +255,40 @@
   </div>
 
 </div>
+
+
+  <!-- TELEMETRY TABS -->
+  <div class="telem-panel">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab('tab-orders')">🎧 Ordres</button>
+      <button class="tab-btn" onclick="showTab('tab-tyres')">🔴 Pneus</button>
+      <button class="tab-btn" onclick="showTab('tab-pace')">⏱ Rythme</button>
+      <button class="tab-btn" onclick="showTab('tab-gaps')">📊 Gaps</button>
+      <button class="tab-btn" onclick="showTab('tab-strat')">🗺 Stratégie</button>
+    </div>
+    <div class="tab-pane active" id="tab-orders">
+      <div id="playerControlsNew"></div>
+    </div>
+    <div class="tab-pane" id="tab-tyres">
+      <div id="tyresLegend" class="chart-legend"></div>
+      <div class="chart-wrap"><canvas id="canvasTyres"></canvas></div>
+      <div class="chart-hint">Condition pneu (100%=neuf · 0%=mort) · Ligne rouge = cliff à 20%</div>
+    </div>
+    <div class="tab-pane" id="tab-pace">
+      <div id="paceLegend" class="chart-legend"></div>
+      <div class="chart-wrap"><canvas id="canvasPace"></canvas></div>
+      <div class="chart-hint">Temps au tour en secondes · Pics = pit stops</div>
+    </div>
+    <div class="tab-pane" id="tab-gaps">
+      <div id="gapsLegend" class="chart-legend"></div>
+      <div class="chart-wrap"><canvas id="canvasGaps"></canvas></div>
+      <div class="chart-hint">Écart en secondes au leader</div>
+    </div>
+    <div class="tab-pane" id="tab-strat">
+      <div style="font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Stratégies — Tous les pilotes</div>
+      <div id="stratFull"></div>
+    </div>
+  </div>
 
 <!-- RESULTS -->
 <div id="resOverlay" class="overlay" style="display:none">
@@ -556,6 +609,7 @@ function startRace() {
   try { const s = Save.load(); if (s && typeof CareerEvents !== 'undefined') { const ev = CareerEvents.triggerPreRace(s); Save.save(s); if (ev) alert('Événement avant-course : '+ev.title+'\n'+ev.text); } } catch(e) { console.warn(e); }
   if (!cid) { alert('Choisis un circuit !'); return; }
 
+  Telem.reset();
   Race.init(cid, 'dry', collectPreRaceStrategies());
   started = true;
 
@@ -599,6 +653,10 @@ function runSim() {
     addEvents(res.events);
     renderStrat();
     renderPlayerControls();
+    syncOrdersTab();
+    Telem.record();
+    const atab=document.querySelector('.tab-pane.active');
+    if(atab&&atab.id!=='tab-orders')Telem.updateAll();
 
     if (Race.state.finished) {
       clearInterval(simInterval);
@@ -632,8 +690,9 @@ function toggleFast() {
 
 function skipEnd() {
   clearInterval(simInterval);
-  Race.simulateAll();
+  Race.simulateAll(()=>Telem.record());
   CR.advanceLap();
+  Telem.updateAll();
   document.getElementById('svgLap').textContent = Race.state.currentLap;
   document.getElementById('progFill').style.width = '100%';
   renderStandings();
@@ -772,6 +831,11 @@ function collectPreRaceStrategies() {
 }
 
 function renderPlayerControls() {
+  // Sync telemetry orders tab with player controls
+  const newBox = document.getElementById('playerControlsNew');
+  if (newBox && document.getElementById('playerControls')) {
+    // Will be filled below
+  }
   const box = document.getElementById('playerControls');
   if (!box || !Race.state) return;
   const save = Save.load();
@@ -796,7 +860,49 @@ function renderPlayerControls() {
     box.appendChild(row);
   });
 }
-function setMode(driverId, mode) { Race.setDriverMode(driverId, mode); addEvents(Race.state.events.slice(-1)); renderPlayerControls(); }
+function setMode(driverId, mode) { Race.setDriverMode(driverId, mode); addEvents(Race.state.events.slice(-1)); renderPlayerControls(); syncOrdersTab(); }
+function forcePitNew(driverId) { const sel = document.getElementById('pit_new_'+driverId); Race.forcePitStop(driverId, sel ? sel.value : 'MEDIUM'); addEvents(Race.state.events.slice(-1)); renderPlayerControls(); syncOrdersTab(); }
+function syncOrdersTab() {
+  const box = document.getElementById('playerControlsNew');
+  const src = document.getElementById('playerControls');
+  if (!box || !src) return;
+  if (!Race.state) { box.innerHTML = '<span style="color:var(--muted);font-size:11px">Démarre une course.</span>'; return; }
+  const save = Save.load(); const pid = save?.playerTeamId;
+  const cars = Race.state.grid.filter(c => c.driver.teamId === pid && c.status === 'racing');
+  if (!cars.length) { box.innerHTML = '<span style="color:var(--muted);font-size:11px;padding:6px">Aucune équipe joueur.</span>'; return; }
+  box.innerHTML = '';
+  cars.forEach(car => {
+    const tyre = F1Data.tyres[car.tyre.compound], cond = Math.round(car.tyre.condition*100);
+    const mode = car.orderMode||'normal', laps = Race.state.totalLaps - Race.state.currentLap;
+    const pit = cond<35?'🔴 PIT URGENT':(cond<55&&laps>5)?'🟡 Fenêtre pit':'🟢 OK';
+    const col = F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;margin-bottom:8px';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="font-family:var(--fh);font-weight:900;font-size:20px;color:${col}">P${car.position}</div>
+        <div style="font-family:var(--fh);font-weight:700;font-size:15px;flex:1">${car.driver.firstName} ${car.driver.name}</div>
+        <div style="font-family:var(--fh);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${mode==='attack'?'#1a1a00':mode==='save'?'#001a00':'var(--surface)'};color:${mode==='attack'?'var(--gold)':mode==='save'?'var(--green)':'var(--muted)'};border:1px solid ${mode==='attack'?'#3a3a00':mode==='save'?'#003a00':'var(--border)'}">
+          ${mode==='attack'?'⚡ Attaque':mode==='save'?'🌿 Économie':'◼ Normal'}
+        </div>
+      </div>
+      <div style="font-family:var(--fh);font-size:11px;color:var(--muted);margin-bottom:8px">
+        <span style="color:${tyre.color}">● ${tyre.name}</span> ${cond}% &nbsp;|&nbsp; Gap: ${car.gap===0?'LEADER':'+'+car.gap.toFixed(1)+'s'} &nbsp;|&nbsp; ${pit} &nbsp;|&nbsp; ${laps} tours restants
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-gold" onclick="setMode('${car.driver.id}','attack')" ${mode==='attack'?'disabled':''}>⚡ Attaquer</button>
+        <button class="btn btn-sec"  onclick="setMode('${car.driver.id}','normal')"  ${mode==='normal'?'disabled':''}>◼ Normal</button>
+        <button class="btn btn-sec"  onclick="setMode('${car.driver.id}','save')"    ${mode==='save'?'disabled':''}>🌿 Économiser</button>
+        &nbsp;
+        <select class="mini-sel" id="pit_new_${car.driver.id}">
+          ${['SOFT','MEDIUM','HARD','INTER','WET'].map(c=>`<option value="${c}"${c==='MEDIUM'?' selected':''}>${F1Data.tyres[c].name}</option>`).join('')}
+        </select>
+        <button class="btn btn-red" onclick="forcePitNew('${car.driver.id}')">🔧 Pitter</button>
+      </div>`;
+    box.appendChild(card);
+  });
+  if(Race.state) Telem.updateAll();
+}
 function forcePit(driverId) { const sel = document.getElementById('pit_'+driverId); Race.forcePitStop(driverId, sel ? sel.value : 'MEDIUM'); addEvents(Race.state.events.slice(-1)); renderPlayerControls(); }
 
 function renderStrat() {
@@ -894,6 +1000,97 @@ function fmtTime(s) {
 function fmtLap(s) {
   const m = Math.floor(s/60), sec = (s%60).toFixed(3);
   return `${m}:${String(parseFloat(sec).toFixed(3)).padStart(6,'0')}`;
+}
+
+
+// ════════════════════════════════════
+//  TÉLÉMÉTRIE
+// ════════════════════════════════════
+const Telem = {
+  tyreH:{},paceH:{},gapH:{},
+  reset(){this.tyreH={};this.paceH={};this.gapH={};},
+  record(){
+    if(!Race.state) return;
+    Race.state.grid.forEach(car=>{
+      const id=car.driver.id;
+      if(!this.tyreH[id])this.tyreH[id]=[];
+      if(!this.paceH[id])this.paceH[id]=[];
+      if(!this.gapH[id]) this.gapH[id]=[];
+      this.tyreH[id].push(Math.round(car.tyre.condition*100));
+      if(car.lapTimes.length>0)this.paceH[id].push(car.lapTimes[car.lapTimes.length-1]);
+      this.gapH[id].push(car.gap||0);
+    });
+  },
+  drawChart(id,datasets,opts={}){
+    const canvas=document.getElementById(id);if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    const W=canvas.offsetWidth||350,H=175;
+    canvas.width=W;canvas.height=H;
+    ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,W,H);
+    const p={l:36,r:10,t:8,b:22},pw=W-p.l-p.r,ph=H-p.t-p.b;
+    const all=datasets.flatMap(d=>d.data);
+    if(!all.length){ctx.fillStyle='#4a4a6a';ctx.font='12px Barlow Condensed';ctx.textAlign='center';ctx.fillText('Pas encore de données',W/2,H/2);return;}
+    let mn=opts.minY!==undefined?opts.minY:Math.floor(Math.min(...all));
+    let mx=opts.maxY!==undefined?opts.maxY:Math.ceil(Math.max(...all));
+    if(mn===mx){mn-=1;mx+=1;}
+    const maxLen=Math.max(...datasets.map(d=>d.data.length),2);
+    ctx.strokeStyle='#1a1a2a';ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const y=p.t+ph-(i/4)*ph;
+      ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(p.l+pw,y);ctx.stroke();
+      ctx.fillStyle='#4a4a6a';ctx.font='10px Barlow Condensed';ctx.textAlign='right';
+      ctx.fillText(Math.round(mn+(i/4)*(mx-mn)),p.l-4,y+4);
+    }
+    if(opts.dangerLine!==undefined){
+      const yD=p.t+ph-((opts.dangerLine-mn)/(mx-mn))*ph;
+      ctx.strokeStyle='#ff2244';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(p.l,yD);ctx.lineTo(p.l+pw,yD);ctx.stroke();ctx.setLineDash([]);
+    }
+    datasets.forEach(ds=>{
+      if(!ds.data.length)return;
+      ctx.strokeStyle=ds.color;ctx.lineWidth=2;ctx.beginPath();
+      ds.data.forEach((v,i)=>{
+        const x=p.l+(i/(maxLen-1||1))*pw,y=p.t+ph-((v-mn)/(mx-mn))*ph;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      const li=ds.data.length-1,x=p.l+(li/(maxLen-1||1))*pw,y=p.t+ph-((ds.data[li]-mn)/(mx-mn))*ph;
+      ctx.fillStyle=ds.color;ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+    });
+    ctx.fillStyle='#4a4a6a';ctx.textAlign='center';ctx.font='10px Barlow Condensed';
+    const xt=Math.min(maxLen,8);
+    for(let i=0;i<xt;i++){const li=Math.round(i/(xt-1||1)*(maxLen-1));ctx.fillText('T'+(li+1),p.l+(li/(maxLen-1||1))*pw,H-4);}
+  },
+  updateAll(){
+    if(!Race.state)return;
+    const save=Save.load(),pid=save?.playerTeamId,standings=Race.getStandings();
+    // Pneus
+    const tc=pid?standings.filter(c=>c.driver.teamId===pid):standings.slice(0,2);
+    this.drawChart('canvasTyres',tc.map(car=>({color:F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.tyreH[car.driver.id]||[]})),{minY:0,maxY:100,dangerLine:20});
+    const tyL=document.getElementById('tyresLegend');
+    if(tyL)tyL.innerHTML=tc.map(car=>{const col=F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const ty=F1Data.tyres[car.tyre.compound];return`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div>${car.driver.name} — <span style="color:${ty.color}">${ty.name}</span> ${Math.round(car.tyre.condition*100)}%</div>`;}).join('');
+    // Rythme
+    const top5=standings.filter(c=>c.status==='racing').slice(0,5),base=Race.state.circuit.baseLapTime;
+    this.drawChart('canvasPace',top5.map(car=>({color:F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.paceH[car.driver.id]||[]})),{minY:base-2,maxY:base+10});
+    const paL=document.getElementById('paceLegend');
+    if(paL)paL.innerHTML=top5.map(car=>{const col=F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const last=car.lapTimes.length>0?car.lapTimes[car.lapTimes.length-1].toFixed(3):'—';return`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div>${car.driver.name} ${last}s</div>`;}).join('');
+    // Gaps
+    const top8=standings.filter(c=>c.status==='racing').slice(0,8);
+    this.drawChart('canvasGaps',top8.map((car,i)=>({color:i===0?'#00e676':F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.gapH[car.driver.id]||[]})),{minY:0});
+    const gaL=document.getElementById('gapsLegend');
+    if(gaL)gaL.innerHTML=top8.map((car,i)=>{const col=i===0?'#00e676':F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';return`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div>${car.driver.name} ${i===0?'LEADER':'+'+car.gap.toFixed(1)+'s'}</div>`;}).join('');
+    // Stratégie
+    const sf=document.getElementById('stratFull');
+    if(sf){sf.innerHTML='';standings.forEach(car=>{const col=F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const pills=car.strategy.compounds.map((c,i)=>{const ty=F1Data.tyres[c];const act=i===car.currentCompoundIndex;return`<span class="cpill" style="color:${ty.color};border:1px solid ${act?ty.color:'transparent'}">${ty.name}</span>`;}).join('');const pits=car.pitStops.map(p=>'T'+p.lap).join(',');const row=document.createElement('div');row.className='strat-row-t';row.innerHTML=`<div class="strat-pos-t">${car.position}</div><div class="tbar" style="background:${col};height:18px;margin:0 2px;border-radius:2px"></div><div class="strat-name-t">${car.driver.name}</div>${pills}<div class="strat-stops">${car.pitStops.length}arr.${pits?' ('+pits+')':''}</div>${car.status==='dnf'?'<span class="dnf-b">DNF T.'+car.dnfLap+'</span>':''}`;sf.appendChild(row);});}
+  }
+};
+
+function showTab(id){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>{if(b.getAttribute('onclick')===`showTab('${id}')`)b.classList.add('active');});
+  if(Race.state)Telem.updateAll();
 }
 
 initSel();
