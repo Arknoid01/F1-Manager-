@@ -244,6 +244,7 @@ const Career = {
 
     const currentSeason = save.season || 2025;
     const playerTeamId  = save.playerTeamId;
+    this.ensureContractSystem(save);
 
     // 0. Archiver le palmarès de la saison que l'on termine.
     // Même si le joueur clique sur "Fin de saison" avant le dernier GP,
@@ -301,6 +302,17 @@ const Career = {
         seasons:     (d.seasons || 0) + 1,
       };
       d.seasons = (d.seasons || 0) + 1;
+    });
+
+    // 5b. Les contrats perdent une année à la fin de chaque saison
+    Object.keys(save.contracts || {}).forEach(id => {
+      const c = save.contracts[id];
+      if (!c) return;
+      c.years = Math.max(0, (Number(c.years) || 0) - 1);
+      const d = F1Data.drivers.find(x => x.id === id);
+      if (d && d.teamId === playerTeamId && c.years === 0) {
+        c.satisfaction = Math.max(10, (c.satisfaction ?? 50) - 8);
+      }
     });
 
     // 6. Incrémenter la saison et reset complet des stats/courses
@@ -385,8 +397,180 @@ const Career = {
       });
     }
 
+    this.persistDriverStates(save);
     Save.save(save);
     return { ok: true, msg: `${driver.name} recruté pour ${signingFee}M€ !`, signingFee };
+  },
+
+
+
+  // ── CONTRATS / NÉGOCIATIONS ──────────────────────────────
+  persistDriverStates(save) {
+    if (!save) return;
+    save.driverStates = save.driverStates || {};
+    F1Data.drivers.forEach(d => {
+      save.driverStates[d.id] = {
+        age: d.age, pace: d.pace, consistency: d.consistency, wetSkill: d.wetSkill,
+        overtaking: d.overtaking, defending: d.defending, salary: d.salary,
+        trait: d.trait, potential: d.potential, retired: d.retired, teamId: d.teamId,
+        seasons: d.seasons || 0, contractYears: d.contractYears || 0, personality: d.personality,
+      };
+    });
+  },
+
+  ensureContractSystem(save) {
+    if (!save) return;
+    save.contracts = save.contracts || {};
+    save.negotiations = save.negotiations || {};
+    save.reputation = save.reputation ?? 50;
+
+    const personalities = ['loyal', 'mercenaire', 'ambitieux', 'prudent', 'jeune_loup'];
+    F1Data.drivers.forEach(d => {
+      if (!d.personality) {
+        const score = this.getDriverScore(d);
+        if ((d.age || 25) <= 23) d.personality = 'jeune_loup';
+        else if (score >= 88) d.personality = 'ambitieux';
+        else if ((d.seasons || 0) >= 2) d.personality = 'loyal';
+        else d.personality = personalities[Math.floor(Math.random() * personalities.length)];
+      }
+      if (!save.contracts[d.id]) {
+        const baseYears = d.teamId ? 1 + Math.floor(Math.random() * 3) : 0;
+        save.contracts[d.id] = {
+          years: baseYears,
+          salary: Number(d.salary) || 1,
+          status: 'pilote2',
+          refus: 0,
+          cooldownUntilSeason: 0,
+          satisfaction: d.teamId === save.playerTeamId ? 58 : 50,
+        };
+      }
+    });
+    this.persistDriverStates(save);
+  },
+
+  getPersonalityInfo(driver) {
+    const map = {
+      loyal:      { label:'Loyal', icon:'🤝', desc:'Préfère la stabilité, plus simple à prolonger.' },
+      mercenaire: { label:'Mercenaire', icon:'💰', desc:'Très sensible au salaire et aux primes.' },
+      ambitieux:  { label:'Ambitieux', icon:'🏆', desc:'Veut une équipe compétitive et un vrai statut.' },
+      prudent:    { label:'Prudent', icon:'🧠', desc:'Aime les contrats longs et le risque faible.' },
+      jeune_loup: { label:'Jeune loup', icon:'🌱', desc:'Cherche du temps de piste et une progression rapide.' },
+    };
+    return map[driver.personality] || map.prudent;
+  },
+
+  getTeamRank(save) {
+    const standings = save?.teamStandings || {};
+    if (!save?.playerTeamId) return 10;
+    const ranked = [...F1Data.teams].sort((a,b)=>(standings[b.id]||0)-(standings[a.id]||0));
+    const pos = ranked.findIndex(t=>t.id===save.playerTeamId);
+    if (Object.values(standings).every(v => !v)) {
+      const team = F1Data.teams.find(t=>t.id===save.playerTeamId);
+      return Math.max(1, Math.round((100 - (team?.performance || 70)) / 5));
+    }
+    return pos >= 0 ? pos + 1 : 10;
+  },
+
+  evaluateContractOffer(save, driverId, offer = {}) {
+    this.ensureContractSystem(save);
+    const d = F1Data.drivers.find(x=>x.id===driverId);
+    if (!d || d.retired) return { ok:false, msg:'Pilote indisponible' };
+    const c = save.contracts[d.id] || {};
+    const score = this.getDriverScore(d);
+    const salary = Number(offer.salary ?? d.salary ?? 1);
+    const years = Number(offer.years ?? 2);
+    const role = offer.role || 'pilote2';
+    const bonus = Number(offer.bonus ?? 0);
+    const isRenewal = d.teamId === save.playerTeamId;
+    const baseSalary = Math.max(1, Number(d.salary) || 1);
+    const salaryRatio = salary / baseSalary;
+    const teamRank = this.getTeamRank(save);
+    const rep = Number(save.reputation ?? 50);
+
+    let chance = isRenewal ? 55 : 38;
+    chance += Math.max(-25, Math.min(30, (salaryRatio - 1) * 55));
+    chance += Math.max(0, Math.min(12, bonus * 0.8));
+    chance += (rep - 50) * 0.35;
+    chance += Math.max(-18, 12 - teamRank * 3);
+    if (role === 'pilote1') chance += 11;
+    if (role === 'egal') chance += 5;
+    if (years >= 3) chance += 4;
+    if (years <= 1) chance -= 5;
+    chance -= Math.max(0, score - 82) * 1.4;
+    chance -= (c.refus || 0) * 7;
+    if ((c.cooldownUntilSeason || 0) > (save.season || 2025)) chance -= 18;
+    if (isRenewal) chance += Math.max(-15, Math.min(18, ((c.satisfaction ?? 58) - 50) * 0.45));
+
+    switch (d.personality) {
+      case 'loyal':
+        if (isRenewal) chance += 14; else chance -= 4;
+        if (salaryRatio < 0.95) chance -= 5;
+        break;
+      case 'mercenaire':
+        chance += (salaryRatio - 1) * 25 + bonus * 0.5;
+        if (salaryRatio < 1.1) chance -= 8;
+        break;
+      case 'ambitieux':
+        if (teamRank > 5) chance -= 18;
+        if (role !== 'pilote1') chance -= 8;
+        break;
+      case 'prudent':
+        if (years >= 3) chance += 10;
+        if (years <= 1) chance -= 8;
+        break;
+      case 'jeune_loup':
+        if (role === 'pilote1' || role === 'egal') chance += 8;
+        if (score > 82 && teamRank > 7) chance -= 8;
+        break;
+    }
+
+    const demandSalary = Math.max(baseSalary, Math.ceil(baseSalary * (1.05 + Math.max(0, score - 80) / 90 + (d.personality === 'mercenaire' ? 0.18 : 0))));
+    const demandBonus = Math.max(0, Math.round((score - 78) / 5));
+    const demandYears = d.personality === 'prudent' ? 3 : (d.personality === 'ambitieux' ? 2 : years);
+    chance = Math.round(Math.max(5, Math.min(92, chance)));
+    return { ok:true, chance, isRenewal, score, teamRank, demand:{ salary:demandSalary, bonus:demandBonus, years:demandYears, role: score >= 86 ? 'pilote1' : 'egal' } };
+  },
+
+  makeContractOffer(save, driverId, offer = {}) {
+    const evalResult = this.evaluateContractOffer(save, driverId, offer);
+    if (!evalResult.ok) return evalResult;
+    const d = F1Data.drivers.find(x=>x.id===driverId);
+    const salary = Number(offer.salary ?? d.salary ?? 1);
+    const years = Number(offer.years ?? 2);
+    const bonus = Number(offer.bonus ?? 0);
+    const role = offer.role || 'pilote2';
+    const isRenewal = d.teamId === save.playerTeamId;
+    const upfront = isRenewal ? bonus : Math.round((Number(d.salary)||1) * 1.2 + bonus);
+    if ((save.budget || 0) < upfront) return { ok:false, msg:`Budget insuffisant : il faut ${upfront}M€ maintenant.` };
+
+    const roll = Math.floor(Math.random() * 100) + 1;
+    const c = save.contracts[d.id] || {};
+    if (roll <= evalResult.chance) {
+      if (!isRenewal) {
+        const teamDrivers = F1Data.drivers.filter(x => x.teamId === save.playerTeamId && !x.retired);
+        if (teamDrivers.length >= 2 && !offer.replaceDriverId) return { ok:false, msg:'Tu as déjà 2 pilotes. Choisis un pilote à remplacer.' };
+        if (offer.replaceDriverId) {
+          const old = F1Data.drivers.find(x=>x.id===offer.replaceDriverId && x.teamId===save.playerTeamId);
+          if (old) old.teamId = null;
+        }
+        d.teamId = save.playerTeamId;
+      }
+      d.salary = salary;
+      d.contractYears = years;
+      save.contracts[d.id] = { ...c, years, salary, status: role, refus:0, cooldownUntilSeason:0, satisfaction: Math.min(95, (c.satisfaction ?? 58) + 10) };
+      save.budget = Math.round(((save.budget || 0) - upfront) * 10) / 10;
+      save.finances = save.finances || { income:0, expenses:0 };
+      save.finances.expenses = Math.round(F1Data.drivers.filter(x=>x.teamId===save.playerTeamId&&!x.retired).reduce((sum,x)=>sum+(Number(x.salary)||0),0)*10)/10;
+      this.persistDriverStates(save);
+      if (typeof CareerEvents !== 'undefined') CareerEvents.log(save, { phase:'contrats', title: isRenewal ? 'Prolongation signée' : 'Contrat signé', text:`${d.firstName} ${d.name} signe ${years} an(s), ${salary}M€/an.` });
+      Save.save(save);
+      return { ok:true, accepted:true, msg:`${d.firstName} ${d.name} accepte l'offre !`, cost:upfront, chance:evalResult.chance };
+    }
+
+    save.contracts[d.id] = { ...c, refus:(c.refus||0)+1, cooldownUntilSeason:(save.season || 2025) + 1, salary:c.salary || d.salary, years:c.years || 0, status:c.status || 'pilote2', satisfaction: Math.max(15, (c.satisfaction ?? 50) - 6) };
+    const counter = roll <= evalResult.chance + 22 ? evalResult.demand : null;
+    Save.save(save);
+    return { ok:true, accepted:false, counter, chance:evalResult.chance, msg: counter ? `${d.name} refuse mais propose une contre-offre.` : `${d.name} refuse l'offre.` };
   },
 
   // ── LICENCIER UN PILOTE ──────────────────────────────────
@@ -415,6 +599,7 @@ const Career = {
       });
     }
 
+    this.persistDriverStates(save);
     Save.save(save);
     return { ok: true, msg: `${driver.name} libéré (indemnité : ${penalty}M€)` };
   },
