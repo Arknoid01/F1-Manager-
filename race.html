@@ -379,7 +379,10 @@ const CR = {
       lastTime = now;
 
       if (Race.state) {
-        const lapsPerSec = 1 / (getInterval() / 1000);
+        // Vitesse visuelle FIXE et indépendante de la simulation
+        // Les voitures font toujours ~1 tour en 4 secondes visuellement
+        // Peu importe la vitesse de simulation choisie
+        const lapsPerSec = isFast ? 8.0 : 0.25;
 
         Race.state.grid.forEach((car, idx) => {
           if (car.status === 'dnf') return;
