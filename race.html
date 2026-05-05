@@ -127,6 +127,12 @@
     .rpts  { font-family:var(--fh); font-weight:700; font-size:14px; color:var(--gold); text-align:right; }
     .rtime { font-family:var(--fh); font-size:10px; color:var(--muted); text-align:right; }
     .podium { background:rgba(255,215,0,.04); }
+    .player-box { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:10px; margin-bottom:12px; }
+    .player-title { font-family:var(--fh); font-weight:900; color:var(--gold); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+    .player-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:6px 0; border-top:1px solid var(--border); }
+    .player-row:first-of-type{border-top:0}
+    .player-name { min-width:92px; font-family:var(--fh); font-weight:700; }
+    .mini-sel { background:#101018; color:var(--text); border:1px solid var(--border); border-radius:4px; padding:5px; font-family:var(--fh); }
 
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
@@ -203,6 +209,12 @@
 
   </div>
 
+
+  <div class="player-box">
+    <div class="player-title">🎧 Muret des stands — Ordres joueurs</div>
+    <div id="playerControls"><span style="color:var(--muted);font-size:11px">Démarre une course pour donner des consignes à tes pilotes.</span></div>
+  </div>
+
   <!-- BOTTOM ROW : events + stratégie -->
   <div class="bottom-row">
     <div class="events-panel">
@@ -227,7 +239,7 @@
     <div id="resBody"></div>
     <div style="margin-top:14px;display:flex;gap:8px">
       <button class="btn btn-red" onclick="closeRes()">Fermer</button>
-      <button class="btn btn-sec" onclick="resetRace()">Nouvelle course</button>
+      <button class="btn btn-sec" onclick="window.location.href='index.html'">Course suivante</button>
     </div>
   </div>
 </div>
@@ -281,8 +293,7 @@ const CR = {
   fractions: [],
 
   init(circuitId) {
-    const t = TRACKS[circuitId];
-    if (!t) return;
+    const t = TRACKS[circuitId] || { d: 'M70,35 L300,35 Q365,35 368,95 L370,145 Q372,195 330,215 L295,230 Q345,245 345,270 L100,270 Q55,268 42,225 L30,180 Q18,130 35,85 Q48,50 70,35 Z', sl:{x:70,y:35}, w:10 };
 
     const tG = document.getElementById('trackG');
     const cG = document.getElementById('carsG');
@@ -552,6 +563,7 @@ function startRace() {
 
   renderStandings();
   renderStrat();
+  renderPlayerControls();
 
   // Séquence feux de départ → puis simulation
   CR.startLights(() => runSim());
@@ -575,6 +587,7 @@ function runSim() {
     renderStandings();
     addEvents(res.events);
     renderStrat();
+    renderPlayerControls();
 
     if (Race.state.finished) {
       clearInterval(simInterval);
@@ -685,6 +698,35 @@ function addEvents(evs) {
   while (log.children.length > 50) log.removeChild(log.lastChild);
 }
 
+
+function renderPlayerControls() {
+  const box = document.getElementById('playerControls');
+  if (!box || !Race.state) return;
+  const save = Save.load();
+  const playerTeamId = save?.playerTeamId;
+  const cars = Race.state.grid.filter(c => c.driver.teamId === playerTeamId);
+  if (!cars.length) { box.innerHTML = '<span style="color:var(--muted);font-size:11px">Aucune carrière chargée : les ordres ne sont disponibles que pour ton équipe.</span>'; return; }
+  box.innerHTML = '';
+  cars.forEach(car => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="player-name">${car.driver.name}</div>
+      <button class="btn btn-gold" onclick="setMode('${car.driver.id}','attack')">Attaquer</button>
+      <button class="btn btn-sec" onclick="setMode('${car.driver.id}','normal')">Normal</button>
+      <button class="btn btn-sec" onclick="setMode('${car.driver.id}','save')">Économiser</button>
+      <select class="mini-sel" id="pit_${car.driver.id}">
+        <option value="SOFT">Soft</option><option value="MEDIUM" selected>Medium</option><option value="HARD">Hard</option><option value="INTER">Inter</option><option value="WET">Wet</option>
+      </select>
+      <button class="btn btn-red" onclick="forcePit('${car.driver.id}')">Pit ce tour</button>
+      <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">Mode: ${car.orderMode || 'normal'} · Pneu ${F1Data.tyres[car.tyre.compound].name} ${Math.round(car.tyre.condition*100)}%</span>
+    `;
+    box.appendChild(row);
+  });
+}
+function setMode(driverId, mode) { Race.setDriverMode(driverId, mode); addEvents(Race.state.events.slice(-1)); renderPlayerControls(); }
+function forcePit(driverId) { const sel = document.getElementById('pit_'+driverId); Race.forcePitStop(driverId, sel ? sel.value : 'MEDIUM'); addEvents(Race.state.events.slice(-1)); renderPlayerControls(); }
+
 function renderStrat() {
   if (!Race.state) return;
   const body = document.getElementById('stratBody');
@@ -704,58 +746,16 @@ function renderStrat() {
 
 
 function persistRaceResults(results) {
-  if (!Race.state || Race.state._savedToCareer) return;
+  if (!Race.state || Race.state._savedToCareer) return Race.state ? Race.state._careerReward : null;
 
-  const save = Save.load();
-  if (!save || !save.playerTeamId) return;
-
-  const circuit = Race.state.circuit;
-  const playerTeamId = save.playerTeamId;
-  save.driverStandings = save.driverStandings || {};
-  save.teamStandings   = save.teamStandings || {};
-  save.raceResults     = save.raceResults || [];
-
-  results.forEach(r => {
-    save.driverStandings[r.driver.id] = (save.driverStandings[r.driver.id] || 0) + r.points;
-    save.teamStandings[r.team.id]     = (save.teamStandings[r.team.id] || 0) + r.points;
-  });
-
-  const playerResults = results.filter(r => r.team.id === playerTeamId);
-  const bestPosition  = Math.min(...playerResults.map(r => r.position));
-  const teamPoints    = playerResults.reduce((sum, r) => sum + r.points, 0);
-  const reward        = 5 + teamPoints + (bestPosition <= 3 ? 12 : bestPosition <= 10 ? 5 : 0);
-  const tokens        = 1 + (teamPoints > 0 ? 1 : 0) + (bestPosition <= 3 ? 1 : 0);
-
-  save.budget = Math.round(((save.budget || 0) + reward) * 10) / 10;
-  save.tokens = (save.tokens || 0) + tokens;
-  save.race   = ((save.race || 0) + 1) % F1Data.circuits.length;
-
-  save.raceResults.push({
-    season: save.season || 2025,
-    raceIndex: save.raceResults.length,
-    circuitId: circuit.id,
-    circuitName: circuit.name,
-    date: new Date().toISOString(),
-    reward,
-    tokens,
-    results: results.map(r => ({
-      position: r.position,
-      driverId: r.driver.id,
-      teamId: r.team.id,
-      points: r.points,
-      totalTime: r.totalTime || null,
-      gap: r.gap || null,
-      status: r.status,
-      dnfLap: r.dnfLap || null,
-      bestLap: r.bestLap || null,
-      pitStops: r.pitStops || [],
-    })),
-  });
-
-  Save.save(save);
+  const careerReward = Save.recordRaceResults(Race.state, results);
   Race.state._savedToCareer = true;
+  Race.state._careerReward = careerReward;
 
-  Race.state._careerReward = { reward, tokens };
+  if (!careerReward) {
+    console.warn('[Race] Résultat affiché, mais non enregistré dans la carrière. Crée/charge une carrière depuis la page Équipe.');
+  }
+  return careerReward;
 }
 
 function showResults() {

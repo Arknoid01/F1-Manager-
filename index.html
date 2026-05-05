@@ -134,6 +134,10 @@
     .sponsor-progress { display:flex; align-items:center; gap:6px; }
     .sponsor-bar-wrap { width:60px; height:4px; background:#1a1a2a; border-radius:2px; overflow:hidden; }
     .sponsor-bar { height:100%; border-radius:2px; background:var(--green); transition:width .5s; }
+    .staff-list { padding:12px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; }
+    .staff-card { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:10px; }
+    .staff-name { font-family:var(--font-h); font-weight:800; font-size:14px; }
+    .staff-role { font-family:var(--font-h); color:var(--muted); font-size:11px; margin:2px 0 8px; }
 
     /* NEXT RACE */
     .next-race { padding:14px; display:flex; align-items:center; gap:14px; }
@@ -238,6 +242,12 @@
       <div class="dev-section" id="devSection"></div>
     </div>
 
+    <!-- STAFF -->
+    <div class="panel">
+      <div class="ph"><div class="dot"></div> Staff & recrutement</div>
+      <div class="staff-list" id="staffSection"></div>
+    </div>
+
     <!-- FINANCES + SPONSORS -->
     <div class="grid2">
       <div class="panel">
@@ -273,14 +283,16 @@ const CAR_COMPONENTS = [
   { id: 'engine',     name: 'Moteur / ERS',      icon: '⚡', stat: 'engine',  baseCost: 50, tokenCost: 3 },
   { id: 'suspension', name: 'Suspensions',       icon: '🔧', stat: null,      baseCost: 20, tokenCost: 1 },
   { id: 'pitstop',    name: 'Pit Stop Speed',    icon: '⏱️', stat: null,      baseCost: 15, tokenCost: 1 },
+  { id: 'reliability',name: 'Fiabilité',         icon: '🛡️', stat: 'reliability', baseCost: 25, tokenCost: 2 },
 ];
 
 // Sponsors par défaut selon niveau équipe
 const SPONSORS_POOL = [
-  { name: 'TechVision',    value: 25, condition: 'Top 5 Constructeurs',       target: 5,  progress: 0 },
-  { name: 'VelocityFuel',  value: 18, condition: 'Terminer 10 courses',       target: 10, progress: 0 },
-  { name: 'ApexGear',      value: 12, condition: 'Un podium cette saison',    target: 1,  progress: 0 },
-  { name: 'GridStar',      value: 8,  condition: 'Top 10 dans 15 courses',    target: 15, progress: 0 },
+  { name: 'Oracle',        value: 35, condition: 'Marquer 60 points',          type:'points', target: 60, progress: 0, paid:false },
+  { name: 'DHL',           value: 22, condition: 'Terminer 10 courses',        type:'races',  target: 10, progress: 0, paid:false },
+  { name: 'Pirelli',       value: 18, condition: '5 arrivées dans le Top 10',  type:'top10',  target: 5,  progress: 0, paid:false },
+  { name: 'Heineken 0.0',  value: 28, condition: 'Signer un podium',           type:'podium', target: 1,  progress: 0, paid:false },
+  { name: 'AWS',           value: 15, condition: 'Marquer 25 points',          type:'points', target: 25, progress: 0, paid:false },
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -289,11 +301,23 @@ const SPONSORS_POOL = [
 function init() {
   const saved = Save.load();
   if (saved && saved.playerTeamId) {
-    gameState = saved;
+    gameState = migrateSave(saved);
     showDashboard();
   } else {
     showTeamSelection();
   }
+}
+
+
+function migrateSave(save) {
+  save.version = 2;
+  save.sponsors = (save.sponsors && save.sponsors.length && save.sponsors[0].type) ? save.sponsors : JSON.parse(JSON.stringify(SPONSORS_POOL));
+  save.staff = save.staff || [];
+  save.completedSeasons = save.completedSeasons || [];
+  save.finances = save.finances || { income: 0, expenses: 0 };
+  if (!save.carDev.reliability) save.carDev.reliability = { level: F1Data.teams.find(t=>t.id===save.playerTeamId)?.reliability || 75, upgrades: 0 };
+  Save.save(save);
+  return save;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -353,7 +377,7 @@ function confirmTeam() {
   });
 
   gameState = {
-    version: 1,
+    version: 2,
     season: 2025,
     race: 0,
     playerTeamId: selectedTeamId,
@@ -364,6 +388,8 @@ function confirmTeam() {
     teamStandings: {},
     raceResults: [],
     sponsors: JSON.parse(JSON.stringify(SPONSORS_POOL)),
+    staff: [],
+    completedSeasons: [],
     finances: {
       income:   team.budget * 0.4,  // revenus annuels de base
       expenses: drivers.reduce((s, d) => s + d.salary, 0) + 80, // salaires + opérations
@@ -408,6 +434,7 @@ function showDashboard() {
 
   // Sponsors
   renderSponsors();
+  renderStaff();
   updateChampionshipSummary();
 }
 
@@ -565,6 +592,43 @@ function upgradeComponent(compId) {
   renderDev(team || F1Data.teams.find(t => t.id === gameState.playerTeamId));
 }
 
+
+function renderStaff() {
+  const el = document.getElementById('staffSection');
+  if (!el) return;
+  const hired = gameState.staff || [];
+  const pool = F1Data.staffPool || [];
+  el.innerHTML = '';
+  const current = document.createElement('div');
+  current.className = 'staff-card';
+  current.innerHTML = `<div class="staff-name">Staff actuel</div><div class="staff-role">${hired.length ? hired.map(id => pool.find(s=>s.id===id)?.name || id).join(', ') : 'Aucun recrutement premium'}</div><div style="font-size:11px;color:var(--muted)">Chaque staff donne +1 à sa spécialité après recrutement.</div>`;
+  el.appendChild(current);
+  pool.forEach(st => {
+    const owned = hired.includes(st.id);
+    const card = document.createElement('div');
+    card.className = 'staff-card';
+    card.innerHTML = `
+      <div class="staff-name">${st.name}</div>
+      <div class="staff-role">${st.role} · bonus ${st.bonus} · niv. ${st.level}</div>
+      <button class="btn btn-gold" onclick="hireStaff('${st.id}')" ${owned || gameState.budget < st.cost ? 'disabled' : ''}>${owned ? 'Recruté' : `Recruter ${st.cost}M€`}</button>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function hireStaff(id) {
+  const st = (F1Data.staffPool || []).find(x => x.id === id);
+  if (!st || (gameState.staff || []).includes(id)) return;
+  if (gameState.budget < st.cost) { showToast('❌ Budget insuffisant pour ce recrutement.', true); return; }
+  gameState.budget -= st.cost;
+  gameState.staff = gameState.staff || [];
+  gameState.staff.push(id);
+  if (gameState.carDev[st.bonus]) gameState.carDev[st.bonus].level = Math.min(100, gameState.carDev[st.bonus].level + 1);
+  Save.save(gameState);
+  showToast(`✅ ${st.name} rejoint l'équipe.`, false);
+  showDashboard();
+}
+
 function renderFinances() {
   const el = document.getElementById('financeSection');
   const f  = gameState.finances;
@@ -613,7 +677,7 @@ function renderSponsors() {
     const div = document.createElement('div');
     div.className = 'sponsor-item';
     div.innerHTML = `
-      <div class="sponsor-name">${sp.name}</div>
+      <div class="sponsor-name">${sp.name}${sp.paid ? ' ✅' : ''}</div>
       <div class="sponsor-value">+${sp.value}M€</div>
       <div style="flex:2;text-align:right;">
         <div class="sponsor-condition">${sp.condition}</div>
