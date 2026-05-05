@@ -154,6 +154,7 @@
     <select id="circSel" class="sel"></select>
     <button class="btn btn-red" id="btnStart" onclick="startRace()">▶ Démarrer</button>
     <button class="btn btn-sec" id="btnPause" onclick="togglePause()" disabled>⏸ Pause</button>
+    <button class="btn btn-gold" id="btnSlow" onclick="toggleSlow()">🐢</button>
     <button class="btn btn-gold" id="btnFast" onclick="toggleFast()">⚡</button>
     <span class="spd" id="spdLbl">x1</span>
     <button class="btn btn-sec" id="btnSkip" onclick="skipEnd()" disabled>⏩ Fin</button>
@@ -347,50 +348,57 @@ const CR = {
     if (!Race.state || !this.pathEl) return;
 
     const standings = Race.getStandings();
-    const totalLaps = Race.state.totalLaps;
-    const curLap    = Race.state.currentLap;
     const lapTime   = Race.state.circuit.baseLapTime;
 
-    standings.forEach((car, rank) => {
-      // Retrouver l'index original dans la grille
+    standings.forEach((car) => {
       const idx = Race.state.grid.indexOf(car);
       if (idx < 0) return;
       if (car.status === 'dnf') {
-        // Voitures DNF : on les cache
         if (this.carEls[idx]) this.carEls[idx].style.display = 'none';
         return;
       }
 
-      // Fraction = progression totale en tours / totalLaps
-      // Le leader avance de 1 tour complet, les autres un peu moins selon le gap
-      const gapFraction = (car.gap || 0) / lapTime / totalLaps;
-      this.fractions[idx] = ((curLap / totalLaps) - gapFraction) % 1;
-      if (this.fractions[idx] < 0) this.fractions[idx] += 1;
+      // CORRECTION : fraction = position dans le tour ACTUEL (0..1)
+      // Le leader est à 0 (vient de finir le tour = début du suivant)
+      // Les autres sont derrière selon leur gap en secondes / durée d'un tour
+      const gapInTour = ((car.gap || 0) / lapTime) % 1;
+      // On soustrait depuis 0 → une voiture avec +0.5s de retard est à 0.5 tour derrière
+      let frac = (1 - gapInTour) % 1;
+      if (frac < 0) frac += 1;
+      this.fractions[idx] = frac;
     });
   },
 
   // Animation RAF — interpolation fluide des points sur le tracé
   startAnim() {
     if (!this.pathEl) return;
-    let lastTime  = performance.now();
+    let lastTime = performance.now();
 
     const loop = (now) => {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
       if (Race.state && !Race.state.finished) {
-        const lapsPerSec = isFast ? 0.8 : 0.08; // vitesse d'animation visuelle
-        const lapTime    = Race.state.circuit.baseLapTime;
+        // Synchronisation exacte : 1 tour simulé = 1 tour visuel
+        // x1  = 350ms/tour → lapsPerSec = 2.86
+        // x10 = 35ms/tour  → lapsPerSec = 28.6
+        const intervalSec = getInterval() / 1000;
+        const lapsPerSec  = 1 / intervalSec;
 
         Race.state.grid.forEach((car, idx) => {
           if (car.status === 'dnf') return;
-          // Avancer doucement vers la position cible
-          const target = this.fractions[idx] || 0;
-          let   cur    = this._displayFrac[idx] || target;
 
-          // Interpolation (lerp)
+          const target = this.fractions[idx] !== undefined ? this.fractions[idx] : 0;
+          let   cur    = this._displayFrac[idx] !== undefined ? this._displayFrac[idx] : target;
+
+          // Avancer continuellement (les voitures tournent !)
+          cur = (cur + dt * lapsPerSec) % 1;
+
+          // Garder l'écart relatif entre voitures cohérent avec fractions[]
+          // On snap doucement vers la fraction cible sans bloquer le mouvement
           const diff = ((target - cur + 1.5) % 1) - 0.5;
-          cur = (cur + diff * Math.min(dt * lapsPerSec * 4, 1) + 1) % 1;
+          cur = (cur + diff * 0.02 + 1) % 1;
+
           this._displayFrac[idx] = cur;
 
           const pt = this.pathEl.getPointAtLength(cur * this.len);
@@ -419,7 +427,17 @@ const CR = {
 let simInterval = null;
 let isPaused    = false;
 let isFast      = false;
+let isSlow      = false;
 let started     = false;
+
+// Intervalles en ms par tour simulé
+const SPEEDS = { slow: 800, normal: 400, fast: 35 };
+
+function getInterval() {
+  if (isSlow) return SPEEDS.slow;
+  if (isFast) return SPEEDS.fast;
+  return SPEEDS.normal;
+}
 
 function initSel() {
   const sel = document.getElementById('circSel');
@@ -463,10 +481,8 @@ function runSim() {
     const res = Race.simulateLap();
     if (!res) return;
 
-    // Avancer les voitures sur le circuit
     CR.advanceLap();
 
-    // Mise à jour UI
     const lap = Race.state.currentLap;
     document.getElementById('tLap').innerHTML     = `Tour <b>${lap}</b>/<span id="tTotal">${Race.state.totalLaps}</span>`;
     document.getElementById('svgLap').textContent = lap;
@@ -481,7 +497,7 @@ function runSim() {
       clearInterval(simInterval);
       setTimeout(showResults, 1000);
     }
-  }, isFast ? 35 : 350);
+  }, getInterval());
 }
 
 function togglePause() {
@@ -489,9 +505,20 @@ function togglePause() {
   document.getElementById('btnPause').textContent = isPaused ? '▶ Reprendre' : '⏸ Pause';
 }
 
+function toggleSlow() {
+  isSlow = !isSlow;
+  if (isSlow) isFast = false;
+  document.getElementById('btnSlow').classList.toggle('on', isSlow);
+  document.getElementById('btnFast').classList.remove('on');
+  document.getElementById('spdLbl').textContent = isSlow ? 'x0.5' : 'x1';
+  if (started) runSim();
+}
+
 function toggleFast() {
   isFast = !isFast;
+  if (isFast) isSlow = false;
   document.getElementById('btnFast').classList.toggle('on', isFast);
+  document.getElementById('btnSlow').classList.remove('on');
   document.getElementById('spdLbl').textContent = isFast ? 'x10' : 'x1';
   if (started) runSim();
 }
