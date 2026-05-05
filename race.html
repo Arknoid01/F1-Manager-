@@ -519,13 +519,17 @@ function getInterval() {
 
 function initSel() {
   const sel = document.getElementById('circSel');
+  const save = Save.load();
+  const nextCircuitId = save && Number.isFinite(save.race) ? F1Data.circuits[save.race % F1Data.circuits.length].id : null;
   F1Data.circuits.forEach(c => {
     const o = document.createElement('option');
     o.value = c.id;
     o.textContent = `${c.name} (${c.laps} t.)`;
     sel.appendChild(o);
   });
+  if (nextCircuitId) sel.value = nextCircuitId;
 }
+
 
 function startRace() {
   const cid = document.getElementById('circSel').value;
@@ -698,10 +702,68 @@ function renderStrat() {
   });
 }
 
+
+function persistRaceResults(results) {
+  if (!Race.state || Race.state._savedToCareer) return;
+
+  const save = Save.load();
+  if (!save || !save.playerTeamId) return;
+
+  const circuit = Race.state.circuit;
+  const playerTeamId = save.playerTeamId;
+  save.driverStandings = save.driverStandings || {};
+  save.teamStandings   = save.teamStandings || {};
+  save.raceResults     = save.raceResults || [];
+
+  results.forEach(r => {
+    save.driverStandings[r.driver.id] = (save.driverStandings[r.driver.id] || 0) + r.points;
+    save.teamStandings[r.team.id]     = (save.teamStandings[r.team.id] || 0) + r.points;
+  });
+
+  const playerResults = results.filter(r => r.team.id === playerTeamId);
+  const bestPosition  = Math.min(...playerResults.map(r => r.position));
+  const teamPoints    = playerResults.reduce((sum, r) => sum + r.points, 0);
+  const reward        = 5 + teamPoints + (bestPosition <= 3 ? 12 : bestPosition <= 10 ? 5 : 0);
+  const tokens        = 1 + (teamPoints > 0 ? 1 : 0) + (bestPosition <= 3 ? 1 : 0);
+
+  save.budget = Math.round(((save.budget || 0) + reward) * 10) / 10;
+  save.tokens = (save.tokens || 0) + tokens;
+  save.race   = ((save.race || 0) + 1) % F1Data.circuits.length;
+
+  save.raceResults.push({
+    season: save.season || 2025,
+    raceIndex: save.raceResults.length,
+    circuitId: circuit.id,
+    circuitName: circuit.name,
+    date: new Date().toISOString(),
+    reward,
+    tokens,
+    results: results.map(r => ({
+      position: r.position,
+      driverId: r.driver.id,
+      teamId: r.team.id,
+      points: r.points,
+      totalTime: r.totalTime || null,
+      gap: r.gap || null,
+      status: r.status,
+      dnfLap: r.dnfLap || null,
+      bestLap: r.bestLap || null,
+      pitStops: r.pitStops || [],
+    })),
+  });
+
+  Save.save(save);
+  Race.state._savedToCareer = true;
+
+  Race.state._careerReward = { reward, tokens };
+}
+
 function showResults() {
   CR.stopAnim();
   const results = Race.assignPoints();
-  document.getElementById('resSub').textContent = `Grand Prix de ${Race.state.circuit.name}`;
+  persistRaceResults(results);
+  const careerReward = Race.state._careerReward;
+  document.getElementById('resSub').textContent = `Grand Prix de ${Race.state.circuit.name}` + (careerReward ? ` · Gains équipe : +${careerReward.reward}M € · +${careerReward.tokens} token${careerReward.tokens > 1 ? 's' : ''}` : '');
   const body = document.getElementById('resBody');
   body.innerHTML = '';
   results.forEach((r,i) => {

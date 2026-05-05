@@ -382,7 +382,7 @@ function showDashboard() {
   document.getElementById('teamSelectScreen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'flex';
 
-  const team    = F1Data.teams.find(t => t.id === gameState.playerTeamId);
+  const team    = getEffectivePlayerTeam();
   const drivers = F1Data.drivers.filter(d => d.teamId === gameState.playerTeamId);
 
   // Topbar
@@ -408,6 +408,41 @@ function showDashboard() {
 
   // Sponsors
   renderSponsors();
+  updateChampionshipSummary();
+}
+
+
+function getEffectivePlayerTeam() {
+  const team = { ...F1Data.teams.find(t => t.id === gameState.playerTeamId) };
+  if (!team || !gameState.carDev) return team;
+  ['aero', 'chassis', 'engine', 'reliability'].forEach(stat => {
+    if (gameState.carDev[stat] && Number.isFinite(gameState.carDev[stat].level)) {
+      team[stat] = gameState.carDev[stat].level;
+    }
+  });
+  team.performance = Math.round((team.aero + team.chassis + team.engine) / 3);
+  return team;
+}
+
+function updateChampionshipSummary() {
+  const drivers = F1Data.drivers.filter(d => d.teamId === gameState.playerTeamId);
+  const dStand = gameState.driverStandings || {};
+  const tStand = gameState.teamStandings || {};
+
+  const driverRanking = [...F1Data.drivers]
+    .sort((a,b) => (dStand[b.id] || 0) - (dStand[a.id] || 0));
+  const teamRanking = [...F1Data.teams]
+    .sort((a,b) => (tStand[b.id] || 0) - (tStand[a.id] || 0));
+
+  const leadDriver = drivers.slice().sort((a,b) => (dStand[b.id] || 0) - (dStand[a.id] || 0))[0];
+  const driverPos = leadDriver ? driverRanking.findIndex(d => d.id === leadDriver.id) + 1 : 0;
+  const teamPos = teamRanking.findIndex(t => t.id === gameState.playerTeamId) + 1;
+  const points = drivers.reduce((sum,d) => sum + (dStand[d.id] || 0), 0);
+
+  document.getElementById('champDriverPos').textContent = driverPos ? `P${driverPos}` : '—';
+  document.getElementById('champTeamPos').textContent   = teamPos ? `P${teamPos}` : '—';
+  document.getElementById('champPoints').textContent    = points;
+  document.getElementById('nextRacePos').textContent    = `${gameState.raceResults?.length || 0} course(s) disputée(s) · ${F1Data.circuits.length} GP au calendrier`;
 }
 
 function renderTeamOverview(team) {
