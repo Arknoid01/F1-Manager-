@@ -235,10 +235,9 @@ const Career = {
 
     if (!save) return report;
 
-    // Initialiser le stockage des pilotes générés dans la save
     save.generatedDrivers = save.generatedDrivers || [];
 
-    // 1. Vieillir tous les pilotes (y compris ceux en mémoire)
+    // 1. Vieillir tous les pilotes
     report.retired = this.ageAllDrivers(save) || [];
 
     // 2. Libérer les mauvais performers (IA)
@@ -247,13 +246,9 @@ const Career = {
     // 3. Générer de nouveaux talents
     const newDrivers = this.generateNewTalents(save);
     report.newTalents = newDrivers;
+    newDrivers.forEach(d => save.generatedDrivers.push(d));
 
-    // 4. Persister les nouveaux pilotes générés dans la save
-    newDrivers.forEach(d => {
-      save.generatedDrivers.push(d);
-    });
-
-    // 5. Persister l'état de TOUS les pilotes dans la save
+    // 4. Persister l'état de tous les pilotes
     save.driverStates = {};
     F1Data.drivers.forEach(d => {
       save.driverStates[d.id] = {
@@ -272,26 +267,47 @@ const Career = {
       };
     });
 
-    // 6. Remplir les sièges vides (IA)
+    // 5. Remplir les sièges vides (IA)
     this.fillEmptySeats(save);
 
-    // 7. Incrémenter la saison
+    // 6. Incrémenter la saison
     save.season = (save.season || 2025) + 1;
     save.race   = 0;
 
-    // 8. Tokens bonus
+    // 7. Tokens bonus
     save.tokens = (save.tokens || 0) + 5;
 
-    // 9. Revenus annuels
+    // 8. Revenus annuels
     const team = F1Data.teams.find(t => t.id === save.playerTeamId);
     if (team) {
       const incomeBonus = Math.round(team.performance * 0.8);
       save.budget = Math.round(((save.budget || 0) + incomeBonus) * 10) / 10;
     }
 
-    // 10. Reset standings pour nouvelle saison
+    // 9. RESET standings pour nouvelle saison
     save.driverStandings = {};
     save.teamStandings   = {};
+    save.raceResults     = save.raceResults || [];
+
+    // 10. RESET carDev — revenir aux stats de base de l'équipe
+    // On garde les upgrades achetés MAIS on recalcule depuis les stats actuelles
+    // pour éviter les stats bloquées à 100
+    if (save.carDev && team) {
+      const CAR_COMPONENTS = ['aero','chassis','engine','reliability','suspension','pitstop'];
+      CAR_COMPONENTS.forEach(compId => {
+        if (!save.carDev[compId]) return;
+        // Réinitialiser le niveau depuis les vraies stats de l'équipe
+        // (pas depuis le carDev accumulé)
+        const baseStat = team[compId] !== undefined ? team[compId] : 70;
+        save.carDev[compId] = {
+          level:    baseStat,
+          upgrades: 0, // reset les upgrades pour repartir à coût de base
+        };
+      });
+    }
+
+    // 11. Reset le flag bannière pour qu'elle s'affiche à nouveau
+    delete save._bannerDismissed;
 
     Save.save(save);
     return report;
