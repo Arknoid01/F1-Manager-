@@ -344,32 +344,37 @@ const CR = {
     return el;
   },
 
-  // Met à jour les fractions cibles après chaque tour simulé
+  // Appelé à chaque tour simulé — met à jour les vitesses individuelles
   advanceLap() {
     if (!Race.state || !this.pathEl) return;
 
     const standings = Race.getStandings();
-    const lapTime   = Race.state.circuit.baseLapTime;
 
-    // Le leader est à fraction 0 (vient de franchir la ligne)
-    // Chaque voiture est derrière selon son gap en fraction de tour
     standings.forEach((car) => {
       const idx = Race.state.grid.indexOf(car);
       if (idx < 0) return;
       if (car.status === 'dnf') {
         if (this.carEls[idx]) this.carEls[idx].style.display = 'none';
+        this.carSpeed[idx] = 0;
         return;
       }
-      // gap en fraction de tour (ex: +5s sur lap de 93s = 0.054 de tour derrière)
-      const gapFrac = ((car.gap || 0) / lapTime) % 1;
-      // fraction = 0 pour le leader, négatif (= derrière) pour les autres
-      // On stocke comme valeur absolue 0..1 sur le tracé
-      // Le leader est à 0.0, P2 à (1 - gapFrac), etc.
-      this.targetFrac[idx] = (1.0 - gapFrac + 1) % 1;
+      // Vitesse de chaque voiture en tours/seconde VISUEL
+      // Basée sur le dernier temps au tour réel
+      // Le temps au tour réel est entre ~82s (Monza) et ~106s (Spa)
+      // On normalise : vitesse de base = 1 tour / getInterval(ms) en visuel
+      const lastLap = car.lapTimes.length > 0
+        ? car.lapTimes[car.lapTimes.length - 1]
+        : Race.state.circuit.baseLapTime;
+
+      // La vitesse visuelle est proportionnelle au temps au tour
+      // Voiture rapide (lap court) = tourne plus vite que voiture lente
+      const baseSpeed = 1 / (getInterval() / 1000);
+      const relSpeed  = Race.state.circuit.baseLapTime / lastLap;
+      this.carSpeed[idx] = baseSpeed * relSpeed;
     });
   },
 
-  // Animation RAF — tourne TOUJOURS en continu, indépendamment de la simulation
+  // Animation RAF — vitesse constante et fluide pour chaque voiture
   startAnim() {
     if (!this.pathEl) return;
     let lastTime = performance.now();
@@ -378,30 +383,18 @@ const CR = {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
-      if (Race.state) {
-        // Vitesse visuelle FIXE et indépendante de la simulation
-        // Les voitures font toujours ~1 tour en 4 secondes visuellement
-        // Peu importe la vitesse de simulation choisie
-        const lapsPerSec = isFast ? 8.0 : 0.25;
-
+      if (Race.state && !isPaused) {
         Race.state.grid.forEach((car, idx) => {
           if (car.status === 'dnf') return;
 
-          // Position actuelle affichée
+          const speed = this.carSpeed[idx] || (1 / (getInterval() / 1000));
+
+          // Avancer en continu à vitesse propre — JAMAIS de saut
           let cur = this._displayFrac[idx] !== undefined
             ? this._displayFrac[idx]
-            : (this.targetFrac[idx] || 0);
+            : this.fractions[idx] || 0;
 
-          // Avancer en continu
-          cur = (cur + dt * lapsPerSec) % 1;
-
-          // Correction douce vers la cible (snap progressif)
-          // Cela permet aux dépassements d'être visibles progressivement
-          const target = this.targetFrac[idx] !== undefined ? this.targetFrac[idx] : cur;
-          const diff   = ((target - cur + 1.5) % 1) - 0.5;
-          // Snap à 5% par seconde → dépassement visible sur ~1-2 tours
-          cur = (cur + diff * dt * 0.4 + 1) % 1;
-
+          cur = (cur + dt * speed) % 1;
           this._displayFrac[idx] = cur;
 
           const pt = this.pathEl.getPointAtLength(cur * this.len);
@@ -410,6 +403,10 @@ const CR = {
             this.carEls[idx].style.display = '';
           }
         });
+
+        // Compteur de tour synchronisé sur le leader visuel
+        // Quand le leader passe la fraction 0 (ligne de départ), on incrémente
+        this._syncLapCounter();
       }
 
       this.raf = requestAnimationFrame(loop);
@@ -417,7 +414,34 @@ const CR = {
 
     this._displayFrac = [...this.fractions];
     this.targetFrac   = [...this.fractions];
+    this.carSpeed     = new Array(Race.state.grid.length).fill(1 / (getInterval() / 1000));
+    this._prevFrac    = [...this.fractions];
+    this._visualLap   = 1;
     this.raf = requestAnimationFrame(loop);
+  },
+
+  // Détecte le passage de la ligne de départ du leader
+  _syncLapCounter() {
+    if (!Race.state) return;
+    // Trouver le leader actuel (position 1)
+    const leader = Race.state.grid.find(c => c.position === 1 && c.status === 'racing');
+    if (!leader) return;
+    const idx = Race.state.grid.indexOf(leader);
+    if (idx < 0) return;
+
+    const cur  = this._displayFrac[idx] || 0;
+    const prev = this._prevFrac[idx]    || 0;
+
+    // Passage de la ligne : la fraction passe de ~0.98+ à ~0.02 (wraparound)
+    if (prev > 0.85 && cur < 0.15) {
+      this._visualLap = Math.min((this._visualLap || 1) + 1, Race.state.totalLaps);
+      // Mettre à jour le compteur affiché
+      document.getElementById('svgLap').textContent = this._visualLap;
+      document.getElementById('tLap').innerHTML =
+        `Tour <b>${this._visualLap}</b>/<span>${Race.state.totalLaps}</span>`;
+    }
+
+    this._prevFrac[idx] = cur;
   },
 
   stopAnim() {
@@ -487,10 +511,9 @@ function runSim() {
 
     CR.advanceLap();
 
-    const lap = Race.state.currentLap;
-    document.getElementById('tLap').innerHTML     = `Tour <b>${lap}</b>/<span id="tTotal">${Race.state.totalLaps}</span>`;
-    document.getElementById('svgLap').textContent = lap;
-    document.getElementById('progFill').style.width = (lap / Race.state.totalLaps * 100) + '%';
+    // Progress bar uniquement — compteur de tour géré par _syncLapCounter
+    document.getElementById('progFill').style.width =
+      (Race.state.currentLap / Race.state.totalLaps * 100) + '%';
 
     updateWeather();
     renderStandings();
