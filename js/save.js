@@ -62,11 +62,62 @@ const Save = {
     try {
       const raw = localStorage.getItem(this.KEY);
       if (!raw) return null;
-      return JSON.parse(raw);
+      const save = JSON.parse(raw);
+      this.applyDriverStates(save);
+      return save;
     } catch (e) {
       console.error('[Save] Erreur chargement:', e);
       return null;
     }
+  },
+
+  // ── SYNCHRO PILOTES / MARCHÉ ──────────────────────────────
+  // Toutes les pages appellent Save.load(). Cette fonction restaure donc
+  // les transferts sauvegardés avant que Race, Standings ou Index lisent
+  // F1Data.drivers. Sans ça, ces pages reprenaient les teamId d'origine.
+  applyDriverStates(save) {
+    if (!save || typeof F1Data === 'undefined' || !Array.isArray(F1Data.drivers)) return;
+
+    if (Array.isArray(save.generatedDrivers)) {
+      save.generatedDrivers.forEach(gd => {
+        if (gd && gd.id && !F1Data.drivers.find(d => d.id === gd.id)) {
+          F1Data.drivers.push({ ...gd });
+        }
+      });
+    }
+
+    if (!save.driverStates) return;
+    F1Data.drivers.forEach(d => {
+      const state = save.driverStates[d.id];
+      if (!state) return;
+      d.age = state.age ?? d.age;
+      d.pace = state.pace ?? d.pace;
+      d.consistency = state.consistency ?? d.consistency;
+      d.wetSkill = state.wetSkill ?? d.wetSkill;
+      d.overtaking = state.overtaking ?? d.overtaking;
+      d.defending = state.defending ?? d.defending;
+      d.salary = state.salary ?? d.salary;
+      d.trait = state.trait ?? d.trait;
+      d.potential = state.potential ?? d.potential;
+      d.retired = state.retired ?? false;
+      d.personality = state.personality ?? d.personality;
+      d.contractYears = state.contractYears ?? d.contractYears ?? 0;
+      d.seasons = state.seasons ?? d.seasons ?? 0;
+      if (Object.prototype.hasOwnProperty.call(state, 'teamId')) d.teamId = state.teamId;
+    });
+  },
+
+  persistDriverStates(save) {
+    if (!save || typeof F1Data === 'undefined') return;
+    save.driverStates = save.driverStates || {};
+    F1Data.drivers.forEach(d => {
+      save.driverStates[d.id] = {
+        age: d.age, pace: d.pace, consistency: d.consistency, wetSkill: d.wetSkill,
+        overtaking: d.overtaking, defending: d.defending, salary: d.salary,
+        trait: d.trait, potential: d.potential, retired: d.retired, teamId: d.teamId,
+        seasons: d.seasons || 0, contractYears: d.contractYears || 0, personality: d.personality,
+      };
+    });
   },
 
   // ── RESET ─────────────────────────────────────────────────
