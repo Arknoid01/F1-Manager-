@@ -1,90 +1,145 @@
 // ============================================================
-//  F1 Manager — engine.js  (v3 — écarts réalistes)
+//  F1 Manager — engine.js  (v5 — personnalités réalistes)
 //
-//  CALIBRATION CIBLE :
-//  - Écart top team vs backmarker : ~0.8s/tour MAX
-//  - Écart pilote 1 vs pilote 20  : ~0.3s/tour MAX
-//  - Gap final P1 vs P20 (sans DNF, même strat) : ~30-60s
-//  - Gap P1 vs P2 (même équipe) : ~5-15s
+//  TRAITS ACTIFS EN COURSE :
+//  aggressive   → pace +0.15s, dégradation ×1.20, crash ×1.4
+//  consistent   → dégradation ×0.88, variabilité réduite
+//  qualifier    → pace +0.20s sur tour rapide, dégradation ×1.10
+//  rain_master  → wetSkill +5 effectif, bonus ×1.5 sous pluie
+//  defender     → défense +7, perd 0.15s en attaque
+//  overtaker    → overtaking +7, bonus DRS ×1.4
+//  prodigy      → progresse +0.05s/tour de confiance
+//  technical    → gère mieux le cliff pneu, feedback setup
 // ============================================================
 
 const Engine = {
 
-  // ── CALCUL TEMPS AU TOUR ──────────────────────────────────
-  calcLapTime(driver, team, circuit, tyreState, fuelLoad, weather = 'dry', lap = 1, orderMode = 'normal') {
-    const tyre = F1Data.tyres[tyreState.compound];
+  // ── TRAIT HELPERS ─────────────────────────────────────────
+  getTrait(driver) {
+    return F1Data.traits?.[driver.trait] || { label:'Standard', icon:'🏎️',
+      paceBonus:0, tyreMultiplier:1.0, overtakingBonus:0, wetPenalty:0 };
+  },
 
-    // 1. Base circuit — tout le monde part de là
+  // ── CALCUL TEMPS AU TOUR ──────────────────────────────────
+  calcLapTime(driver, team, circuit, tyreState, fuelLoad, weather='dry', lap=1, orderMode='normal') {
+    const tyre  = F1Data.tyres[tyreState.compound];
+    const trait = this.getTrait(driver);
+
     let lapTime = circuit.baseLapTime;
 
-    // 2. Performance équipe
-    // Red Bull (perf 95) → -0.50s | Midfield (75) → +0.30s | Backmarker (60) → +0.80s
-    // Formule : (85 - perf) * 0.030  →  max écart = (85-60)*0.030 = 0.75s
-    const teamFactor = (85 - team.performance) * 0.030;
-    lapTime += teamFactor;
+    // ── 1. Performance équipe ─────────────────────────────
+    // Écart max top/backmarker : 0.75s/tour
+    lapTime += (85 - team.performance) * 0.030;
 
-    // 3. Skill pilote
-    // Verstappen (97) → -0.18s | Sargeant (72) → +0.27s
-    // Formule : (87 - pace) * 0.012  →  max écart = 0.45s total (partagé équipe+pilote)
-    const driverFactor = (87 - driver.pace) * 0.012;
-    lapTime += driverFactor;
+    // ── 2. Skill pilote ───────────────────────────────────
+    lapTime += (87 - driver.pace) * 0.012;
 
-    // 4. Pneus — grip de base (soft vs hard = ~0.3s)
+    // ── 3. Trait pilote — impact pace ─────────────────────
+    lapTime -= trait.paceBonus * 0.10;
+
+    // Qualifier : boost supplémentaire sur les softs
+    if (driver.trait === 'qualifier' && tyreState.compound === 'SOFT') {
+      lapTime -= 0.08;
+    }
+    // Defender : légèrement moins rapide en mode offensif
+    if (driver.trait === 'defender' && orderMode === 'attack') {
+      lapTime += 0.12;
+    }
+    // Prodigy : monte en confiance au fil des tours (+0.004s tous les 5 tours)
+    if (driver.trait === 'prodigy' && lap > 1) {
+      lapTime -= Math.min(0.15, Math.floor(lap / 5) * 0.004);
+    }
+    // Technical : tire mieux parti du setup (bonus aero équipe)
+    if (driver.trait === 'technical') {
+      const aeroBonus = Math.max(0, (team.aero - 75)) * 0.002;
+      lapTime -= aeroBonus;
+    }
+
+    // ── 4. Pneus — grip de base ───────────────────────────
     lapTime += (1 - tyre.grip) * 1.5;
 
-    // 5. Dégradation pneus (progressive)
+    // ── 5. Dégradation pneus ─────────────────────────────
     const degradation = (1 - tyreState.condition);
-    lapTime += degradation * 2.8 * circuit.tyreDegradation;
+    let degradFactor  = circuit.tyreDegradation;
 
-    // 6. Phase de chauffe
+    // Technical gère mieux le cliff (détecte les limites)
+    if (driver.trait === 'technical') degradFactor *= 0.92;
+
+    lapTime += degradation * 2.8 * degradFactor;
+
+    // ── 6. Phase de chauffe ───────────────────────────────
     if (tyreState.age < tyre.warmupLaps) {
-      lapTime += (tyre.warmupLaps - tyreState.age) * 0.25;
+      const warmupPenalty = (tyre.warmupLaps - tyreState.age) * 0.25;
+      // Consistent réchauffe plus vite
+      lapTime += driver.trait === 'consistent' ? warmupPenalty * 0.75 : warmupPenalty;
     }
 
-    // 7. Cliff pneu au-delà de 80% dégradation
+    // ── 7. Cliff pneu ─────────────────────────────────────
     if (degradation > 0.80) {
-      lapTime += (degradation - 0.80) * 10;
+      let cliffFactor = 10;
+      if (driver.trait === 'technical')  cliffFactor = 7;   // gère mieux
+      if (driver.trait === 'aggressive') cliffFactor = 13;  // pire
+      lapTime += (degradation - 0.80) * cliffFactor;
     }
 
-    // 8. Fuel load — charge max ~110kg, fin de course ~0kg
-    // 0.028s/kg → début de course +3.1s, fin ~0s (réaliste F1)
+    // ── 8. Fuel load ──────────────────────────────────────
     lapTime += fuelLoad * 0.028;
 
-    // 9. Météo
+    // ── 9. Météo + trait pluie ────────────────────────────
     if (weather === 'light_rain') {
-      const wetBonus = (driver.wetSkill - 82) * 0.020;
-      lapTime += 3.0 - wetBonus;
+      let wetSkill = driver.wetSkill;
+      if (driver.trait === 'rain_master') wetSkill = Math.min(99, wetSkill + 5);
+      const wetBonus = (wetSkill - 82) * 0.020;
+      lapTime += (driver.trait === 'rain_master' ? 2.0 : 3.0) - wetBonus;
       if (!['INTER', 'WET'].includes(tyreState.compound)) lapTime += 6.0;
     } else if (weather === 'heavy_rain') {
-      const wetBonus = (driver.wetSkill - 82) * 0.040;
-      lapTime += 9.0 - wetBonus;
+      let wetSkill = driver.wetSkill;
+      if (driver.trait === 'rain_master') wetSkill = Math.min(99, wetSkill + 8);
+      const wetBonus = (wetSkill - 82) * 0.040;
+      lapTime += (driver.trait === 'rain_master' ? 5.5 : 9.0) - wetBonus;
       if (tyreState.compound !== 'WET') lapTime += 16.0;
     }
 
-    // 10. Ordres pilote joueur : attaque plus rapide mais use davantage les pneus
+    // ── 10. Ordres pilote ─────────────────────────────────
     if (orderMode === 'attack') lapTime -= 0.28;
     if (orderMode === 'save')   lapTime += 0.22;
 
-    // 11. Variabilité très faible (± 0.10s — F1 est extrêmement consistent)
-    lapTime += (Math.random() - 0.5) * 0.20;
+    // ── 11. Consistance — variabilité ─────────────────────
+    // Consistent = très peu de variation, aggressive = plus variable
+    let variability = 0.20;
+    if (driver.trait === 'consistent') variability = 0.10;
+    if (driver.trait === 'aggressive') variability = 0.32;
+    lapTime += (Math.random() - 0.5) * variability;
 
     return Math.max(lapTime, circuit.baseLapTime * 0.990);
   },
 
   // ── DÉGRADATION PNEUS ─────────────────────────────────────
-  degradeTyre(tyreState, circuit, driver, weather = 'dry', orderMode = 'normal') {
-    const tyre = F1Data.tyres[tyreState.compound];
+  degradeTyre(tyreState, circuit, driver, weather='dry', orderMode='normal') {
+    const tyre  = F1Data.tyres[tyreState.compound];
+    const trait = this.getTrait(driver);
+
     let rate = tyre.degradationRate * circuit.tyreDegradation;
 
+    // Trait pilote affecte la dégradation
+    rate *= trait.tyreMultiplier;
+
+    // Agressivité naturelle (overtaking élevé = plus de dégradation)
     const aggressionFactor = 1 + (driver.overtaking - 80) * 0.003;
     rate *= aggressionFactor;
 
+    // Ordres pilote
     if (orderMode === 'attack') rate *= 1.28;
     if (orderMode === 'save')   rate *= 0.72;
 
+    // Météo
     if (weather === 'light_rain') rate *= 0.70;
     if (weather === 'heavy_rain') rate *= 0.50;
 
+    // Consistent gère mieux sur le long terme
+    if (driver.trait === 'consistent' && tyreState.age > 15) rate *= 0.92;
+
+    // Variabilité
     rate *= (0.93 + Math.random() * 0.14);
 
     tyreState.condition = Math.max(0, tyreState.condition - rate);
@@ -100,7 +155,7 @@ const Engine = {
   },
 
   // ── DÉCISION PIT STOP ─────────────────────────────────────
-  shouldPit(tyreState, lap, totalLaps, strategy, someoneJustPitted = false, weather = 'dry', safetyCarActive = false) {
+  shouldPit(tyreState, lap, totalLaps, strategy, someoneJustPitted=false, weather='dry', safetyCarActive=false) {
     if (tyreState.condition < 0.12) return { pit: true, reason: 'tyre_dead' };
 
     if ((weather === 'light_rain' || weather === 'heavy_rain') &&
@@ -116,7 +171,11 @@ const Engine = {
     if (strategy && strategy.pitLaps) {
       for (const pitLap of strategy.pitLaps) {
         if (lap === pitLap) return { pit: true, reason: 'planned' };
-        if (safetyCarActive && Math.abs(lap - pitLap) <= 3) return { pit: true, reason: 'safety_car_opportunity' };
+        // Opportunité safety car : pitter si on est proche du pit planifié
+        if (safetyCarActive && Math.abs(lap - pitLap) <= 3) {
+          return { pit: true, reason: 'safety_car_opportunity' };
+        }
+        // Undercut
         if (someoneJustPitted && lap >= pitLap - 2 && lap < pitLap) {
           return { pit: true, reason: 'undercut' };
         }
@@ -126,8 +185,75 @@ const Engine = {
     return { pit: false };
   },
 
+  // ── INCIDENTS — TRAITS AFFECTENT LA PROBABILITÉ ───────────
+  rollIncidents(driver, team, lap, totalLaps) {
+    const events = [];
+    const trait  = this.getTrait(driver);
+
+    // Abandon mécanique
+    const reliabilityFactor = (100 - team.reliability) / 100;
+    if (Math.random() < reliabilityFactor * 0.0015) {
+      events.push({ type: 'dnf', reason: 'mechanical' });
+    }
+
+    // Crash — aggressive plus susceptible, defender moins
+    let crashBase = lap <= 2 ? 0.0020 : 0.00035;
+    if (driver.trait === 'aggressive') crashBase *= 1.40;
+    if (driver.trait === 'defender')   crashBase *= 0.60;
+    if (driver.trait === 'consistent') crashBase *= 0.70;
+    if (Math.random() < crashBase) {
+      events.push({ type: 'dnf', reason: 'crash' });
+    }
+
+    // Pénalité — aggressive plus souvent pénalisé
+    let penaltyBase = 0.0015;
+    if (driver.trait === 'aggressive') penaltyBase *= 1.50;
+    if (driver.trait === 'overtaker')  penaltyBase *= 1.20;
+    if (Math.random() < penaltyBase) {
+      events.push({ type: 'penalty', seconds: Math.random() > 0.5 ? 5 : 10 });
+    }
+
+    return events;
+  },
+
+  // ── DÉPASSEMENT — TRAITS MAJEURS ─────────────────────────
+  attemptOvertake(attacker, defender, circuit) {
+    const speedDiff = defender.currentPace - attacker.currentPace;
+    if (speedDiff <= 0) return false;
+
+    const baseChance = speedDiff * 0.15;
+    const circuitFactor = 1 - circuit.overtakingDifficulty;
+
+    let attackerOv = attacker.driver.overtaking;
+    let defenderDf = defender.driver.defending;
+
+    // Traits : overtaker boost, defender résiste
+    if (attacker.driver.trait === 'overtaker')  attackerOv = Math.min(99, attackerOv + 7);
+    if (attacker.driver.trait === 'aggressive') attackerOv = Math.min(99, attackerOv + 3);
+    if (defender.driver.trait === 'defender')   defenderDf = Math.min(99, defenderDf + 7);
+    if (defender.driver.trait === 'consistent') defenderDf = Math.min(99, defenderDf + 2);
+
+    const attackerSkill = attackerOv / 100;
+    const defenderSkill = defenderDf / 100;
+
+    const chance = baseChance * circuitFactor * (0.5 + attackerSkill * 0.5) * (1 - defenderSkill * 0.3);
+    return Math.random() < Math.max(0, Math.min(chance, 0.80));
+  },
+
+  // ── SAFETY CAR ────────────────────────────────────────────
+  rollSafetyCar(lap, totalLaps, incidents) {
+    const hasCrash = incidents.some(i => i.type === 'dnf' && i.reason === 'crash');
+    if (hasCrash && Math.random() > 0.2) {
+      return { active: true, laps: 4 + Math.floor(Math.random() * 3) };
+    }
+    if (Math.random() < 0.007) {
+      return { active: true, laps: 3 + Math.floor(Math.random() * 2) };
+    }
+    return { active: false };
+  },
+
   // ── GÉNÉRATION STRATÉGIE ──────────────────────────────────
-  generateStrategy(circuit, teamPerformance, weather = 'dry') {
+  generateStrategy(circuit, teamPerformance, weather='dry', driverTrait=null) {
     if (weather === 'heavy_rain') return { compounds: ['WET'], pitLaps: [] };
 
     const L = circuit.laps;
@@ -136,7 +262,14 @@ const Engine = {
     let stops = 1;
     if (D > 1.2 || L > 65) stops = 2;
     if (D > 1.45) stops = 3;
+
+    // Top équipes peuvent faire moins d'arrêts
     if (teamPerformance > 87 && stops === 2 && Math.random() > 0.7) stops = 1;
+
+    // Consistent préfère les stratégies longues (Hard)
+    // Aggressive préfère les softs et plus d'arrêts
+    if (driverTrait === 'consistent' && stops === 2 && Math.random() > 0.5) stops = 1;
+    if (driverTrait === 'aggressive' && stops === 1 && Math.random() > 0.6) stops = 2;
 
     const strategies = {
       1: [
@@ -159,18 +292,24 @@ const Engine = {
     return pool[Math.floor(Math.random() * pool.length)];
   },
 
-
-  // ── STRATÉGIE PERSONNALISÉE ───────────────────────────────
-  normalizeStrategy(raw, circuit, weather = 'dry') {
+  // ── NORMALISATION STRATÉGIE PERSO ─────────────────────────
+  normalizeStrategy(raw, circuit, weather='dry') {
     const valid = ['SOFT','MEDIUM','HARD','INTER','WET'];
     if (!raw || !circuit) return this.generateStrategy(circuit, 80, weather);
-    let compounds = Array.isArray(raw.compounds) ? raw.compounds.filter(c => valid.includes(c)) : [];
-    if (!compounds.length) compounds = weather === 'heavy_rain' ? ['WET'] : weather === 'light_rain' ? ['INTER','MEDIUM'] : ['MEDIUM','HARD'];
-    if (compounds.length === 1 && weather === 'dry') compounds.push(compounds[0] === 'HARD' ? 'MEDIUM' : 'HARD');
-    let pitLaps = Array.isArray(raw.pitLaps) ? raw.pitLaps.map(n => parseInt(n,10)).filter(n => Number.isFinite(n)) : [];
+    let compounds = Array.isArray(raw.compounds)
+      ? raw.compounds.filter(c => valid.includes(c)) : [];
+    if (!compounds.length) {
+      compounds = weather === 'heavy_rain' ? ['WET']
+        : weather === 'light_rain' ? ['INTER','MEDIUM'] : ['MEDIUM','HARD'];
+    }
+    if (compounds.length === 1 && weather === 'dry') {
+      compounds.push(compounds[0] === 'HARD' ? 'MEDIUM' : 'HARD');
+    }
+    let pitLaps = Array.isArray(raw.pitLaps)
+      ? raw.pitLaps.map(n => parseInt(n,10)).filter(n => Number.isFinite(n)) : [];
     pitLaps = pitLaps
       .map(n => Math.max(2, Math.min(circuit.laps - 3, n)))
-      .sort((a,b) => a-b)
+      .sort((a,b) => a - b)
       .slice(0, Math.max(0, compounds.length - 1));
     while (pitLaps.length < compounds.length - 1) {
       pitLaps.push(Math.round(circuit.laps * ((pitLaps.length + 1) / compounds.length)));
@@ -178,54 +317,36 @@ const Engine = {
     return { compounds, pitLaps };
   },
 
-  // ── INCIDENTS ─────────────────────────────────────────────
-  rollIncidents(driver, team, lap, totalLaps) {
-    const events = [];
+  // ── DÉVELOPPEMENT IA ──────────────────────────────────────
+  // Appelé en fin de course pour faire progresser les équipes IA
+  advanceAI(save) {
+    if (!save) return;
+    save.aiDevelopment = save.aiDevelopment || {};
 
-    // ~1-2 DNF mécaniques par course en moyenne
-    const reliabilityFactor = (100 - team.reliability) / 100;
-    if (Math.random() < reliabilityFactor * 0.0015) {
-      events.push({ type: 'dnf', reason: 'mechanical' });
-    }
+    F1Data.teams.forEach(team => {
+      if (team.id === save.playerTeamId) return;
 
-    // Crash — rare sauf au 1er tour
-    const crashChance = lap <= 2 ? 0.0020 : 0.00035;
-    if (Math.random() < crashChance) {
-      events.push({ type: 'dnf', reason: 'crash' });
-    }
+      // Chaque équipe IA investit selon son budget
+      const investRate = team.budget / 500; // Red Bull = 1.0, Williams = 0.4
+      save.aiDevelopment[team.id] = save.aiDevelopment[team.id] || {};
 
-    // Pénalité
-    if (Math.random() < 0.0015) {
-      events.push({ type: 'penalty', seconds: Math.random() > 0.5 ? 5 : 10 });
-    }
+      // 5% chance par course d'upgrade sur un composant aléatoire
+      if (Math.random() < 0.05 * investRate) {
+        const comps = ['aero','chassis','engine','reliability'];
+        const comp  = comps[Math.floor(Math.random() * comps.length)];
+        save.aiDevelopment[team.id][comp] = (save.aiDevelopment[team.id][comp] || 0) + 1;
+      }
 
-    return events;
-  },
-
-  // ── SAFETY CAR ────────────────────────────────────────────
-  rollSafetyCar(lap, totalLaps, incidents) {
-    const hasCrash = incidents.some(i => i.type === 'dnf' && i.reason === 'crash');
-    if (hasCrash && Math.random() > 0.2) {
-      return { active: true, laps: 4 + Math.floor(Math.random() * 3) };
-    }
-    if (Math.random() < 0.007) {
-      return { active: true, laps: 3 + Math.floor(Math.random() * 2) };
-    }
-    return { active: false };
-  },
-
-  // ── DÉPASSEMENT ───────────────────────────────────────────
-  attemptOvertake(attacker, defender, circuit) {
-    const speedDiff = defender.currentPace - attacker.currentPace;
-    if (speedDiff <= 0) return false;
-
-    const baseChance    = speedDiff * 0.15;
-    const circuitFactor = 1 - circuit.overtakingDifficulty;
-    const attackerSkill = attacker.driver.overtaking / 100;
-    const defenderSkill = defender.driver.defending  / 100;
-
-    const chance = baseChance * circuitFactor * (0.5 + attackerSkill * 0.5) * (1 - defenderSkill * 0.3);
-    return Math.random() < Math.max(0, Math.min(chance, 0.80));
+      // Appliquer le développement accumulé
+      const ai = save.aiDevelopment[team.id];
+      ['aero','chassis','engine','reliability'].forEach(k => {
+        if (ai[k]) {
+          team[k] = Math.min(99, (team[k] || 70) + ai[k]);
+          ai[k]   = 0; // reset après application
+        }
+      });
+      team.performance = Math.round((team.aero + team.chassis + team.engine) / 3);
+    });
   },
 
 };
