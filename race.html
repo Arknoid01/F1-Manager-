@@ -924,6 +924,7 @@ function initSel() {
 
 
 function startRace() {
+  try {
   const cid = document.getElementById('circSel').value;
   try { const s = Save.load(); if (s && typeof CareerEvents !== 'undefined') { const ev = CareerEvents.triggerPreRace(s); Save.save(s); if (ev) alert('Événement avant-course : '+ev.title+'\n'+ev.text); } } catch(e) { console.warn(e); }
   if (!cid) { alert('Choisis un circuit !'); return; }
@@ -1006,6 +1007,11 @@ function startRace() {
   renderPlayerControls();
 
   CR.startLights(() => runSim());
+
+  } catch(err) {
+    console.error('startRace ERROR:', err);
+    alert('Erreur démarrage : ' + err.message);
+  }
 }
 
 function runSim() {
