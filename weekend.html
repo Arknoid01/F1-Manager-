@@ -572,24 +572,20 @@ function buildRaceBriefing() {
   const grid     = save.qualiGrid || [];
   const knowledge= save.weekendKnowledge || { tyreBonus:0, setupBonus:0, paceBonus:0 };
 
-  // Fenêtres de pit recommandées depuis les EL
-  const longRun = fpResults.filter(r => r.program === 'long_run')[0];
-
-  // Calculer l'estimation de durée par compound depuis les EL
-  const tyreEstimates = calcTyreEstimates();
+  const longRun    = fpResults.filter(r => r.program === 'long_run')[0];
+  const tyreEst    = calcTyreEstimates();
+  const stratOpts  = calcStrategyOptions(tyreEst);
 
   let pitWindow = '';
   if (longRun) {
-    const cliffIdx = longRun.tyreData.findIndex(c => c < 30);
+    const wearPerLap = (100 - longRun.tyreLife) / longRun.laps;
+    const cliffIdx   = longRun.tyreData.findIndex(c => c < 30);
     if (cliffIdx > 0) {
-      // Extrapoler sur la durée d'un vrai relais
-      const wearPerLap = (100 - longRun.tyreLife) / longRun.laps;
-      const cliffLap   = Math.round((100 - 30) / wearPerLap);
-      pitWindow = `${F1Data.tyres[longRun.compound].name} : cliff estimé vers le tour ${Math.min(cliffLap, circuit.laps - 3)}`;
+      const cliffLap = Math.round((100 - 30) / wearPerLap);
+      pitWindow = `${F1Data.tyres[longRun.compound].name} : cliff estimé tour ${Math.min(cliffLap, circuit.laps - 3)}`;
     } else {
-      const wearPerLap = (100 - longRun.tyreLife) / longRun.laps;
-      const lifeTotal  = Math.round(70 / wearPerLap); // jusqu'à 30% restant
-      pitWindow = `${F1Data.tyres[longRun.compound].name} : durée estimée ~${Math.min(lifeTotal, circuit.laps)} tours`;
+      const lifeTotal = Math.round(70 / wearPerLap);
+      pitWindow = `${F1Data.tyres[longRun.compound].name} : durée ~${Math.min(lifeTotal, circuit.laps)} tours`;
     }
   }
 
@@ -597,6 +593,8 @@ function buildRaceBriefing() {
     <div class="panel" style="margin-bottom:10px">
       <div class="ph"><div class="dot"></div>📋 Briefing pré-course</div>
       <div class="content">
+
+        <!-- Bilan weekend + grille -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px;font-family:var(--fh);font-size:12px">
             <div style="color:var(--gold);font-weight:700;margin-bottom:5px">📊 Bilan du weekend</div>
@@ -604,46 +602,71 @@ function buildRaceBriefing() {
             <div style="color:var(--muted)">Bonus pneus : <strong style="color:var(--green)">-${(knowledge.tyreBonus*100).toFixed(0)}% dégradation</strong></div>
             <div style="color:var(--muted)">Bonus setup : <strong style="color:var(--blue)">+${(knowledge.setupBonus*100).toFixed(0)}% stabilité</strong></div>
             ${pitWindow ? `<div style="color:var(--orange);margin-top:4px">⚠️ ${pitWindow}</div>` : ''}
-            ${tyreEstimates.length ? `
-              <div style="margin-top:6px;font-weight:700;color:var(--text)">Estimations durée pneus :</div>
-              ${tyreEstimates.map(e => `
-                <div style="color:${e.color}">● ${e.compound} : ~${e.life} tours · Dégradation ~${e.wearPerLap.toFixed(1)}%/tour</div>
-              `).join('')}
+            ${tyreEst.length ? `
+              <div style="margin-top:6px;font-weight:700;color:var(--text)">Durée pneus estimée :</div>
+              ${tyreEst.map(e=>`<div style="color:${e.color}">● ${e.compound} ~${e.life}t · ${e.wearPerLap.toFixed(1)}%/t</div>`).join('')}
             ` : ''}
           </div>
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px;font-family:var(--fh);font-size:12px">
             <div style="color:var(--gold);font-weight:700;margin-bottom:5px">🏎️ Grille de départ</div>
-            ${grid.filter(d => d.isPlayer).map(d => {
-              const driver = F1Data.drivers.find(dr => dr.id === d.driverId);
-              return `<div style="color:var(--text)"><strong style="color:var(--gold)">P${d.gridPos}</strong> — ${driver?.firstName||''} ${driver?.name||'?'}</div>`;
-            }).join('') || '<div style="color:var(--muted)">Grille non disponible</div>'}
-            <div style="color:var(--muted);margin-top:4px">Circuit : ${circuit.overtakingDifficulty > 0.7 ? '⛔ Dépassements difficiles' : circuit.overtakingDifficulty < 0.4 ? '✅ Piste propice aux dépassements' : '⚠️ Dépassements possibles'}</div>
+            ${grid.filter(d=>d.isPlayer).map(d=>{
+              const driver=F1Data.drivers.find(dr=>dr.id===d.driverId);
+              return `<div><strong style="color:var(--gold)">P${d.gridPos}</strong> — ${driver?.firstName||''} ${driver?.name||'?'}</div>`;
+            }).join('')||'<div style="color:var(--muted)">Non disponible</div>'}
+            <div style="color:var(--muted);margin-top:4px">${circuit.overtakingDifficulty>0.7?'⛔ Dépassements difficiles':circuit.overtakingDifficulty<0.4?'✅ Piste propice':'⚠️ Dépassements possibles'}</div>
+            <div style="color:var(--muted)">DRS : ${circuit.drsZones} zone${circuit.drsZones>1?'s':''} · Pit loss : ${circuit.pitLoss}s</div>
           </div>
         </div>
 
-        <div class="ph" style="border:1px solid var(--border);border-radius:5px;margin-bottom:8px"><div class="dot"></div>🔧 Stratégie de course — Tes pilotes</div>
+        <!-- RECOMMANDATIONS STRATÉGIE -->
+        <div style="font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">
+          🛞 Stratégies recommandées — ${circuit.laps} tours
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:14px">
+          ${stratOpts.slice(0,4).map((opt,i)=>{
+            const isRec   = i===0 && opt.feasible;
+            const isRisky = !opt.feasible;
+            const badge   = isRec?'⭐ Recommandée':isRisky?'⚠️ Risquée':'✅ Viable';
+            const bdrClr  = isRec?'var(--gold)':isRisky?'#ff4444':'#2979ff44';
+            const bgClr   = isRec?'#1a1a00':isRisky?'#1a0000':'var(--surface2)';
+            return `
+              <div style="background:${bgClr};border:1px solid ${bdrClr};border-radius:5px;padding:10px;font-family:var(--fh)">
+                <div style="font-size:9px;font-weight:700;color:${isRec?'var(--gold)':isRisky?'#ff6666':'var(--green)'};margin-bottom:4px">${badge}</div>
+                <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">${opt.stops} arrêt${opt.stops>1?'s':''}</div>
+                <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-bottom:5px">
+                  ${opt.compounds.map((c,ci)=>{
+                    const t=F1Data.tyres[c];
+                    const laps=ci===0?opt.pitLaps[0]:ci<opt.pitLaps.length?opt.pitLaps[ci]-opt.pitLaps[ci-1]:circuit.laps-opt.pitLaps[opt.pitLaps.length-1];
+                    return `${ci>0?'<span style="color:var(--muted);font-size:10px">→</span>':''}
+                      <span style="color:${t.color};font-size:11px;font-weight:700">●${laps}t</span>`;
+                  }).join('')}
+                </div>
+                <div style="font-size:10px;color:var(--muted)">Pit T.${opt.pitLaps.join(' / T.')}</div>
+                <button class="mini-sel" style="margin-top:6px;width:100%;cursor:pointer;background:var(--accent);color:#fff;border:none;border-radius:3px;font-family:var(--fh);font-weight:700;font-size:10px;padding:4px"
+                  onclick="applyStratReco(${JSON.stringify(opt)})">Appliquer</button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- STRATÉGIE MANUELLE -->
+        <div class="ph" style="border:1px solid var(--border);border-radius:5px;margin-bottom:8px"><div class="dot"></div>🔧 Stratégie personnalisée — Tes pilotes</div>
         <div id="raceStratConfig">
-          ${myDrivers.map(driver => {
-            const gridEntry = grid.find(g => g.driverId === driver.id);
-            const gridPos   = gridEntry?.gridPos || '?';
-            const defPit    = circuit.tyreDegradation > 1.2 ? [Math.round(circuit.laps*0.33), Math.round(circuit.laps*0.66)] : [Math.round(circuit.laps*0.48)];
+          ${myDrivers.map(driver=>{
+            const gridEntry=grid.find(g=>g.driverId===driver.id);
+            const gridPos=gridEntry?.gridPos||'?';
+            const defPit=circuit.tyreDegradation>1.2?[Math.round(circuit.laps*.33),Math.round(circuit.laps*.66)]:[Math.round(circuit.laps*.48)];
             return `
               <div class="strat-row">
                 <div class="strat-grid-pos">P${gridPos}</div>
                 <div class="strat-name">${driver.firstName} ${driver.name}</div>
-                <select class="mini-sel" id="rc1-${driver.id}">
-                  ${tyreOpts('MEDIUM')}
-                </select>
+                <select class="mini-sel" id="rc1-${driver.id}">${tyreOpts('MEDIUM')}</select>
                 <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">→ T.</span>
                 <input class="mini-sel" id="rp1-${driver.id}" type="number" min="2" max="${circuit.laps-3}" value="${defPit[0]||''}" style="width:52px">
-                <select class="mini-sel" id="rc2-${driver.id}">
-                  ${tyreOpts('HARD')}
-                </select>
+                <select class="mini-sel" id="rc2-${driver.id}">${tyreOpts('HARD')}</select>
                 <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">→ T.</span>
                 <input class="mini-sel" id="rp2-${driver.id}" type="number" min="2" max="${circuit.laps-3}" value="${defPit[1]||''}" style="width:52px">
-                <select class="mini-sel" id="rc3-${driver.id}">
-                  ${tyreOpts('SOFT')}
-                </select>
+                <select class="mini-sel" id="rc3-${driver.id}">${tyreOpts('SOFT')}</select>
               </div>
             `;
           }).join('')}
@@ -657,6 +680,66 @@ function buildRaceBriefing() {
     </div>
   `;
   return el;
+}
+
+function calcStrategyOptions(tyreEst) {
+  const L       = circuit.laps;
+  const lifeMap = {};
+  tyreEst.forEach(e => lifeMap[e.compound] = e.life);
+  ['SOFT','MEDIUM','HARD'].forEach(c => {
+    if (!lifeMap[c]) {
+      const t = F1Data.tyres[c];
+      lifeMap[c] = Math.min(Math.round(80 / (t.degradationRate * circuit.tyreDegradation * 100)), L-2);
+    }
+  });
+
+  const options = [];
+
+  // 1 arrêt
+  [['MEDIUM','HARD'],['HARD','MEDIUM'],['SOFT','HARD'],['MEDIUM','MEDIUM']].forEach(([c1,c2])=>{
+    const l1=lifeMap[c1]||20, l2=lifeMap[c2]||30;
+    const p1=Math.min(l1,Math.round(L*0.48));
+    if(p1>=5&&p1<=L-5&&(L-p1)<=l2+6){
+      options.push({ stops:1, compounds:[c1,c2], pitLaps:[p1], feasible:p1<=l1+3&&(L-p1)<=l2+6 });
+    }
+  });
+  // 2 arrêts
+  [['SOFT','MEDIUM','HARD'],['SOFT','HARD','MEDIUM'],['MEDIUM','SOFT','HARD'],['SOFT','SOFT','HARD']].forEach(([c1,c2,c3])=>{
+    const l1=lifeMap[c1]||15, l2=lifeMap[c2]||20, l3=lifeMap[c3]||30;
+    const p1=Math.min(l1,Math.round(L*0.30));
+    const p2=Math.min(p1+l2,Math.round(L*0.62));
+    if(p1>=4&&p2>p1&&p2<=L-5&&(L-p2)<=l3+6){
+      options.push({ stops:2, compounds:[c1,c2,c3], pitLaps:[p1,p2], feasible:p1<=l1+2&&(p2-p1)<=l2+3&&(L-p2)<=l3+6 });
+    }
+  });
+  // 3 arrêts si haute dégradation
+  if(circuit.tyreDegradation>1.2){
+    const p1=Math.round(L*.22),p2=Math.round(L*.47),p3=Math.round(L*.72);
+    if(p3<=L-4) options.push({ stops:3, compounds:['SOFT','SOFT','SOFT','HARD'], pitLaps:[p1,p2,p3], feasible:(lifeMap['SOFT']||12)>=10 });
+  }
+
+  return options.sort((a,b)=>b.feasible-a.feasible||(a.stops-b.stops));
+}
+
+// Applique une stratégie recommandée aux selects
+function applyStratReco(opt) {
+  myDrivers.forEach(driver => {
+    const c1 = opt.compounds[0]||'MEDIUM', c2 = opt.compounds[1]||'HARD', c3 = opt.compounds[2]||'MEDIUM';
+    const p1 = opt.pitLaps[0], p2 = opt.pitLaps[1];
+    const sel1 = document.getElementById(`rc1-${driver.id}`);
+    const sel2 = document.getElementById(`rc2-${driver.id}`);
+    const sel3 = document.getElementById(`rc3-${driver.id}`);
+    const inp1 = document.getElementById(`rp1-${driver.id}`);
+    const inp2 = document.getElementById(`rp2-${driver.id}`);
+    if(sel1) sel1.value = c1;
+    if(sel2) sel2.value = c2;
+    if(sel3) sel3.value = c3;
+    if(inp1) inp1.value = p1||'';
+    if(inp2) inp2.value = p2||'';
+  });
+  // Flash confirmation
+  const rows = document.querySelectorAll('.strat-row');
+  rows.forEach(r => { r.style.background='#1a2a00'; setTimeout(()=>r.style.background='',600); });
 }
 
 function tyreOpts(sel) {
