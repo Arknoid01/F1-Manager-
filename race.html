@@ -743,8 +743,8 @@ function renderStratReco() {
         return `<span style="color:${t.color}">● ${t.name} ~${l}t</span>`;
       }).join('')}
     </div>
-    ${shown.map((opt, idx) => {
-      const isRec   = idx === 0 && opt.feasible;
+    ${shown.map((opt, optIdx) => {
+      const isRec   = optIdx === 0 && opt.feasible;
       const isRisky = !opt.feasible;
       const badgeCls= isRec ? 'rec' : isRisky ? 'risky' : 'alt';
       const badgeTxt= isRec ? '⭐ Recommandée' : isRisky ? '⚠️ Risquée' : '✅ Viable';
@@ -766,9 +766,10 @@ function renderStratReco() {
             ${opt.stops} arrêt${opt.stops>1?'s':''}
           </div>
           <div class="strat-compounds">
-            ${compoundLaps.map(({c, laps}, ci) => {
+            ${compoundLaps.map(({c, laps}, cIdx) => {
               const t = F1Data.tyres[c];
-              return `${ci > 0 ? '<span class="strat-arrow">→</span>' : ''}<div class="strat-dot" style="background:${t.color}"></div><span class="strat-laps" style="color:${t.color}">${laps}t</span>`;
+              const arrow = cIdx > 0 ? '<span class="strat-arrow">→</span>' : '';
+              return arrow + '<div class="strat-dot" style="background:'+t.color+'"></div><span class="strat-laps" style="color:'+t.color+'">'+laps+'t</span>';
             }).join('')}
           </div>
           <div class="strat-detail">${opt.detail}</div>
@@ -845,6 +846,13 @@ function renderWeatherPopup() {
   const chartData = profile.slice(lap - 1, lap - 1 + nextLaps);
   const maxH      = 100;
 
+  // Pré-calculer les barres météo (évite map+index dans template)
+  const chartBars = chartData.map((h, barIdx) => {
+    const cond2 = Weather.getTrackCondition(h);
+    const hp = Math.max(4, (h / maxH) * 100);
+    return '<div style="flex:1;background:' + cond2.color + ';border-radius:1px;height:' + hp + '%;opacity:' + (barIdx===0?1:0.7) + ';min-width:4px" title="T.' + (lap+barIdx) + ': ' + h.toFixed(0) + '%"></div>';
+  }).join('');
+
   let html = `
     <!-- Humidité actuelle -->
     <div style="margin-bottom:10px">
@@ -866,11 +874,7 @@ function renderWeatherPopup() {
     <div style="margin-bottom:10px">
       <div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-bottom:4px">Prévision ${nextLaps} prochains tours</div>
       <div style="display:flex;align-items:flex-end;gap:2px;height:40px;background:#0a0a14;border-radius:4px;padding:4px">
-        ${chartData.map((h, i) => {
-          const c = Weather.getTrackCondition(h);
-          const heightPct = Math.max(4, (h / maxH) * 100);
-          return `<div style="flex:1;background:${c.color};border-radius:1px;height:${heightPct}%;opacity:${i===0?1:0.7};min-width:4px" title="T.${lap+i}: ${h.toFixed(0)}%"></div>`;
-        }).join('')}
+        ${chartBars}
       </div>
       <div style="display:flex;justify-content:space-between;font-family:var(--fh);font-size:9px;color:var(--muted);margin-top:2px">
         <span>T.${lap}</span>
@@ -1458,10 +1462,10 @@ const Telem = {
     const top8=standings.filter(c=>c.status==='racing').slice(0,8);
     this.drawChart('canvasGaps',top8.map((car,i)=>({color:i===0?'#00e676':F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.gapH[car.driver.id]||[]})),{minY:0});
     const gaL=document.getElementById('gapsLegend');
-    if(gaL)gaL.innerHTML=top8.map((car,i)=>{const col=i===0?'#00e676':F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';return`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div>${Profiles.linkDriver(car.driver)} ${i===0?'LEADER':'+'+car.gap.toFixed(1)+'s'}</div>`;}).join('');
+    if(gaL)gaL.innerHTML=top8.map((car,gIdx)=>{const col=gIdx===0?'#00e676':F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const gapTxt=gIdx===0?'LEADER':'+'+car.gap.toFixed(1)+'s';return'<div class="legend-item"><div class="legend-dot" style="background:'+col+'"></div>'+Profiles.linkDriver(car.driver)+' '+gapTxt+'</div>';}).join('');
     // Stratégie
     const sf=document.getElementById('stratFull');
-    if(sf){sf.innerHTML='';standings.forEach(car=>{const col=F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const pills=car.strategy.compounds.map((c,i)=>{const ty=F1Data.tyres[c];const act=i===car.currentCompoundIndex;return`<span class="cpill" style="color:${ty.color};border:1px solid ${act?ty.color:'transparent'}">${ty.name}</span>`;}).join('');const pits=car.pitStops.map(p=>'T'+p.lap).join(',');const row=document.createElement('div');row.className='strat-row-t';row.innerHTML=`<div class="strat-pos-t">${car.position}</div><div class="tbar" style="background:${col};height:18px;margin:0 2px;border-radius:2px"></div><div class="strat-name-t">${Profiles.linkDriver(car.driver)}</div>${pills}<div class="strat-stops">${car.pitStops.length}arr.${pits?' ('+pits+')':''}</div>${car.status==='dnf'?'<span class="dnf-b">DNF T.'+car.dnfLap+'</span>':''}`;sf.appendChild(row);});}
+    if(sf){sf.innerHTML='';standings.forEach(car=>{const col=F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const pills=car.strategy.compounds.map((c,pIdx)=>{const ty=F1Data.tyres[c];const act=pIdx===car.currentCompoundIndex;return'<span class="cpill" style="color:'+ty.color+';border:1px solid '+(act?ty.color:'transparent')+'">'+ty.name+'</span>';}).join('');const pits=car.pitStops.map(p=>'T'+p.lap).join(',');const row=document.createElement('div');row.className='strat-row-t';row.innerHTML=`<div class="strat-pos-t">${car.position}</div><div class="tbar" style="background:${col};height:18px;margin:0 2px;border-radius:2px"></div><div class="strat-name-t">${Profiles.linkDriver(car.driver)}</div>${pills}<div class="strat-stops">${car.pitStops.length}arr.${pits?' ('+pits+')':''}</div>${car.status==='dnf'?'<span class="dnf-b">DNF T.'+car.dnfLap+'</span>':''}`;sf.appendChild(row);});}
   }
 };
 
