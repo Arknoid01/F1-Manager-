@@ -308,6 +308,7 @@
 <script src="js/engine.js"></script>
 <script src="js/race.js"></script>
 <script src="js/save.js"></script>
+<script src="js/career.js"></script>
 <script src="js/events.js"></script>
 <script>
 // ══════════════════════════════════════════════
@@ -1093,6 +1094,48 @@ function showTab(id){
   document.querySelectorAll('.tab-btn').forEach(b=>{if(b.getAttribute('onclick')===`showTab('${id}')`)b.classList.add('active');});
   if(Race.state)Telem.updateAll();
 }
+
+
+// ── Restaurer les états pilotes depuis la save ─────────────
+function restoreDriverStates() {
+  const save = Save.load();
+  if (!save) return;
+
+  // Restaurer les états sauvegardés (teamId, âge, stats, retraite...)
+  if (save.driverStates) {
+    F1Data.drivers.forEach(d => {
+      const state = save.driverStates[d.id];
+      if (!state) return;
+      d.age         = state.age         ?? d.age;
+      d.pace        = state.pace        ?? d.pace;
+      d.consistency = state.consistency ?? d.consistency;
+      d.wetSkill    = state.wetSkill    ?? d.wetSkill;
+      d.overtaking  = state.overtaking  ?? d.overtaking;
+      d.defending   = state.defending   ?? d.defending;
+      d.salary      = state.salary      ?? d.salary;
+      d.trait       = state.trait       ?? d.trait;
+      d.potential   = state.potential   ?? d.potential;
+      d.retired     = state.retired     ?? false;
+      d.teamId      = state.teamId;  // ← crucial : teamId depuis la save
+      d.seasons     = state.seasons  ?? 0;
+    });
+  }
+
+  // Restaurer les pilotes générés
+  if (save.generatedDrivers?.length) {
+    save.generatedDrivers.forEach(gd => {
+      if (!F1Data.drivers.find(d => d.id === gd.id)) {
+        F1Data.drivers.push(gd);
+      } else {
+        const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
+        if (save.driverStates?.[gd.id]) {
+          Object.assign(F1Data.drivers[idx], save.driverStates[gd.id]);
+        }
+      }
+    });
+  }
+}
+restoreDriverStates();
 
 initSel();
 </script>
