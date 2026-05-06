@@ -489,7 +489,7 @@ function init() {
   // Restaurer les staffs générés depuis la save
   if (typeof Career !== 'undefined') {
     Career.restoreGeneratedStaff(save);
-    Career.restoreTeamStates(save); // ← restaurer stats équipes IA
+  
     // Générer le premier lot si jamais fait
     if (!save.generatedStaff || save.generatedStaff.length === 0) {
       Career.generateNewStaff(save);
