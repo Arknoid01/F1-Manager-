@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche — F1 Manager</title>
+<style>
+:root{--bg:#050508;--surface:#111119;--surface2:#181824;--border:#2a2a38;--text:#f2f2f5;--muted:#8a8a98;--accent:#e10600;--gold:#ffd700;--green:#00e676;--fh:'Arial Narrow',Arial,sans-serif;--fb:Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#050508,#0b0b14);color:var(--text);font-family:var(--fb);min-height:100vh}.topbar{height:52px;background:#0a0a12;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 16px;position:sticky;top:0;z-index:10}.logo{font-family:var(--fh);font-weight:900;font-size:22px;letter-spacing:1px}.logo span{color:var(--accent)}.nav-link{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:1px;text-transform:uppercase;padding:3px 7px}.nav-link:hover,.nav-link.active{color:var(--accent)}.page{max-width:1100px;margin:0 auto;padding:18px}.hero{background:linear-gradient(135deg,#151520,#0d0d15);border:1px solid var(--border);border-radius:10px;overflow:hidden}.hero-top{height:8px;background:var(--accent)}.hero-body{display:grid;grid-template-columns:96px 1fr auto;gap:16px;padding:18px;align-items:center}.avatar{width:82px;height:82px;border-radius:12px;background:#090911;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:42px}.title{font-family:var(--fh);font-weight:900;font-size:36px;line-height:1}.subtitle{font-family:var(--fh);font-size:15px;color:var(--muted);margin-top:6px}.score{font-family:var(--fh);font-weight:900;font-size:44px;color:var(--gold);text-align:right}.score small{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:14px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}.ph{height:38px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;font-family:var(--fh);font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:1px}.dot{width:3px;height:16px;background:var(--accent);border-radius:2px}.content{padding:14px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.stat{background:#0c0c14;border:1px solid var(--border);border-radius:6px;padding:10px}.stat b{display:block;font-family:var(--fh);font-size:24px}.stat span{font-family:var(--fh);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}.line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #20202c}.line:last-child{border-bottom:0}.label{font-family:var(--fh);color:var(--muted);text-transform:uppercase;font-size:12px}.value{font-family:var(--fh);font-weight:800}.desc{color:#cfcfd8;line-height:1.6;font-size:14px}.badge{display:inline-block;font-family:var(--fh);font-size:12px;font-weight:800;color:var(--gold);border:1px solid #4a3a00;background:#1a1400;border-radius:4px;padding:4px 8px;margin:4px 4px 0 0}.entity-link{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.entity-link:hover{color:var(--gold)}.back{display:inline-block;margin-bottom:12px;color:var(--muted);font-family:var(--fh);font-weight:800;text-decoration:none}.back:hover{color:var(--text)}.empty{padding:40px;text-align:center;color:var(--muted);font-family:var(--fh);font-size:18px}@media(max-width:760px){.hero-body{grid-template-columns:1fr}.score{text-align:left}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">F1<span>MANAGER</span></div>
+  <a href="index.html" class="nav-link">🏠 Équipe</a>
+  <a href="race.html" class="nav-link">🏁 Course</a>
+  <a href="standings.html" class="nav-link">🏆 Champ.</a>
+  <a href="drivers.html" class="nav-link">👤 Pilotes</a>
+  <a href="staff.html" class="nav-link">🧑‍🔧 Staff</a>
+  <a href="news.html" class="nav-link">📰 News</a>
+</div>
+<div class="page">
+  <a href="javascript:history.back()" class="back">← Retour</a>
+  <div id="profile"></div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script src="js/events.js"></script>
+<script src="js/career.js"></script>
+<script src="js/profiles.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const type = params.get('type');
+const id = params.get('id');
+const save = Profiles.loadSave() || {};
+const entity = Profiles.getEntity(type, id, save);
+const root = document.getElementById('profile');
+const esc = Profiles.escapeHtml;
+function fmt(v, fallback='—'){ return v === undefined || v === null || v === '' ? fallback : esc(v); }
+function full(d){ return Profiles.fullName(d); }
+function driverScore(d){ return typeof Career !== 'undefined' && Career.getDriverScore ? Career.getDriverScore(d) : Math.round(((d.pace||0)+(d.consistency||0)+(d.wetSkill||0)+(d.overtaking||0)+(d.defending||0))/5); }
+function line(label, value){ return `<div class="line"><div class="label">${label}</div><div class="value">${value}</div></div>`; }
+function stats(items){ return `<div class="stats">${items.map(s=>`<div class="stat"><b style="color:${s.color||'var(--text)'}">${s.value}</b><span>${s.label}</span></div>`).join('')}</div>`; }
+function hero(icon, title, subtitle, score, accent){ return `<div class="hero"><div class="hero-top" style="background:${accent||'var(--accent)'}"></div><div class="hero-body"><div class="avatar">${icon}</div><div><div class="title">${esc(title)}</div><div class="subtitle">${subtitle}</div></div>${score?`<div class="score">${score}<small>Note</small></div>`:''}</div></div>`; }
+if (!entity) {
+  root.innerHTML = `<div class="panel"><div class="empty">Fiche introuvable pour <strong>${esc(type||'?')}</strong> / <strong>${esc(id||'?')}</strong>.</div></div>`;
+} else if (type === 'driver' || type === 'pilote') {
+  const d = entity, team = d.teamId ? F1Data.teams.find(t=>String(t.id)===String(d.teamId)) : null;
+  root.innerHTML = hero('🏎️', full(d), `${team ? Profiles.linkTeam(team) : 'Agent libre'} · N° ${fmt(d.number)} · ${fmt(d.age)} ans`, driverScore(d), team?.color)
+    + `<div class="grid"><div class="panel"><div class="ph"><div class="dot"></div>Stats pilote</div><div class="content">${stats([
+      {label:'Pace',value:fmt(d.pace),color:'#ffd700'},{label:'Régularité',value:fmt(d.consistency),color:'#00e676'},{label:'Pluie',value:fmt(d.wetSkill),color:'#2979ff'},{label:'Attaque',value:fmt(d.overtaking),color:'#ff9944'},{label:'Défense',value:fmt(d.defending),color:'#e10600'},{label:'Potentiel',value:fmt(d.potential),color:'#aa44ff'}
+    ])}</div></div><div class="panel"><div class="ph"><div class="dot"></div>Contrat</div><div class="content">${line('Écurie', team?Profiles.linkTeam(team):'Agent libre')}${line('Salaire', `${fmt(d.salary)}M€/an`)}${line('Contrat', `${fmt(save.contracts?.[d.id]?.years, 0)} an(s)`)}${line('Trait', fmt(d.trait))}${line('Statut', d.retired?'Retraité':'Actif')}</div></div></div>`;
+} else if (type === 'team' || type === 'ecurie' || type === 'écurie') {
+  const t = entity;
+  const drivers = F1Data.drivers.filter(d=>String(d.teamId)===String(t.id) && !d.retired);
+  root.innerHTML = hero('🏢', t.name, `${fmt(t.shortName)} · Budget ${fmt(t.budget)}M€`, fmt(t.performance), t.color)
+    + `<div class="grid"><div class="panel"><div class="ph"><div class="dot"></div>Performance voiture</div><div class="content">${stats([
+      {label:'Perf.',value:fmt(t.performance),color:t.color},{label:'Aéro',value:fmt(t.aero),color:'#2979ff'},{label:'Châssis',value:fmt(t.chassis),color:'#e10600'},{label:'Moteur',value:fmt(t.engine),color:'#ff9944'},{label:'Fiabilité',value:fmt(t.reliability),color:'#00e676'},{label:'Budget',value:fmt(t.budget)+'M',color:'#ffd700'}
+    ])}</div></div><div class="panel"><div class="ph"><div class="dot"></div>Pilotes</div><div class="content">${drivers.length?drivers.map(d=>line(Profiles.linkDriver(d), `N° ${fmt(d.number)} · ${driverScore(d)}`)).join(''):'<div class="desc">Aucun pilote actif.</div>'}</div></div></div>`;
+} else if (type === 'staff') {
+  const st = entity;
+  const displayName = st.firstName ? `${st.firstName} ${st.name}` : (st.fullName || st.name);
+  const impacts = st.impacts || {};
+  root.innerHTML = hero(st.icon||'🧑‍🔧', displayName, `${fmt(st.role)} · ${fmt(st.age,'âge inconnu')}${st.age?' ans':''}`, fmt(Math.round(st.level||0)), '#ffd700')
+    + `<div class="grid"><div class="panel"><div class="ph"><div class="dot"></div>Compétences</div><div class="content">${stats(Object.entries(impacts).map(([k,v])=>({label:k,value:'+'+v,color:'#ffd700'})))}<div class="desc" style="margin-top:12px">${fmt(st.desc,'Membre de staff qualifié.')}</div></div></div><div class="panel"><div class="ph"><div class="dot"></div>Contrat & passif</div><div class="content">${line('Spécialité', fmt(st.specialty || st.bonus))}${line('Salaire', `${fmt(st.salary)}M€/an`)}${line('Coût recrutement', `${fmt(st.cost)}M€`)}${line('Statut', save.staff?.map(Profiles.normalizeStaffId).includes(Profiles.normalizeStaffId(st.id))?'En poste':'Disponible')}<div class="badge">🔮 ${fmt(st.passive,'Bonus de performance')}</div></div></div></div>`;
+}
+</script>
+</body>
+</html>

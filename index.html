@@ -162,7 +162,8 @@
     .toast.error { border-left-color:var(--accent); }
 
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-  </style>
+  .entity-link{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.entity-link:hover{color:var(--gold,#ffd700)}
+</style>
 </head>
 <body>
 
@@ -319,6 +320,7 @@
 <script src="js/save.js"></script>
 <script src="js/events.js"></script>
 <script src="js/career.js"></script>
+<script src="js/profiles.js"></script>
 <script>
 
 // ═══════════════════════════════════════════════════════════
@@ -583,7 +585,7 @@ function renderTeamOverview(team) {
     <div class="team-header">
       <div class="team-color-block" style="background:${team.color}"></div>
       <div>
-        <div class="team-name-big">${team.name}</div>
+        <div class="team-name-big">${Profiles.linkTeam(team)}</div>
         <div class="team-name-sub">Budget annuel : ${team.budget}M €</div>
       </div>
     </div>
@@ -609,7 +611,7 @@ function renderDrivers(drivers) {
     card.innerHTML = `
       <div class="driver-number" style="color:${F1Data.teams.find(t=>t.id===d.teamId).color}">${d.number}</div>
       <div class="driver-info">
-        <div class="driver-fullname">${d.firstName} ${d.name}</div>
+        <div class="driver-fullname">${Profiles.linkDriver(d)}</div>
         <div class="driver-contract">Contrat : ${(gameState.contracts?.[d.id]?.years ?? 2)} an(s) · ${gameState.driverEffects?.[d.id]?.label ? '⚠ '+gameState.driverEffects[d.id].label : 'OK'}</div>
         <div class="driver-stats">
           <div class="dstat"><div class="dstat-val">${d.pace}</div><div class="dstat-lbl">Pace</div></div>
@@ -698,14 +700,14 @@ function renderStaff() {
   el.innerHTML = '';
   const current = document.createElement('div');
   current.className = 'staff-card';
-  current.innerHTML = `<div class="staff-name">Staff actuel</div><div class="staff-role">${hired.length ? hired.map(id => pool.find(s=>s.id===id)?.name || id).join(', ') : 'Aucun recrutement premium'}</div><div style="font-size:11px;color:var(--muted)">Chaque staff donne +1 à sa spécialité après recrutement.</div>`;
+  current.innerHTML = `<div class="staff-name">Staff actuel</div><div class="staff-role">${hired.length ? hired.map(id => { const st = pool.find(s=>s.id===id); return st ? Profiles.linkStaff(st) : id; }).join(', ') : 'Aucun recrutement premium'}</div><div style="font-size:11px;color:var(--muted)">Chaque staff donne +1 à sa spécialité après recrutement.</div>`;
   el.appendChild(current);
   pool.forEach(st => {
     const owned = hired.includes(st.id);
     const card = document.createElement('div');
     card.className = 'staff-card';
     card.innerHTML = `
-      <div class="staff-name">${st.name}</div>
+      <div class="staff-name">${Profiles.linkStaff(st)}</div>
       <div class="staff-role">${st.role} · bonus ${st.bonus} · niv. ${st.level}</div>
       <button class="btn btn-gold" onclick="hireStaff('${st.id}')" ${owned || gameState.budget < st.cost ? 'disabled' : ''}>${owned ? 'Recruté' : `Recruter ${st.cost}M€`}</button>
     `;
