@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>F1 Manager — Staff</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3e;
+      --text:#e8e8f0;--muted:#6a6a8a;--accent:#e8003d;--gold:#ffd700;
+      --green:#00e676;--orange:#ff9944;--blue:#2979ff;--purple:#aa44ff;
+      --fh:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;
+    }
+    html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px}
+
+    .topbar{background:var(--surface);border-bottom:2px solid var(--accent);padding:0 14px;height:50px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+    .logo{font-family:var(--fh);font-weight:900;font-size:20px;color:var(--accent);letter-spacing:2px}
+    .logo span{color:var(--text)}
+    .nav-link{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:1px;text-transform:uppercase;padding:3px 7px}
+    .nav-link:hover,.nav-link.active{color:var(--accent)}
+    .tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .pill{font-family:var(--fh);font-weight:700;font-size:13px;padding:4px 12px;border-radius:4px;background:var(--surface2);border:1px solid var(--border)}
+
+    .page{padding:12px;display:flex;flex-direction:column;gap:12px;max-width:1000px;margin:0 auto}
+
+    /* PANEL */
+    .panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+    .ph{background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 14px;font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+    .ph .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .ph .ml{margin-left:auto;font-size:11px;font-weight:400}
+
+    /* OVERVIEW */
+    .overview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;padding:12px}
+    .ov-card{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center}
+    .ov-val{font-family:var(--fh);font-weight:900;font-size:24px}
+    .ov-lbl{font-family:var(--fh);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+    .ov-bar{height:4px;background:#0a0a14;border-radius:2px;margin-top:6px;overflow:hidden}
+    .ov-fill{height:100%;border-radius:2px;transition:width .5s}
+
+    /* STAFF GRID */
+    .staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;padding:12px}
+
+    /* STAFF CARD */
+    .staff-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:13px;position:relative;transition:border-color .2s}
+    .staff-card:hover{border-color:#3a3a5a}
+    .staff-card.hired{border-color:var(--gold)}
+    .staff-card.elite{border-color:var(--purple)}
+    .sc-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+    .sc-icon{font-size:28px;width:40px;text-align:center;flex-shrink:0}
+    .sc-info{flex:1}
+    .sc-name{font-family:var(--fh);font-weight:900;font-size:17px;line-height:1.1}
+    .sc-role{font-family:var(--fh);font-size:11px;color:var(--muted);margin-top:2px}
+    .sc-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+    .badge{font-family:var(--fh);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--surface);border:1px solid var(--border);color:var(--muted);letter-spacing:.5px}
+    .badge-spec{color:var(--gold);border-color:#3a3a00;background:#1a1a00}
+    .badge-elite{color:var(--purple);border-color:#3a003a;background:#1a001a}
+    .badge-hired{color:var(--green);border-color:#003a18;background:#001a0a}
+
+    /* IMPACT BARS */
+    .sc-impacts{display:flex;flex-direction:column;gap:4px;margin:8px 0 10px}
+    .impact-row{display:flex;align-items:center;gap:6px}
+    .impact-lbl{font-family:var(--fh);font-size:10px;color:var(--muted);width:82px;text-transform:uppercase;letter-spacing:.5px}
+    .impact-bar-wrap{flex:1;height:5px;background:#0a0a14;border-radius:3px;overflow:hidden}
+    .impact-bar{height:100%;border-radius:3px;transition:width .4s}
+    .impact-val{font-family:var(--fh);font-weight:700;font-size:11px;width:28px;text-align:right}
+
+    /* SALARY & ACTIONS */
+    .sc-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:10px}
+    .sc-salary{font-family:var(--fh);font-size:12px;color:var(--muted);flex:1}
+    .sc-salary span{color:var(--gold);font-weight:700}
+    .btn{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border:none;border-radius:4px;cursor:pointer;transition:all .15s;white-space:nowrap}
+    .btn-red{background:var(--accent);color:#fff}
+    .btn-red:hover{background:#ff1a52}
+    .btn-red:disabled{background:#3a1a22;color:#664;cursor:not-allowed}
+    .btn-sec{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+    .btn-sec:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-sec:disabled{opacity:.4;cursor:not-allowed}
+    .btn-gold{background:#1a1a00;color:var(--gold);border:1px solid #3a3a00}
+    .btn-gold:hover{background:#2a2a00}
+    .btn-gold:disabled{opacity:.4;cursor:not-allowed}
+    .btn-purple{background:#1a001a;color:var(--purple);border:1px solid #3a003a}
+
+    /* TABS */
+    .tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);overflow-x:auto}
+    .tab-btn{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 14px;background:none;border:none;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+    .tab-btn:hover{color:var(--text)}
+    .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+    .tab-pane{display:none}
+    .tab-pane.active{display:block}
+
+    /* SALARY SUMMARY */
+    .salary-summary{padding:12px;display:flex;flex-direction:column;gap:6px}
+    .sal-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--fh);font-size:13px}
+    .sal-row:last-child{border-bottom:0}
+    .sal-total{font-weight:900;font-size:16px;color:var(--gold)}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:5px;padding:12px 16px;font-family:var(--fh);font-size:13px;z-index:500;transform:translateX(120%);transition:transform .3s;max-width:300px}
+    .toast.show{transform:translateX(0)}
+    .toast.error{border-left-color:var(--accent)}
+
+    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">F1<span>Manager</span></div>
+  <a href="index.html"     class="nav-link">🏠 Équipe</a>
+  <a href="race.html"      class="nav-link">🏁 Course</a>
+  <a href="standings.html" class="nav-link">🏆 Champ.</a>
+  <a href="drivers.html"   class="nav-link">👤 Pilotes</a>
+  <a href="board.html"     class="nav-link">🏢 Direction</a>
+  <a href="news.html"      class="nav-link">📰 News</a>
+  <a href="staff.html"     class="nav-link active">🧑‍🔧 Staff</a>
+  <div class="tb-right">
+    <div class="pill" id="seasonBadge">—</div>
+    <div class="pill" style="color:var(--gold)" id="budgetBadge">—</div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- APERÇU ÉQUIPE TECHNIQUE -->
+  <div class="panel">
+    <div class="ph"><div class="dot"></div>📊 Performance technique actuelle</div>
+    <div class="overview-grid" id="overviewGrid"></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="panel">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab('tab-hired')">👥 Mon staff (<span id="hiredCount">0</span>)</button>
+      <button class="tab-btn" onclick="showTab('tab-market')">🛒 Recrutement</button>
+      <button class="tab-btn" onclick="showTab('tab-finances')">💰 Masse salariale</button>
+    </div>
+
+    <!-- MON STAFF -->
+    <div class="tab-pane active" id="tab-hired">
+      <div class="staff-grid" id="hiredGrid"></div>
+    </div>
+
+    <!-- MARCHÉ -->
+    <div class="tab-pane" id="tab-market">
+      <div style="padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">Filtrer :</span>
+        <button class="btn btn-sec" id="fAll"   onclick="filterMarket('all')"       >Tous</button>
+        <button class="btn btn-sec" id="fAero"  onclick="filterMarket('aero')"      >🌊 Aéro</button>
+        <button class="btn btn-sec" id="fChassis" onclick="filterMarket('chassis')" >🏗️ Châssis</button>
+        <button class="btn btn-sec" id="fEngine" onclick="filterMarket('engine')"   >⚡ Moteur</button>
+        <button class="btn btn-sec" id="fPit"   onclick="filterMarket('pitstop')"   >⏱️ Pit Stop</button>
+        <button class="btn btn-sec" id="fRel"   onclick="filterMarket('reliability')">🔩 Fiabilité</button>
+        <button class="btn btn-sec" id="fElite" onclick="filterMarket('elite')"     >⭐ Élite</button>
+      </div>
+      <div class="staff-grid" id="marketGrid"></div>
+    </div>
+
+    <!-- MASSE SALARIALE -->
+    <div class="tab-pane" id="tab-finances">
+      <div class="salary-summary" id="salarySummary"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script src="js/events.js"></script>
+<script src="js/career.js"></script>
+<script>
+
+// ══════════════════════════════════════════════════════════
+//  BASE DE DONNÉES STAFF
+// ══════════════════════════════════════════════════════════
+const STAFF_DB = [
+  // ── DIRECTEURS TECHNIQUES ────────────────────────────────
+  {
+    id:'dt_newey',    name:'Adrian Newey',     icon:'🌊',
+    role:'Directeur Technique',  specialty:'aero',
+    desc:'Le génie de l\'aérodynamique. Impact exceptionnel sur les performances en courbe.',
+    level:98, salary:22, cost:45, elite:true,
+    impacts:{ aero:+12, chassis:+4, performance:+5 },
+    passive:'Réduit le temps en soufflerie de 15% → +1 token R&D/saison',
+    exclusive: true,
+  },
+  {
+    id:'dt_wache',    name:'Pierre Waché',      icon:'🏗️',
+    role:'Directeur Technique',  specialty:'chassis',
+    desc:'Spécialiste du châssis et de la dynamique véhicule. Architecture révolutionnaire.',
+    level:91, salary:11, cost:26, elite:true,
+    impacts:{ chassis:+10, aero:+3, reliability:+2 },
+    passive:'Réduit les coûts d\'upgrade châssis de 10%',
+    exclusive: true,
+  },
+  {
+    id:'dt_allison',  name:'James Allison',     icon:'⚙️',
+    role:'Directeur Technique',  specialty:'chassis',
+    desc:'Architecte visionnaire de plusieurs voitures championnes du monde.',
+    level:93, salary:13, cost:30, elite:true,
+    impacts:{ chassis:+9, aero:+5, performance:+3 },
+    passive:'Bonus de +0.2s par tour sur les circuits à haute vitesse',
+    exclusive: true,
+  },
+
+  // ── INGÉNIEURS AÉRO ──────────────────────────────────────
+  {
+    id:'aero_1',      name:'Sofia Marchetti',  icon:'🌬️',
+    role:'Ingénieure Aéro Senior', specialty:'aero',
+    desc:'Spécialiste des appendices aéro et de l\'efficacité en virage.',
+    level:84, salary:5, cost:12,
+    impacts:{ aero:+6 },
+    passive:'Améliore l\'efficacité des upgrades aéro de 8%',
+  },
+  {
+    id:'aero_2',      name:'Lars Eriksson',    icon:'🔬',
+    role:'Analyste CFD',          specialty:'aero',
+    desc:'Expert en simulation numérique. Optimise la corrélation soufflerie/piste.',
+    level:79, salary:4, cost:9,
+    impacts:{ aero:+4 },
+    passive:'+1 token R&D toutes les 3 courses',
+  },
+  {
+    id:'aero_3',      name:'Yuki Tanaka',      icon:'💨',
+    role:'Ingénieur Soufflerie',  specialty:'aero',
+    desc:'Spécialiste des essais en soufflerie. Réduit le temps de validation des upgrades.',
+    level:76, salary:3, cost:7,
+    impacts:{ aero:+3 },
+    passive:'Réduit le coût des upgrades aéro de 5M€',
+  },
+
+  // ── INGÉNIEURS CHÂSSIS ────────────────────────────────────
+  {
+    id:'chas_1',      name:'Marco Brivio',     icon:'🏗️',
+    role:'Ingénieur Châssis Chef', specialty:'chassis',
+    desc:'Architecte de la plateforme mécanique. Optimise le comportement dynamique.',
+    level:82, salary:5, cost:11,
+    impacts:{ chassis:+6, reliability:+2 },
+    passive:'Réduit les dommages mécaniques en course de 5%',
+  },
+  {
+    id:'chas_2',      name:'Elena Volkov',     icon:'🔧',
+    role:'Ingénieure Suspensions', specialty:'chassis',
+    desc:'Spécialiste des suspensions et de la gestion des transferts de charge.',
+    level:77, salary:3, cost:8,
+    impacts:{ chassis:+4 },
+    passive:'Améliore la dégradation pneus de 3% sur tous les circuits',
+  },
+  {
+    id:'chas_3',      name:'Tom Wickens',      icon:'📐',
+    role:'Ingénieur Setup',        specialty:'chassis',
+    desc:'Maître du réglage voiture. Tire le maximum de chaque configuration de circuit.',
+    level:74, salary:3, cost:7,
+    impacts:{ chassis:+3 },
+    passive:'Bonus de +0.05s/tour sur les 5 premiers tours (pneus chauds)',
+  },
+
+  // ── INGÉNIEURS MOTEUR ─────────────────────────────────────
+  {
+    id:'eng_1',       name:'Ben Agathangelou', icon:'⚡',
+    role:'Directeur Motoriste',   specialty:'engine',
+    desc:'Expert en intégration moteur/châssis. Maximise la puissance déployable.',
+    level:85, salary:7, cost:16,
+    impacts:{ engine:+7, reliability:+3 },
+    passive:'Réduit la consommation de carburant → vitesse de pointe +0.5km/h',
+    elite: true,
+  },
+  {
+    id:'eng_2',       name:'Ryo Hayashi',      icon:'🔋',
+    role:'Ingénieur ERS',          specialty:'engine',
+    desc:'Spécialiste de la récupération d\'énergie. Optimise le déploiement en course.',
+    level:80, salary:5, cost:11,
+    impacts:{ engine:+5 },
+    passive:'Boost ERS +2% → 0.08s/tour sur les sections DRS',
+  },
+  {
+    id:'eng_3',       name:'Franziska Bauer',  icon:'🔩',
+    role:'Ingénieure Thermique',   specialty:'engine',
+    desc:'Gestion thermique du groupe propulseur. Réduit les risques de surchauffe.',
+    level:74, salary:4, cost:9,
+    impacts:{ engine:+3, reliability:+4 },
+    passive:'Réduit les DNF mécaniques de 15%',
+  },
+
+  // ── CHEF MÉCANICIEN / PIT STOP ────────────────────────────
+  {
+    id:'pit_1',       name:'Jonathan Wheatley', icon:'⏱️',
+    role:'Chef Pit Stop',          specialty:'pitstop',
+    desc:'Le meilleur chef pit stop du paddock. Des arrêts sous les 2 secondes.',
+    level:92, salary:7, cost:18, elite:true,
+    impacts:{ pitstop:+12 },
+    passive:'Réduit le pitLoss de 2s sur tous les circuits',
+  },
+  {
+    id:'pit_2',       name:'Carlos Medina',    icon:'🔧',
+    role:'Mécanicien Chef',        specialty:'pitstop',
+    desc:'Coordinateur des 20 mécaniciens de l\'équipe. Précision chirurgicale.',
+    level:82, salary:4, cost:10,
+    impacts:{ pitstop:+7 },
+    passive:'Réduit le pitLoss de 1.2s',
+  },
+  {
+    id:'pit_3',       name:'Anna Kowalski',    icon:'🛞',
+    role:'Responsable Pneumatiques', specialty:'pitstop',
+    desc:'Spécialiste pneus Pirelli. Optimise les pressions et températures.',
+    level:76, salary:3, cost:7,
+    impacts:{ pitstop:+4 },
+    passive:'Réduit la phase de chauffe de 0.15s/tour sur les 2 premiers tours',
+  },
+
+  // ── FIABILITÉ ─────────────────────────────────────────────
+  {
+    id:'rel_1',       name:'Günter Steiner',   icon:'🛡️',
+    role:'Directeur Sportif',      specialty:'reliability',
+    desc:'Directeur de course expérimenté. Gère la fiabilité et les stratégies de risk management.',
+    level:85, salary:6, cost:14,
+    impacts:{ reliability:+8 },
+    passive:'Réduit les DNF mécaniques de 20% · Améliore la décision de Safety Car',
+  },
+  {
+    id:'rel_2',       name:'Priya Nair',       icon:'🔍',
+    role:'Ingénieure Fiabilité',   specialty:'reliability',
+    desc:'Détecte les pannes avant qu\'elles n\'arrivent. Maintenance prédictive.',
+    level:79, salary:4, cost:10,
+    impacts:{ reliability:+6 },
+    passive:'Réduit les DNF de 12% · +0.5 point de fiabilité/saison automatiquement',
+  },
+  {
+    id:'rel_3',       name:'Mikael Sundström', icon:'📡',
+    role:'Ingénieur Données',      specialty:'reliability',
+    desc:'Analyse télémétrique en temps réel. Anticipe les problèmes mécaniques.',
+    level:73, salary:3, cost:8,
+    impacts:{ reliability:+4 },
+    passive:'Alerte précoce DNF → réduit les abandons de 8%',
+  },
+
+  // ── STRATÉGIE ─────────────────────────────────────────────
+  {
+    id:'strat_1',     name:'Hannah Schmidt',   icon:'📊',
+    role:'Chef Stratège',          specialty:'aero',
+    desc:'Analyste stratégique de génie. Prédit les fenêtres de pit optimal.',
+    level:88, salary:8, cost:18, elite:true,
+    impacts:{ aero:+2, chassis:+2 },
+    passive:'Améliore les décisions undercut/overcut · Bonus de 1 point par podium',
+  },
+  {
+    id:'strat_2',     name:'David Greenwood',  icon:'🎯',
+    role:'Stratège Course',        specialty:'pitstop',
+    desc:'Spécialiste des stratégies alternatives. Exploite les Safety Car.',
+    level:80, salary:5, cost:12,
+    impacts:{ pitstop:+3 },
+    passive:'Double les opportunités de pit sous Safety Car',
+  },
+
+  // ── DIRECTION ─────────────────────────────────────────────
+  {
+    id:'dir_1',       name:'Andrea Stella',    icon:'🏆',
+    role:'Team Principal',         specialty:'chassis',
+    desc:'Leader inspirant. Fédère l\'équipe et optimise chaque décision.',
+    level:90, salary:9, cost:22, elite:true,
+    impacts:{ chassis:+3, reliability:+3, aero:+3 },
+    passive:'Réduit la pression du board de 5/saison · Boost moral équipe',
+  },
+  {
+    id:'dir_2',       name:'Otmar Szafnauer',  icon:'💼',
+    role:'Directeur Général',      specialty:'reliability',
+    desc:'Expert en gestion d\'équipe et négociations sponsors.',
+    level:82, salary:7, cost:16,
+    impacts:{ reliability:+4 },
+    passive:'+15M€ de revenus sponsors/saison · Facilite les recrutements',
+  },
+];
+
+// ══════════════════════════════════════════════════════════
+//  ÉTAT
+// ══════════════════════════════════════════════════════════
+let save        = null;
+let mktFilter   = 'all';
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+function init() {
+  save = Save.load();
+  if (!save || !save.playerTeamId) {
+    document.querySelector('.page').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);font-family:var(--fh)"><div style="font-size:24px;margin-bottom:12px">Aucune carrière trouvée</div><a href="index.html" class="btn btn-red">Créer une carrière</a></div>`;
+    return;
+  }
+
+  save.staff = save.staff || [];
+
+  // Restaurer les staffs générés depuis la save
+  if (typeof Career !== 'undefined') {
+    Career.restoreGeneratedStaff(save);
+    // Générer le premier lot si jamais fait
+    if (!save.generatedStaff || save.generatedStaff.length === 0) {
+      Career.generateNewStaff(save);
+      Save.save(save);
+    }
+  }
+
+  document.getElementById('seasonBadge').textContent = `Saison ${save.season||2025}`;
+  document.getElementById('budgetBadge').textContent = `💰 ${Math.round((save.budget||0)*10)/10}M €`;
+
+  applyStaffPassives();
+  renderOverview();
+  renderHired();
+  renderMarket();
+  renderSalaries();
+}
+
+// ══════════════════════════════════════════════════════════
+//  IMPACT PASSIF DU STAFF
+// ══════════════════════════════════════════════════════════
+function applyStaffPassives() {
+  if (!save?.staff) return;
+  const team = F1Data.teams.find(t => t.id === save.playerTeamId);
+  if (!team) return;
+
+  // Recalculer les stats équipe depuis la base + carDev + staff
+  const hiredStaff = STAFF_DB.filter(s => save.staff.includes(s.id));
+
+  // Reset staff bonuses (on les recalcule à chaque fois)
+  save.staffBonuses = {
+    aero:0, chassis:0, engine:0, reliability:0, pitstop:0,
+    pitLossReduction:0, tyreWarmupBonus:0, dnfReduction:0
+  };
+
+  hiredStaff.forEach(st => {
+    Object.entries(st.impacts).forEach(([key, val]) => {
+      save.staffBonuses[key] = (save.staffBonuses[key] || 0) + val;
+    });
+    // Passifs spéciaux
+    if (st.id === 'pit_1') save.staffBonuses.pitLossReduction  = (save.staffBonuses.pitLossReduction||0) + 2.0;
+    if (st.id === 'pit_2') save.staffBonuses.pitLossReduction  = (save.staffBonuses.pitLossReduction||0) + 1.2;
+    if (st.id === 'pit_3') save.staffBonuses.tyreWarmupBonus   = (save.staffBonuses.tyreWarmupBonus||0) + 0.15;
+    if (st.id === 'eng_3') save.staffBonuses.dnfReduction      = (save.staffBonuses.dnfReduction||0) + 0.15;
+    if (st.id === 'rel_1') save.staffBonuses.dnfReduction      = (save.staffBonuses.dnfReduction||0) + 0.20;
+    if (st.id === 'rel_2') save.staffBonuses.dnfReduction      = (save.staffBonuses.dnfReduction||0) + 0.12;
+    if (st.id === 'rel_3') save.staffBonuses.dnfReduction      = (save.staffBonuses.dnfReduction||0) + 0.08;
+  });
+
+  Save.save(save);
+}
+
+// ══════════════════════════════════════════════════════════
+//  OVERVIEW
+// ══════════════════════════════════════════════════════════
+function renderOverview() {
+  const team = F1Data.teams.find(t => t.id === save.playerTeamId);
+  const carDev = save.carDev || {};
+  const sb = save.staffBonuses || {};
+
+  const stats = [
+    { lbl:'Aéro',      val:Math.min(100,(team?.aero||70)+(carDev.aero?.level||0)/10+(sb.aero||0)/5|0),    base:team?.aero||70,     bonus:sb.aero||0,     color:'#2979ff' },
+    { lbl:'Châssis',   val:Math.min(100,(team?.chassis||70)+(carDev.chassis?.level||0)/10+(sb.chassis||0)/5|0), base:team?.chassis||70,  bonus:sb.chassis||0,  color:'#e8003d' },
+    { lbl:'Moteur',    val:Math.min(100,(team?.engine||70)+(carDev.engine?.level||0)/10+(sb.engine||0)/5|0),  base:team?.engine||70,   bonus:sb.engine||0,   color:'#ff9944' },
+    { lbl:'Fiabilité', val:Math.min(100,(team?.reliability||70)+(sb.reliability||0)|0),                       base:team?.reliability||70,bonus:sb.reliability||0,color:'#00e676'},
+    { lbl:'Pit Stop',  val:Math.min(100,50+(carDev.pitstop?.level||0)/2+(sb.pitstop||0)|0),                  base:50,                 bonus:sb.pitstop||0,  color:'#ffd700' },
+    { lbl:'Staff',     val:save.staff?.length||0,                                                             base:0,                  bonus:0,              color:'#aa44ff',max:STAFF_DB.length },
+  ];
+
+  document.getElementById('overviewGrid').innerHTML = stats.map(s => {
+    const pct = s.max ? Math.round(s.val / s.max * 100) : s.val;
+    const bonusText = s.bonus > 0 ? ` <span style="color:var(--green);font-size:12px">+${s.bonus}</span>` : '';
+    return `
+      <div class="ov-card">
+        <div class="ov-val" style="color:${s.color}">${s.val}${bonusText}</div>
+        <div class="ov-lbl">${s.lbl}</div>
+        <div class="ov-bar"><div class="ov-fill" style="width:${pct}%;background:${s.color}"></div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  MON STAFF
+// ══════════════════════════════════════════════════════════
+function renderHired() {
+  const hired = save.staff || [];
+  const grid  = document.getElementById('hiredGrid');
+  document.getElementById('hiredCount').textContent = hired.length;
+
+  if (!hired.length) {
+    grid.innerHTML = `<div style="padding:20px;color:var(--muted);font-family:var(--fh);font-size:15px;grid-column:1/-1">Aucun staff recruté. Va sur l'onglet Recrutement pour engager des experts.</div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+
+  // Chercher chaque staff recruté dans STAFF_DB ET dans les générés
+  hired.forEach(id => {
+    let st = STAFF_DB.find(s => s.id === id);
+    if (!st && save.generatedStaff) {
+      st = save.generatedStaff.find(s => s.id === id);
+    }
+    if (st) grid.appendChild(buildCard(st, true));
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  MARCHÉ
+// ══════════════════════════════════════════════════════════
+function filterMarket(f) {
+  mktFilter = f;
+  // Mettre à jour boutons
+  ['All','Aero','Chassis','Engine','Pit','Rel','Elite'].forEach(x => {
+    const btn = document.getElementById('f'+x);
+    if (btn) btn.classList.toggle('btn-red', f === x.toLowerCase().replace('pit','pitstop').replace('rel','reliability'));
+  });
+  renderMarket();
+}
+
+function renderMarket() {
+  const hired  = save.staff || [];
+  const grid   = document.getElementById('marketGrid');
+  grid.innerHTML = '';
+
+  // Staff statiques (STAFF_DB) non recrutés
+  let staticPool = STAFF_DB.filter(s => !hired.includes(s.id));
+
+  // Staff générés disponibles
+  let generatedPool = typeof Career !== 'undefined'
+    ? Career.getAvailableGeneratedStaff(save)
+    : [];
+
+  // Combiner
+  let pool = [...staticPool, ...generatedPool];
+
+  if (mktFilter === 'elite')    pool = pool.filter(s => s.elite || (s.level||0) >= 85);
+  else if (mktFilter !== 'all') pool = pool.filter(s => s.specialty === mktFilter);
+
+  if (!pool.length) {
+    grid.innerHTML = `<div style="padding:20px;color:var(--muted);font-family:var(--fh);font-size:15px;grid-column:1/-1">Aucun staff disponible pour ce filtre.</div>`;
+    return;
+  }
+
+  pool.sort((a,b) => (b.level||0) - (a.level||0));
+  pool.forEach(st => grid.appendChild(buildCard(st, false)));
+}
+
+// ══════════════════════════════════════════════════════════
+//  BUILD CARD
+// ══════════════════════════════════════════════════════════
+function buildCard(st, isHired) {
+  const card = document.createElement('div');
+  card.className = `staff-card${isHired?' hired':''}${st.elite?' elite':''}${st.generated?' generated':''}`;
+
+  const specLabel = {
+    aero:'Aérodynamique', chassis:'Châssis', engine:'Moteur/ERS',
+    pitstop:'Pit Stop', reliability:'Fiabilité'
+  }[st.specialty] || st.specialty;
+
+  const specColor = {
+    aero:'#2979ff', chassis:'#e8003d', engine:'#ff9944',
+    pitstop:'#ffd700', reliability:'#00e676'
+  }[st.specialty] || '#888';
+
+  // Nom d'affichage (staff généré a firstName + name)
+  const displayName = st.firstName ? `${st.firstName} ${st.name}` : st.name;
+
+  // Niveau label
+  const lvlLabel = typeof Career !== 'undefined'
+    ? Career.getStaffLevelLabel(st.level || 70)
+    : { label:'Confirmé', color:'#2979ff' };
+
+  // Phase d'âge
+  const agePhase = typeof Career !== 'undefined' && st.age
+    ? Career.getStaffAgePhase(st.age)
+    : null;
+
+  // Barres d'impact (impacts peut être obj ou paires key/val)
+  const impacts = st.impacts || {};
+  const impactBars = Object.entries(impacts).map(([key, val]) => {
+    const lbl = {aero:'Aéro',chassis:'Châssis',engine:'Moteur',pitstop:'Pit Stop',reliability:'Fiabilité',performance:'Performance'}[key]||key;
+    const col = {aero:'#2979ff',chassis:'#e8003d',engine:'#ff9944',pitstop:'#ffd700',reliability:'#00e676',performance:'#ffd700'}[key]||'#888';
+    return `
+      <div class="impact-row">
+        <div class="impact-lbl">${lbl}</div>
+        <div class="impact-bar-wrap"><div class="impact-bar" style="width:${val*5}%;background:${col}"></div></div>
+        <div class="impact-val" style="color:${col}">+${val}</div>
+      </div>
+    `;
+  }).join('');
+
+  const canAfford = (save.budget||0) >= (st.cost||0);
+  const ageInfo   = st.age ? `${st.age} ans${agePhase ? ' · '+agePhase.icon+' '+agePhase.label : ''}` : '';
+
+  card.innerHTML = `
+    <div class="sc-header">
+      <div class="sc-icon">${st.icon||'👤'}</div>
+      <div class="sc-info">
+        <div class="sc-name">${displayName}</div>
+        <div class="sc-role">${st.role}${ageInfo ? ' · '+ageInfo : ''}</div>
+        <div class="sc-badges">
+          <span class="badge badge-spec" style="color:${specColor};border-color:${specColor}40;background:${specColor}18">${specLabel}</span>
+          <span class="badge" style="color:${lvlLabel.color}">Niv. ${Math.round(st.level||70)} · ${lvlLabel.label}</span>
+          ${st.elite ? '<span class="badge badge-elite">⭐ Élite</span>' : ''}
+          ${st.generated ? '<span class="badge" style="color:#00e676;border-color:#003a18;background:#001a0a">✨ Nouveau</span>' : ''}
+          ${isHired ? '<span class="badge badge-hired">✅ En poste</span>' : ''}
+          ${st.aiContracted ? '<span class="badge" style="color:#ff9944;border-color:#3a1a00;background:#1a0a00">🔒 Sous contrat</span>' : ''}
+        </div>
+      </div>
+    </div>
+
+    <div style="font-family:var(--fb);font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5">${st.desc||'Membre de staff qualifié.'}</div>
+
+    <div class="sc-impacts">${impactBars}</div>
+
+    <div style="background:#0a0a14;border:1px solid var(--border);border-radius:4px;padding:7px 10px;margin-bottom:10px;font-family:var(--fh);font-size:11px;color:var(--muted)">
+      🔮 <strong style="color:var(--text)">Passif :</strong> ${st.passive||'Améliore les performances de l\'équipe.'}
+    </div>
+
+    <div class="sc-footer">
+      <div class="sc-salary">
+        ${isHired
+          ? `💰 Salaire : <span>${st.salary}M€/an</span>`
+          : `💰 Recrutement : <span>${st.cost}M€</span> · Salaire : ${st.salary}M€/an`
+        }
+      </div>
+      ${isHired
+        ? `<button class="btn btn-sec" onclick="fireStaff('${st.id}')">🚪 Licencier</button>`
+        : `<button class="btn btn-gold" onclick="hireStaff('${st.id}')" ${!canAfford?'disabled title="Budget insuffisant"':''}>
+             ${canAfford ? '✅ Recruter' : '🚫 Budget insuffisant'}
+           </button>`
+      }
+    </div>
+  `;
+
+  return card;
+}
+
+// ══════════════════════════════════════════════════════════
+//  RECRUTEMENT / LICENCIEMENT
+// ══════════════════════════════════════════════════════════
+function hireStaff(id) {
+  // Chercher dans STAFF_DB d'abord, puis dans les générés
+  let st = STAFF_DB.find(s => s.id === id);
+  if (!st && save.generatedStaff) {
+    st = save.generatedStaff.find(s => s.id === id);
+  }
+  if (!st) return;
+
+  if ((save.budget||0) < st.cost) {
+    toast(`❌ Budget insuffisant (besoin de ${st.cost}M€)`, true);
+    return;
+  }
+
+  // Vérifier l'exclusivité (1 seul DT)
+  if (st.exclusive) {
+    const hasDT = save.staff.some(id2 => {
+      const s2 = STAFF_DB.find(x => x.id === id2);
+      return s2?.exclusive;
+    });
+    if (hasDT) {
+      toast('❌ Tu as déjà un Directeur Technique exclusif !', true);
+      return;
+    }
+  }
+
+  save.budget = Math.round(((save.budget||0) - st.cost) * 10) / 10;
+  save.staff  = [...(save.staff||[]), id];
+
+  // Appliquer les impacts directs sur carDev
+  if (save.carDev) {
+    Object.entries(st.impacts).forEach(([key, val]) => {
+      if (save.carDev[key]) {
+        save.carDev[key].level = Math.min(100, (save.carDev[key].level||70) + Math.round(val * 0.5));
+      }
+    });
+  }
+
+  // Log news
+  if (typeof CareerEvents !== 'undefined') {
+    CareerEvents.log(save, {
+      phase:'mercato', icon:'✅', category:'transfer',
+      title:`${st.name} rejoint l'équipe`,
+      text:`${st.role} recruté pour ${st.cost}M€. Salaire annuel : ${st.salary}M€.`,
+    });
+  }
+
+  Save.save(save);
+  applyStaffPassives();
+  renderOverview();
+  renderHired();
+  renderMarket();
+  renderSalaries();
+  document.getElementById('budgetBadge').textContent = `💰 ${Math.round(save.budget*10)/10}M €`;
+  document.getElementById('hiredCount').textContent  = save.staff.length;
+  toast(`✅ ${st.name} recruté ! Impact immédiat sur la voiture.`);
+}
+
+function fireStaff(id) {
+  let st = STAFF_DB.find(s => s.id === id);
+  if (!st && save.generatedStaff) {
+    st = save.generatedStaff.find(s => s.id === id);
+  }
+  if (!st) return;
+
+  const penalty = Math.round(st.salary * 0.8);
+  if (!confirm(`Licencier ${st.name} ?\nIndemnité : ${penalty}M€`)) return;
+
+  save.budget = Math.round(((save.budget||0) - penalty) * 10) / 10;
+  save.staff  = (save.staff||[]).filter(i => i !== id);
+
+  // Retirer les impacts directs
+  if (save.carDev) {
+    Object.entries(st.impacts).forEach(([key, val]) => {
+      if (save.carDev[key]) {
+        save.carDev[key].level = Math.max(1, (save.carDev[key].level||70) - Math.round(val * 0.5));
+      }
+    });
+  }
+
+  if (typeof CareerEvents !== 'undefined') {
+    CareerEvents.log(save, {
+      phase:'mercato', icon:'🚪', category:'internal',
+      title:`${st.name} quitte l'équipe`,
+      text:`${st.role} licencié. Indemnité : ${penalty}M€.`,
+    });
+  }
+
+  Save.save(save);
+  applyStaffPassives();
+  renderOverview();
+  renderHired();
+  renderMarket();
+  renderSalaries();
+  document.getElementById('budgetBadge').textContent = `💰 ${Math.round(save.budget*10)/10}M €`;
+  document.getElementById('hiredCount').textContent  = save.staff.length;
+  toast(`🚪 ${st.name} licencié (indemnité : ${penalty}M€)`);
+}
+
+// ══════════════════════════════════════════════════════════
+//  MASSE SALARIALE
+// ══════════════════════════════════════════════════════════
+function renderSalaries() {
+  const hired    = (save.staff||[]).map(id => STAFF_DB.find(s=>s.id===id)).filter(Boolean);
+  const myDrivers = F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
+  const driverSalaries = myDrivers.reduce((s,d)=>s+(d.salary||0),0);
+  const staffSalaries  = hired.reduce((s,st)=>s+st.salary,0);
+  const totalAnnual    = driverSalaries + staffSalaries;
+
+  const el = document.getElementById('salarySummary');
+  el.innerHTML = `
+    <div class="sal-row"><span>👤 Pilotes (${myDrivers.length})</span><span style="color:var(--gold)">${driverSalaries}M€/an</span></div>
+    ${myDrivers.map(d=>`<div class="sal-row" style="padding-left:12px;font-size:12px;color:var(--muted)"><span>${d.firstName} ${d.name}</span><span>${d.salary||0}M€</span></div>`).join('')}
+    <div class="sal-row" style="margin-top:8px"><span>🧑‍🔧 Staff technique (${hired.length})</span><span style="color:var(--gold)">${staffSalaries}M€/an</span></div>
+    ${hired.map(st=>`<div class="sal-row" style="padding-left:12px;font-size:12px;color:var(--muted)"><span>${st.icon} ${st.name}</span><span>${st.salary}M€</span></div>`).join('')}
+    <div class="sal-row" style="margin-top:8px;border-top:2px solid var(--border);padding-top:10px">
+      <span style="font-weight:700">Total masse salariale</span>
+      <span class="sal-total">${totalAnnual}M€/an</span>
+    </div>
+    <div class="sal-row">
+      <span>Budget disponible</span>
+      <span style="color:${(save.budget||0)>totalAnnual?'var(--green)':'var(--accent)';font-weight:700">${Math.round((save.budget||0)*10)/10}M€</span>
+    </div>
+    <div class="sal-row">
+      <span>Marge opérationnelle</span>
+      <span style="color:${((save.budget||0)-totalAnnual)>0?'var(--green)':'var(--accent)'};font-weight:700">${Math.round(((save.budget||0)-totalAnnual)*10)/10}M€</span>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    if(b.getAttribute('onclick')===`showTab('${id}')`) b.classList.add('active');
+  });
+}
+
+function toast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = `toast${isError?' error':''}`;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+init();
+</script>
+</body>
+</html>
