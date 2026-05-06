@@ -294,12 +294,6 @@ const PROFILE_STAFF_DB = [
 
 ];
 
-// ══════════════════════════════════════════════════════════
-//  ÉTAT
-// ══════════════════════════════════════════════════════════
-let save        = null;
-let mktFilter   = 'all';
-
 // Compatibilité anciennes sauvegardes : l'ancienne page utilisait des IDs
 // comme "newey", "wache", etc. Cette page utilise maintenant
 // "dt_newey", "dt_wache"... Sans cette conversion, le compteur
