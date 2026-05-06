@@ -182,13 +182,25 @@ html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var
     .toast.error{border-left-color:var(--accent)}
 
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-  </style>
+  
+/* Topbar unifiée (style mobile staff) */
+.topbar{height:52px!important;background:var(--surface)!important;border-bottom:1px solid var(--border)!important;display:flex!important;align-items:center!important;padding:0 16px!important;gap:12px!important;position:sticky!important;top:0!important;z-index:100!important;box-shadow:none!important}
+.logo{font-family:var(--fh)!important;font-weight:900!important;font-size:22px!important;letter-spacing:3px!important;color:var(--accent)!important;white-space:nowrap!important;text-transform:none!important}
+.logo span{color:var(--text)!important}
+.back-home{font-family:var(--fh)!important;font-size:12px!important;color:var(--muted)!important;text-decoration:none!important;padding:4px 8px!important;border:1px solid var(--border)!important;border-radius:4px!important;background:transparent!important;line-height:1!important;white-space:nowrap!important}
+.back-home:hover{color:var(--text)!important;border-color:var(--accent)!important}
+.top-pills{margin-left:auto!important;display:flex!important;gap:8px!important;align-items:center!important}
+.pill{font-family:var(--fh)!important;font-weight:700!important;font-size:13px!important;padding:4px 12px!important;border-radius:20px!important;background:var(--surface2)!important;border:1px solid var(--border)!important;white-space:nowrap!important;line-height:1.2!important}
+.pill-gold{color:var(--gold)!important;border-color:#3a3400!important;background:#161200!important}
+.pill-muted{color:var(--muted)!important}
+@media(max-width:420px){.topbar{padding:0 12px!important;gap:8px!important}.logo{font-size:20px!important;letter-spacing:2px!important}.pill{font-size:12px!important;padding:4px 9px!important}.back-home{font-size:11px!important;padding:4px 7px!important}}
+</style>
 </head>
 <body>
 
 <div class="topbar">
   <div class="logo">F1<span>Manager</span></div>
-  <a href="index.html" style="font-family:var(--fh);font-size:12px;color:var(--muted);text-decoration:none;padding:4px 8px;border:1px solid var(--border);border-radius:4px">← Accueil</a>
+  <a href="index.html" class="back-home">← Accueil</a>
   <div class="top-pills">
     <div class="pill pill-muted" id="seasonBadge">—</div>
     <div class="pill pill-gold" id="budgetBadge">—</div>
@@ -572,6 +584,21 @@ function toast(msg, isError=false) {
 }
 
 init();
+</script>
+
+<script>
+(function(){
+  function syncUnifiedTopbar(){
+    try{
+      const save = (window.Save && Save.load) ? Save.load() : JSON.parse(localStorage.getItem('f1manager_save')||'{}');
+      const season = document.getElementById('seasonBadge');
+      const budget = document.getElementById('budgetBadge');
+      if(season && (!season.textContent || season.textContent.trim()==='—')) season.textContent = `Saison ${save.season || 2025}`;
+      if(budget && (!budget.textContent || budget.textContent.trim()==='—')) budget.textContent = `💰 ${Math.round((save.budget || 0)*10)/10}M €`;
+    }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',syncUnifiedTopbar); else syncUnifiedTopbar();
+})();
 </script>
 </body>
 </html>

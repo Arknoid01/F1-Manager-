@@ -113,12 +113,24 @@ html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var
     .panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}.ph{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 14px;font-family:var(--font-h);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}.dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
     .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}@media(max-width:760px){.summary{grid-template-columns:1fr 1fr}}.card{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px}.card .label{font-family:var(--font-h);font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}.card .value{font-family:var(--font-h);font-weight:900;font-size:25px;color:var(--gold);margin-top:3px}.table{display:flex;flex-direction:column}.row{display:grid;grid-template-columns:44px 1fr 70px;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--border)}.row.header{font-family:var(--font-h);font-size:11px;color:var(--muted);text-transform:uppercase;background:#0e0e16}.pos{font-family:var(--font-h);font-size:18px;font-weight:900;color:var(--gold)}.name{font-family:var(--font-h);font-size:16px;font-weight:700}.team{font-size:10px;color:var(--muted);margin-top:2px}.pts{font-family:var(--font-h);font-size:18px;font-weight:900;text-align:right}.empty{padding:22px;text-align:center;color:var(--muted);font-family:var(--font-h);font-size:14px}.history{padding:12px;display:flex;flex-direction:column;gap:8px}.race{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px;display:flex;justify-content:space-between;gap:12px}.race-title{font-family:var(--font-h);font-weight:700;font-size:15px}.race-sub{font-size:11px;color:var(--muted);margin-top:3px}.btn{font-family:var(--font-h);font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:6px 12px;border-radius:4px;text-decoration:none;background:var(--accent);color:#fff;display:inline-block}
   .entity-link{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.entity-link:hover{color:var(--gold,#ffd700)}
+
+/* Topbar unifiée (style mobile staff) */
+.topbar{height:52px!important;background:var(--surface)!important;border-bottom:1px solid var(--border)!important;display:flex!important;align-items:center!important;padding:0 16px!important;gap:12px!important;position:sticky!important;top:0!important;z-index:100!important;box-shadow:none!important}
+.logo{font-family:var(--fh)!important;font-weight:900!important;font-size:22px!important;letter-spacing:3px!important;color:var(--accent)!important;white-space:nowrap!important;text-transform:none!important}
+.logo span{color:var(--text)!important}
+.back-home{font-family:var(--fh)!important;font-size:12px!important;color:var(--muted)!important;text-decoration:none!important;padding:4px 8px!important;border:1px solid var(--border)!important;border-radius:4px!important;background:transparent!important;line-height:1!important;white-space:nowrap!important}
+.back-home:hover{color:var(--text)!important;border-color:var(--accent)!important}
+.top-pills{margin-left:auto!important;display:flex!important;gap:8px!important;align-items:center!important}
+.pill{font-family:var(--fh)!important;font-weight:700!important;font-size:13px!important;padding:4px 12px!important;border-radius:20px!important;background:var(--surface2)!important;border:1px solid var(--border)!important;white-space:nowrap!important;line-height:1.2!important}
+.pill-gold{color:var(--gold)!important;border-color:#3a3400!important;background:#161200!important}
+.pill-muted{color:var(--muted)!important}
+@media(max-width:420px){.topbar{padding:0 12px!important;gap:8px!important}.logo{font-size:20px!important;letter-spacing:2px!important}.pill{font-size:12px!important;padding:4px 9px!important}.back-home{font-size:11px!important;padding:4px 7px!important}}
 </style>
 </head>
 <body>
 <div class="topbar">
   <div class="logo">F1<span>Manager</span></div>
-  <a href="index.html" style="font-family:var(--fh);font-size:12px;color:var(--muted);text-decoration:none;padding:4px 8px;border:1px solid var(--border);border-radius:4px">← Accueil</a>
+  <a href="index.html" class="back-home">← Accueil</a>
   <div class="top-pills">
     <div class="pill pill-muted" id="seasonBadge">—</div>
     <div class="pill pill-gold" id="budgetBadge">—</div>
@@ -228,6 +240,21 @@ function restoreDriverStates() {
 }
 restoreDriverStates();
 
+</script>
+
+<script>
+(function(){
+  function syncUnifiedTopbar(){
+    try{
+      const save = (window.Save && Save.load) ? Save.load() : JSON.parse(localStorage.getItem('f1manager_save')||'{}');
+      const season = document.getElementById('seasonBadge');
+      const budget = document.getElementById('budgetBadge');
+      if(season && (!season.textContent || season.textContent.trim()==='—')) season.textContent = `Saison ${save.season || 2025}`;
+      if(budget && (!budget.textContent || budget.textContent.trim()==='—')) budget.textContent = `💰 ${Math.round((save.budget || 0)*10)/10}M €`;
+    }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',syncUnifiedTopbar); else syncUnifiedTopbar();
+})();
 </script>
 </body>
 </html>
