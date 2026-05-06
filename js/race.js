@@ -279,7 +279,7 @@ const Race = {
         car.driver, car.team, cir, car.tyre, 0, s.weather, lap, car.orderMode || 'normal'
       );
 
-      // Safety Car : tout le monde à ~135% du temps de base
+      // Safety Car : tout le monde roule au même rythme lent
       if (s.safetyCar.active) {
         lapTime = cir.baseLapTime * 1.38 + (Math.random() - 0.5) * 0.3;
       }
@@ -295,9 +295,32 @@ const Race = {
       }
     });
 
+    // ── Safety Car : regroupement ─────────────────────────────
+    // Réduit progressivement les écarts — les voitures se rassemblent
+    // derrière la SC. Chaque tour sous SC réduit l'écart de ~40%
+    if (s.safetyCar.active) {
+      const racing = s.grid
+        .filter(c => c.status === 'racing')
+        .sort((a, b) => a.totalTime - b.totalTime);
+
+      if (racing.length > 1) {
+        const leaderTime = racing[0].totalTime;
+
+        racing.forEach((car, scIdx) => {
+          if (scIdx === 0) return; // le leader garde son temps
+          const currentGap = car.totalTime - leaderTime;
+          if (currentGap <= 0) return;
+
+          // Réduire l'écart de 35% par tour de SC (en ~3 tours tout le monde est regroupé)
+          // Mais garder un écart minimum de 0.3s entre voitures (file indienne)
+          const minGap     = scIdx * 0.3;
+          const targetGap  = Math.max(minGap, currentGap * 0.65);
+          car.totalTime    = leaderTime + targetGap;
+        });
+      }
+    }
+
     // ── Dépassements actifs ───────────────────────────────────
-    // Appliqué après calcul de tous les temps — on tente les overtakes
-    // en tenant compte du circuit (drsZones, overtakingDifficulty)
     if (!s.safetyCar.active) {
       const racing = s.grid
         .filter(c => c.status === 'racing')
@@ -338,7 +361,7 @@ const Race = {
     // Safety Car aléatoire
     const scRoll = Engine.rollSafetyCar(lap, s.totalLaps, []);
     if (scRoll.active && !s.safetyCar.active) {
-      s.safetyCar = { active: true, remainingLaps: scRoll.laps };
+      s.safetyCar = { active: true, remainingLaps: 3 + Math.floor(Math.random() * 2) }; // 3-4 tours
       lapEvents.push({ lap, type: 'safety_car', message: '🟡 Safety Car déployée !' });
     }
 
