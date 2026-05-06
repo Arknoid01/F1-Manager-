@@ -749,6 +749,16 @@ function renderStratReco() {
       const badgeCls= isRec ? 'rec' : isRisky ? 'risky' : 'alt';
       const badgeTxt= isRec ? '⭐ Recommandée' : isRisky ? '⚠️ Risquée' : '✅ Viable';
 
+      // Calculer les laps par compound AVANT le template
+      const compoundLaps = opt.compounds.map((c, ci) => {
+        const laps = ci === 0
+          ? (opt.pitLaps[0] || circuit.laps)
+          : ci < opt.pitLaps.length
+            ? opt.pitLaps[ci] - opt.pitLaps[ci-1]
+            : circuit.laps - opt.pitLaps[opt.pitLaps.length-1];
+        return { c, laps };
+      });
+
       return `
         <div class="strat-option ${isRec?'recommended':isRisky?'':'possible'}">
           <span class="strat-badge ${badgeCls}">${badgeTxt}</span>
@@ -756,20 +766,13 @@ function renderStratReco() {
             ${opt.stops} arrêt${opt.stops>1?'s':''}
           </div>
           <div class="strat-compounds">
-            ${opt.compounds.map((c, i) => {
+            ${compoundLaps.map(({c, laps}, ci) => {
               const t = F1Data.tyres[c];
-              const laps = i === 0 ? opt.pitLaps[0]
-                : i < opt.pitLaps.length ? opt.pitLaps[i] - opt.pitLaps[i-1]
-                : circuit.laps - opt.pitLaps[opt.pitLaps.length-1];
-              return `
-                ${i > 0 ? '<span class="strat-arrow">→</span>' : ''}
-                <div class="strat-dot" style="background:${t.color}"></div>
-                <span class="strat-laps" style="color:${t.color}">${laps}t</span>
-              `;
+              return `${ci > 0 ? '<span class="strat-arrow">→</span>' : ''}<div class="strat-dot" style="background:${t.color}"></div><span class="strat-laps" style="color:${t.color}">${laps}t</span>`;
             }).join('')}
           </div>
           <div class="strat-detail">${opt.detail}</div>
-          ${opt.pitLaps.length ? `<div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-top:3px">Pit : tour${opt.pitLaps.length>1?'s':''} ${opt.pitLaps.join(' / ')}</div>` : ''}
+          ${opt.pitLaps.length ? `<div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-top:3px">Pit T.${opt.pitLaps.join(' / ')}</div>` : ''}
         </div>
       `;
     }).join('')}
