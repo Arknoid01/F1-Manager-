@@ -718,12 +718,9 @@ function buildCard(st, isHired) {
       </div>
       ${isHired
         ? `<button class="btn btn-sec" onclick="fireStaff('${st.id}')">🚪 Licencier</button>`
-        : (() => {
-            const limitCheck = typeof Career !== 'undefined' ? Career.canHireStaff(save, st) : {ok:true};
-            const disabled   = !canAfford || !limitCheck.ok;
-            const reason     = !canAfford ? 'Budget insuffisant' : (!limitCheck.ok ? limitCheck.reason : '');
-            return `<button class="btn btn-gold" onclick="hireStaff('${st.id}')" ${disabled?`disabled title="${reason}"`:''}>${disabled ? '🚫 '+reason.slice(0,20) : '✅ Recruter'}</button>`;
-          })()
+        : `<button class="btn btn-gold" onclick="hireStaff('${st.id}')" ${(()=>{const c=typeof Career!=='undefined'?Career.canHireStaff(save,st):{ok:true};return(!canAfford||!c.ok)?`disabled title="${!canAfford?'Budget insuffisant':c.reason||''}"`:''})()}>
+             ${canAfford ? '✅ Recruter' : '🚫 Budget'}
+           </button>`
       }
     </div>
   `;
