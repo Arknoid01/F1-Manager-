@@ -252,43 +252,71 @@ const Engine = {
   },
 
   // ── GÉNÉRATION STRATÉGIE ──────────────────────────────────
-  generateStrategy(circuit, teamPerformance, weather='dry', driverTrait=null) {
+  // gridPos : position de départ (1=pole, 20=dernier)
+  generateStrategy(circuit, teamPerformance, weather='dry', driverTrait=null, gridPos=10) {
     if (weather === 'heavy_rain') return { compounds: ['WET'], pitLaps: [] };
 
     const L = circuit.laps;
     const D = circuit.tyreDegradation;
 
+    // Nombre d'arrêts de base
     let stops = 1;
     if (D > 1.2 || L > 65) stops = 2;
     if (D > 1.45) stops = 3;
 
+    // ── Variabilité selon la position grille ─────────────────
+    // Top 3 : stratégie conservatrice (protéger la position)
+    // P4-P10 : stratégie agressive (undercut possible)
+    // P11-P15 : gamble medium (décalage de 1-2 tours)
+    // P16-P20 : gamble total (overcut, 1 arrêt même si 2 optimal)
+
+    let strategyBias = 'normal';
+    if (gridPos <= 3)       strategyBias = 'conservative';
+    else if (gridPos <= 10) strategyBias = 'aggressive';
+    else if (gridPos <= 15) strategyBias = 'offset';
+    else                    strategyBias = 'gamble';
+
+    // Gamble : les derniers tentent souvent 1 arrêt au lieu de 2
+    if (strategyBias === 'gamble' && stops === 2 && Math.random() < 0.55) stops = 1;
+    // Offset : décaler le pit de quelques tours
+    const pitOffset = strategyBias === 'offset' ? Math.floor(Math.random() * 6) - 3 : 0;
+    // Aggressive : essayer l'undercut (pit plus tôt)
+    const earlyPit  = strategyBias === 'aggressive' && Math.random() < 0.4;
+
     // Top équipes peuvent faire moins d'arrêts
     if (teamPerformance > 87 && stops === 2 && Math.random() > 0.7) stops = 1;
 
-    // Consistent préfère les stratégies longues (Hard)
-    // Aggressive préfère les softs et plus d'arrêts
+    // Traits pilote
     if (driverTrait === 'consistent' && stops === 2 && Math.random() > 0.5) stops = 1;
     if (driverTrait === 'aggressive' && stops === 1 && Math.random() > 0.6) stops = 2;
 
+    // ── Pools de stratégies ────────────────────────────────
     const strategies = {
       1: [
-        { compounds: ['MEDIUM', 'HARD'],   pitLaps: [Math.round(L * 0.46)] },
-        { compounds: ['SOFT',   'HARD'],   pitLaps: [Math.round(L * 0.36)] },
-        { compounds: ['HARD',   'MEDIUM'], pitLaps: [Math.round(L * 0.56)] },
+        { compounds: ['MEDIUM','HARD'],  pitLaps: [Math.round(L * (earlyPit?0.38:0.46) + pitOffset)] },
+        { compounds: ['SOFT','HARD'],    pitLaps: [Math.round(L * (earlyPit?0.28:0.36) + pitOffset)] },
+        { compounds: ['HARD','MEDIUM'],  pitLaps: [Math.round(L * (earlyPit?0.48:0.56) + pitOffset)] },
+        { compounds: ['MEDIUM','SOFT'],  pitLaps: [Math.round(L * (earlyPit?0.50:0.60) + pitOffset)] },  // overcut gamble
       ],
       2: [
-        { compounds: ['SOFT',   'MEDIUM', 'HARD'],   pitLaps: [Math.round(L * 0.27), Math.round(L * 0.57)] },
-        { compounds: ['SOFT',   'HARD',   'MEDIUM'], pitLaps: [Math.round(L * 0.24), Math.round(L * 0.59)] },
-        { compounds: ['MEDIUM', 'SOFT',   'HARD'],   pitLaps: [Math.round(L * 0.35), Math.round(L * 0.63)] },
-        { compounds: ['MEDIUM', 'HARD',   'SOFT'],   pitLaps: [Math.round(L * 0.33), Math.round(L * 0.66)] },
+        { compounds: ['SOFT','MEDIUM','HARD'],  pitLaps: [Math.round(L*(earlyPit?0.22:0.27)+pitOffset), Math.round(L*0.57+pitOffset)] },
+        { compounds: ['SOFT','HARD','MEDIUM'],  pitLaps: [Math.round(L*(earlyPit?0.20:0.24)+pitOffset), Math.round(L*0.59+pitOffset)] },
+        { compounds: ['MEDIUM','SOFT','HARD'],  pitLaps: [Math.round(L*(earlyPit?0.28:0.35)+pitOffset), Math.round(L*0.63+pitOffset)] },
+        { compounds: ['MEDIUM','HARD','SOFT'],  pitLaps: [Math.round(L*0.33+pitOffset), Math.round(L*0.66+pitOffset)] },
+        { compounds: ['SOFT','SOFT','HARD'],    pitLaps: [Math.round(L*0.20+pitOffset), Math.round(L*0.42+pitOffset)] },  // agressif
       ],
       3: [
-        { compounds: ['SOFT', 'SOFT', 'MEDIUM', 'HARD'], pitLaps: [Math.round(L * 0.19), Math.round(L * 0.40), Math.round(L * 0.64)] },
+        { compounds: ['SOFT','SOFT','MEDIUM','HARD'], pitLaps: [Math.round(L*0.19), Math.round(L*0.40), Math.round(L*0.64)] },
       ],
     };
 
     const pool = strategies[stops] || strategies[1];
-    return pool[Math.floor(Math.random() * pool.length)];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+
+    // Nettoyer les pitLaps hors limites
+    pick.pitLaps = pick.pitLaps.map(p => Math.max(3, Math.min(L-4, p)));
+
+    return pick;
   },
 
   // ── NORMALISATION STRATÉGIE PERSO ─────────────────────────
