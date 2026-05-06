@@ -342,7 +342,7 @@ init();
 (function(){
   function syncUnifiedTopbar(){
     try{
-      const save = (window.Save && Save.load) ? Save.load() : JSON.parse(localStorage.getItem('f1manager_save')||'{}');
+      const save = ((window.Save && Save.load) ? Save.load() : null) || JSON.parse(localStorage.getItem('f1manager_v1') || localStorage.getItem('f1manager_save') || localStorage.getItem('f1-manager-save') || '{}') || {};
       const season = document.getElementById('seasonBadge');
       const budget = document.getElementById('budgetBadge');
       if(season && (!season.textContent || season.textContent.trim()==='—')) season.textContent = `Saison ${save.season || 2025}`;
