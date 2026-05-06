@@ -195,9 +195,13 @@ const Race = {
         );
 
         let nextCompound = car.requestedCompound || car.strategy.compounds[car.currentCompoundIndex];
-        if (s.weather === 'heavy_rain')      nextCompound = 'WET';
-        else if (s.weather === 'light_rain') nextCompound = 'INTER';
-        else if (['INTER', 'WET'].includes(car.tyre.compound)) nextCompound = 'MEDIUM';
+
+        // Auto-switch météo UNIQUEMENT si le joueur n'a pas forcé un compound
+        if (!car.requestedCompound) {
+          if      (s.weather === 'heavy_rain')                          nextCompound = 'WET';
+          else if (s.weather === 'light_rain' && currentHumidity > 45)  nextCompound = 'INTER';
+          else if (['INTER','WET'].includes(car.tyre.compound) && currentHumidity < 25) nextCompound = 'MEDIUM';
+        }
 
         car.pitStops.push({
           lap,
