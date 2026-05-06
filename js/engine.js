@@ -21,7 +21,8 @@ const Engine = {
   },
 
   // ── CALCUL TEMPS AU TOUR ──────────────────────────────────
-  calcLapTime(driver, team, circuit, tyreState, fuelLoad, weather='dry', lap=1, orderMode='normal') {
+  calcLapTime(driver, team, circuit, tyreState, _fuelLoad, weather='dry', lap=1, orderMode='normal') {
+    // _fuelLoad ignoré — en F1 moderne géré avant la course
     const tyre  = F1Data.tyres[tyreState.compound];
     const trait = this.getTrait(driver);
 
@@ -82,10 +83,8 @@ const Engine = {
       lapTime += (degradation - 0.80) * cliffFactor;
     }
 
-    // ── 8. Fuel load ──────────────────────────────────────
-    lapTime += fuelLoad * 0.028;
 
-    // ── 9. Météo + trait pluie ────────────────────────────
+    // ── 8. Météo + trait pluie ────────────────────────────
     if (weather === 'light_rain') {
       let wetSkill = driver.wetSkill;
       if (driver.trait === 'rain_master') wetSkill = Math.min(99, wetSkill + 5);
@@ -100,11 +99,11 @@ const Engine = {
       if (tyreState.compound !== 'WET') lapTime += 16.0;
     }
 
-    // ── 10. Ordres pilote ─────────────────────────────────
+    // ── 9. Ordres pilote ─────────────────────────────────
     if (orderMode === 'attack') lapTime -= 0.28;
     if (orderMode === 'save')   lapTime += 0.22;
 
-    // ── 11. Consistance — variabilité ─────────────────────
+    // ── 10. Consistance — variabilité ─────────────────────
     // Consistent = très peu de variation, aggressive = plus variable
     let variability = 0.20;
     if (driver.trait === 'consistent') variability = 0.10;
