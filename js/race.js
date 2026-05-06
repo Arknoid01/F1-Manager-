@@ -40,12 +40,12 @@ const Race = {
     const grid = [];
 
     const activeDrivers = F1Data.drivers.filter(d => d.teamId && !d.retired);
-    activeDrivers.forEach(baseDriver => {
+    activeDrivers.forEach((baseDriver, driverIndex) => {
       const driver = (typeof CareerEvents !== 'undefined') ? CareerEvents.effectiveDriver(baseDriver) : baseDriver;
       const baseTeam = F1Data.teams.find(t => t.id === driver.teamId);
       if (!baseTeam) return;
       const team     = this.getEffectiveTeam(baseTeam);
-      let strategy = Engine.generateStrategy(circuit, team.performance, weather, driver.trait, i + 1);
+      let strategy = Engine.generateStrategy(circuit, team.performance, weather, driver.trait, driverIndex + 1);
       if (playerStrategies && playerStrategies[driver.id]) {
         strategy = Engine.normalizeStrategy(playerStrategies[driver.id], circuit, weather);
       }
