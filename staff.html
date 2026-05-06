@@ -474,6 +474,56 @@ const STAFF_DB = [
 let save        = null;
 let mktFilter   = 'all';
 
+// Compatibilité anciennes sauvegardes : l'ancienne page utilisait des IDs
+// comme "newey", "wache", etc. Cette page utilise maintenant
+// "dt_newey", "dt_wache"... Sans cette conversion, le compteur
+// affiche bien 1 staff, mais aucune carte n'est trouvée ni affichée.
+const LEGACY_STAFF_IDS = {
+  newey: 'dt_newey',
+  wache: 'dt_wache',
+  allison: 'dt_allison',
+  seidl: 'pit_2',
+  wheatley: 'pit_1',
+  stella: 'dir_stella'
+};
+
+function normalizeStaffId(id) {
+  const key = String(id || '');
+  return LEGACY_STAFF_IDS[key] || key;
+}
+
+function migrateLegacyStaffIds() {
+  save.staff = (save.staff || []).map(normalizeStaffId);
+  // Supprime les doublons éventuels après conversion
+  save.staff = [...new Set(save.staff)];
+}
+
+function isStaffHired(id) {
+  const nid = normalizeStaffId(id);
+  return (save.staff || []).map(normalizeStaffId).includes(nid);
+}
+
+function findStaffById(id) {
+  const nid = normalizeStaffId(id);
+  return STAFF_DB.find(s => String(s.id) === nid)
+      || (save.generatedStaff || []).find(s => String(s.id) === nid)
+      || null;
+}
+
+function canHireStaffSafe(st) {
+  if (typeof Career !== 'undefined' && typeof Career.canHireStaff === 'function') {
+    return Career.canHireStaff(save, st);
+  }
+  const total = (save.staff || []).length;
+  if (total >= 11) return { ok:false, reason:'Limite de 11 membres de staff atteinte' };
+  if (isStaffHired(st.id)) return { ok:false, reason:'Déjà recruté' };
+  if (st.exclusive) {
+    const hasExclusive = (save.staff || []).some(id => findStaffById(id)?.exclusive);
+    if (hasExclusive) return { ok:false, reason:'Tu as déjà un Directeur Technique exclusif' };
+  }
+  return { ok:true };
+}
+
 // ══════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════
@@ -485,6 +535,7 @@ function init() {
   }
 
   save.staff = save.staff || [];
+  migrateLegacyStaffIds();
 
   // Restaurer les staffs générés depuis la save
   if (typeof Career !== 'undefined') {
@@ -510,25 +561,6 @@ function init() {
 }
 
 // ══════════════════════════════════════════════════════════
-//  HELPERS STAFF
-// ══════════════════════════════════════════════════════════
-function sameStaffId(a, b) {
-  return String(a) === String(b);
-}
-
-function getAllStaff() {
-  return [...(typeof STAFF_DB !== 'undefined' ? STAFF_DB : []), ...(save?.generatedStaff || [])];
-}
-
-function findStaffById(id) {
-  return getAllStaff().find(s => sameStaffId(s.id, id));
-}
-
-function isStaffHired(id) {
-  return (save.staff || []).some(hiredId => sameStaffId(hiredId, id));
-}
-
-// ══════════════════════════════════════════════════════════
 //  IMPACT PASSIF DU STAFF
 // ══════════════════════════════════════════════════════════
 function applyStaffPassives() {
@@ -537,7 +569,7 @@ function applyStaffPassives() {
   if (!team) return;
 
   // Recalculer les stats équipe depuis la base + carDev + staff
-  const hiredStaff = getAllStaff().filter(s => isStaffHired(s.id));
+  const hiredStaff = (save.staff || []).map(findStaffById).filter(Boolean);
 
   // Reset staff bonuses (on les recalcule à chaque fois)
   save.staffBonuses = {
@@ -736,7 +768,7 @@ function buildCard(st, isHired) {
       </div>
       ${isHired
         ? `<button class="btn btn-sec" onclick="fireStaff('${st.id}')">🚪 Licencier</button>`
-        : `<button class="btn btn-gold" onclick="hireStaff('${st.id}')" ${(()=>{const c=typeof Career!=='undefined'?Career.canHireStaff(save,st):{ok:true};return(!canAfford||!c.ok)?`disabled title="${!canAfford?'Budget insuffisant':c.reason||''}"`:''})()}>
+        : `<button class="btn btn-gold" onclick="hireStaff('${st.id}')" ${(()=>{const c=canHireStaffSafe(st);return(!canAfford||!c.ok)?`disabled title="${!canAfford?'Budget insuffisant':c.reason||''}"`:''})()}>
              ${canAfford ? '✅ Recruter' : '🚫 Budget'}
            </button>`
       }
@@ -755,14 +787,8 @@ function hireStaff(id) {
   if (!st) return;
 
   // Vérifier les limites
-  if (typeof Career !== 'undefined') {
-    const check = Career.canHireStaff(save, st);
-    if (!check.ok) { toast(`❌ ${check.reason}`, true); return; }
-  } else {
-    // Fallback si career.js pas chargé
-    const total = (save.staff||[]).length;
-    if (total >= 11) { toast('❌ Limite de 11 membres de staff atteinte !', true); return; }
-  }
+  const check = canHireStaffSafe(st);
+  if (!check.ok) { toast(`❌ ${check.reason}`, true); return; }
 
   if ((save.budget||0) < st.cost) {
     toast(`❌ Budget insuffisant (besoin de ${st.cost}M€)`, true);
@@ -782,7 +808,7 @@ function hireStaff(id) {
   }
 
   save.budget = Math.round(((save.budget||0) - st.cost) * 10) / 10;
-  save.staff  = [...(save.staff||[]), id];
+  save.staff  = [...(save.staff||[]), normalizeStaffId(id)];
 
   // Appliquer les impacts directs sur carDev
   if (save.carDev) {
@@ -821,7 +847,7 @@ function fireStaff(id) {
   if (!confirm(`Licencier ${st.name} ?\nIndemnité : ${penalty}M€`)) return;
 
   save.budget = Math.round(((save.budget||0) - penalty) * 10) / 10;
-  save.staff  = (save.staff||[]).filter(i => !sameStaffId(i, id));
+  save.staff  = (save.staff||[]).filter(i => normalizeStaffId(i) !== normalizeStaffId(id));
 
   // Retirer les impacts directs
   if (save.carDev) {
@@ -855,7 +881,7 @@ function fireStaff(id) {
 //  MASSE SALARIALE
 // ══════════════════════════════════════════════════════════
 function renderSalaries() {
-  const hired    = (save.staff||[]).map(id => findStaffById(id)).filter(Boolean);
+  const hired    = (save.staff||[]).map(findStaffById).filter(Boolean);
   const myDrivers = F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
   const driverSalaries = myDrivers.reduce((s,d)=>s+(d.salary||0),0);
   const staffSalaries  = hired.reduce((s,st)=>s+st.salary,0);
