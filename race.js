@@ -40,12 +40,12 @@ const Race = {
     const grid = [];
 
     const activeDrivers = F1Data.drivers.filter(d => d.teamId && !d.retired);
-    activeDrivers.forEach(baseDriver => {
+    activeDrivers.forEach((baseDriver, driverIndex) => {
       const driver = (typeof CareerEvents !== 'undefined') ? CareerEvents.effectiveDriver(baseDriver) : baseDriver;
       const baseTeam = F1Data.teams.find(t => t.id === driver.teamId);
       if (!baseTeam) return;
       const team     = this.getEffectiveTeam(baseTeam);
-      let strategy = Engine.generateStrategy(circuit, team.performance, weather);
+      let strategy = Engine.generateStrategy(circuit, team.performance, weather, driver.trait, driverIndex + 1);
       if (playerStrategies && playerStrategies[driver.id]) {
         strategy = Engine.normalizeStrategy(playerStrategies[driver.id], circuit, weather);
       }
@@ -204,7 +204,62 @@ const Race = {
         car.tyre = { compound: nextCompound, condition: 1.0, age: 0 };
         car.forcePit = false;
         car.requestedCompound = null;
-        car.totalTime += cir.pitLoss; // ← correction : cir et non circuit
+
+        // ── Calcul du temps pit réaliste ─────────────────────
+        // pitLoss = temps total incluant pit lane traversée
+        // Le temps mécanique (changement pneus) est ~2.5s min
+        // La pit lane traversée est incompressible (~15-22s selon circuit)
+        // Total minimum réaliste : ~17-22s
+
+        const basePitLoss   = cir.pitLoss; // déjà calibré par circuit
+        const minPitTime    = basePitLoss - 4.0; // max 4s de gain possible (staff élite)
+        let pitTime         = basePitLoss;
+
+        // Bonus staff pit stop (depuis save.staffBonuses)
+        try {
+          const sv = Save.load();
+          const sb = sv?.staffBonuses;
+
+          // Staff bonus : plafonné à -3s max (réaliste)
+          if (sb?.pitLossReduction) {
+            pitTime -= Math.min(3.0, sb.pitLossReduction);
+          }
+
+          // Bonus carDev pitstop : plafonné à -1s max
+          const pitDev = sv?.carDev?.pitstop;
+          if (pitDev?.upgrades) {
+            pitTime -= Math.min(1.0, pitDev.upgrades * 0.4);
+          }
+
+          // Jamais en dessous du minimum réaliste
+          pitTime = Math.max(minPitTime, pitTime);
+
+          // ── Arrêt raté ──────────────────────────────────────
+          const pitLevel    = pitDev?.level || 50;
+          const staffBonus  = sb?.pitstop   || 0;
+          const effectiveLvl= Math.min(100, pitLevel + staffBonus);
+          const missChance  = Math.max(0.01, 0.15 - effectiveLvl * 0.0014);
+
+          if (Math.random() < missChance) {
+            const severity = Math.random();
+            const penalty  = severity > 0.8 ? 10 + Math.random() * 5
+                           : severity > 0.5 ? 4  + Math.random() * 4
+                           :                  2  + Math.random() * 2;
+            pitTime += penalty;
+            lapEvents.push({
+              lap,
+              type: 'pit',
+              message: `⚠️ ${car.driver.name} — Arrêt raté ! (+${penalty.toFixed(1)}s)`,
+            });
+          }
+        } catch(e) { /* ignore */ }
+
+        car.totalTime += pitTime;
+
+        // Supprimer les pitLaps proches pour éviter un double arrêt
+        if (car.strategy?.pitLaps) {
+          car.strategy.pitLaps = car.strategy.pitLaps.filter(pl => pl > lap + 5);
+        }
 
         lapEvents.push({
           lap,
@@ -214,9 +269,9 @@ const Race = {
       }
 
       // ── Temps au tour ─────────────────────────────────────────
-      const fuelLoad = Engine.calcFuelLoad(cir, lap);
-      let lapTime    = Engine.calcLapTime(
-        car.driver, car.team, cir, car.tyre, fuelLoad, s.weather, lap, car.orderMode || 'normal'
+      // Pas de fuel load — en F1 moderne c'est calculé avant la course
+      let lapTime = Engine.calcLapTime(
+        car.driver, car.team, cir, car.tyre, 0, s.weather, lap, car.orderMode || 'normal'
       );
 
       // Safety Car : tout le monde à ~135% du temps de base
@@ -234,6 +289,46 @@ const Race = {
         car.tyre = Engine.degradeTyre(car.tyre, cir, car.driver, s.weather, car.orderMode || 'normal');
       }
     });
+
+    // ── Dépassements actifs ───────────────────────────────────
+    // Appliqué après calcul de tous les temps — on tente les overtakes
+    // en tenant compte du circuit (drsZones, overtakingDifficulty)
+    if (!s.safetyCar.active) {
+      const racing = s.grid
+        .filter(c => c.status === 'racing')
+        .sort((a, b) => a.totalTime - b.totalTime);
+
+      // Bonus DRS : plus de zones = dépassements plus faciles
+      const drsBonus = Math.min(0.25, (cir.drsZones || 1) * 0.08);
+
+      for (let i = 1; i < racing.length; i++) {
+        const attacker = racing[i];
+        const defender = racing[i - 1];
+
+        // Écart en temps — le dépassement n'est possible que si proche
+        const gap = attacker.totalTime - defender.totalTime;
+        if (gap > 1.2) continue; // trop loin, pas de bataille
+
+        // Tentative de dépassement via engine.js
+        // On passe un circuit modifié avec le bonus DRS
+        const circuitWithDRS = { ...cir, overtakingDifficulty: Math.max(0.05, cir.overtakingDifficulty - drsBonus) };
+        const overtook = Engine.attemptOvertake(attacker, defender, circuitWithDRS);
+
+        if (overtook) {
+          // Échanger les temps pour refléter le dépassement
+          // Penalty de temps pour le défenseur (résistance perdue)
+          const timePenalty = 0.3 + Math.random() * 0.4;
+          defender.totalTime += timePenalty;
+          attacker.totalTime -= timePenalty * 0.3;
+
+          lapEvents.push({
+            lap,
+            type: 'overtake',
+            message: `🏎️ ${attacker.driver.name} dépasse ${defender.driver.name}${cir.overtakingDifficulty > 0.7 ? ' — dépassement exceptionnel !' : ''}`,
+          });
+        }
+      }
+    }
 
     // Safety Car aléatoire
     const scRoll = Engine.rollSafetyCar(lap, s.totalLaps, []);
