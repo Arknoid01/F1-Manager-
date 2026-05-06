@@ -30,7 +30,7 @@
   </div>
   <div class="panel">
     <div class="ph"><div class="dot"></div> Marché des pilotes</div>
-    <div class="toolbar"><input id="search" placeholder="Rechercher…" oninput="renderMarket()"><select id="filter" onchange="renderMarket()"><option value="all">Tous</option><option value="free">Agents libres</option><option value="young">Jeunes ≤24</option><option value="top">Top score ≥85</option></select></div>
+    <div id="transferBanner" style="display:none;padding:8px 12px;background:#1a0808;border-bottom:1px solid #5a1a1a;font-family:var(--fh);font-size:13px;color:#ff8888">🚫 <strong>Mercato fermé</strong> — Les transferts sont uniquement autorisés avant la première course de la saison. Termine la saison pour rouvrir.</div><div class="toolbar"><input id="search" placeholder="Rechercher…" oninput="renderMarket()"><select id="filter" onchange="renderMarket()"><option value="all">Tous</option><option value="free">Agents libres</option><option value="young">Jeunes ≤24</option><option value="top">Top score ≥85</option></select></div>
     <div class="grid" id="marketGrid"></div>
   </div>
   <div class="panel">
@@ -51,7 +51,7 @@ function restoreDrivers(){
   if(save.driverStates){F1Data.drivers.forEach(d=>{const st=save.driverStates[d.id]; if(st) Object.assign(d,st);});}
   F1Data.drivers.forEach(d=>{if(!d.age)d.age=25;if(!d.potential)d.potential=Math.max(d.pace||70,d.consistency||70)+5;if(!d.trait)d.trait='consistent';if(d.retired===undefined)d.retired=false;});
 }
-function init(){save=Save.load(); if(!save||!save.playerTeamId){document.getElementById('page').innerHTML='<div class="empty">Aucune carrière trouvée<br><br><a class="btn btn-red" href="index.html">Créer une carrière</a></div>';return;} restoreDrivers(); Career.ensureContractSystem(save); Save.save(save); updateTop(); renderMy(); renderNewTalents(); renderMarket(); renderSeasonPreview();}
+function init(){save=Save.load(); if(!save||!save.playerTeamId){document.getElementById('page').innerHTML='<div class="empty">Aucune carrière trouvée<br><br><a class="btn btn-red" href="index.html">Créer une carrière</a></div>';return;} restoreDrivers(); Career.ensureContractSystem(save); Save.save(save); updateTop(); renderMy(); renderMarket(); renderSeasonPreview();}
 function updateTop(){document.getElementById('seasonBadge').textContent=`Saison ${save.season||2025}`;document.getElementById('budgetBadge').textContent=`💰 ${save.budget||0}M €`;}
 function driverTeam(d){return d.teamId?F1Data.teams.find(t=>t.id===d.teamId):null}
 function roleLabel(r){return r==='pilote1'?'Pilote 1':r==='egal'?'Statut égal':'Pilote 2'}
@@ -59,31 +59,17 @@ function buildCard(d,isMine){const team=driverTeam(d),score=Career.getDriverScor
   const div=document.createElement('div');div.className='driver-card'+(isMine?' mine':'');div.innerHTML=`<div class="dc-head"><div><div class="dc-name">${d.firstName||''} ${d.name}</div><div class="dc-team">${team?team.name:'Agent libre'} · ${d.age||'?'} ans · Contrat: ${c.years||0} an(s)</div></div><div class="score">${score}</div></div><div class="badges"><span class="badge">${pers.icon} ${pers.label}</span><span class="badge" style="color:${p.color}">Potentiel ${p.label}</span><span class="badge">💰 ${d.salary||1}M€/an</span>${c.refus?`<span class="badge counter">${c.refus} refus</span>`:''}</div><div class="stats"><div class="stat"><b>${d.pace}</b><span>Pace</span></div><div class="stat"><b>${d.consistency}</b><span>Rég.</span></div><div class="stat"><b>${d.wetSkill}</b><span>Pluie</span></div><div class="stat"><b>${d.overtaking}</b><span>Att.</span></div><div class="stat"><b>${d.defending}</b><span>Déf.</span></div></div><div class="chance">${pers.desc}<br><span id="${prefix}-eval-${d.id}">Ajuste l'offre pour voir les chances.</span></div><div class="offer"><div class="field"><label>Salaire / an</label><input id="${prefix}-sal-${d.id}" type="number" min="1" value="${defaultSalary}" oninput="refreshEval('${d.id}','${prefix}')"></div><div class="field"><label>Durée</label><select id="${prefix}-years-${d.id}" onchange="refreshEval('${d.id}','${prefix}')"><option value="1">1 an</option><option value="2" selected>2 ans</option><option value="3">3 ans</option><option value="4">4 ans</option></select></div><div class="field"><label>Rôle</label><select id="${prefix}-role-${d.id}" onchange="refreshEval('${d.id}','${prefix}')"><option value="pilote2">Pilote 2</option><option value="egal">Statut égal</option><option value="pilote1">Pilote 1</option></select></div><div class="field"><label>Prime signature</label><input id="${prefix}-bonus-${d.id}" type="number" min="0" value="${isMine?0:Math.max(1,Math.round((d.salary||1)*0.5))}" oninput="refreshEval('${d.id}','${prefix}')"></div>${!isMine?`<div class="field" style="grid-column:1/-1"><label>${mustReplace?'Siège à remplacer':'Siège cible'}</label><select id="${prefix}-replace-${d.id}">${mustReplace?'':'<option value="">Ajouter sur un siège libre</option>'}${replaceOptions}</select></div>`:''}<div class="actions"><button class="btn btn-green" onclick="sendOffer('${d.id}','${prefix}')">${isMine?'Prolonger':'Faire une offre'}</button><button class="btn btn-sec" onclick="quickOffer('${d.id}','${prefix}','safe')">Offre prudente</button><button class="btn btn-sec" onclick="quickOffer('${d.id}','${prefix}','big')">Offre forte</button>${isMine?`<button class="btn btn-sec" onclick="releaseMyDriver('${d.id}')">Libérer</button>`:''}</div></div>`;setTimeout(()=>refreshEval(d.id,prefix),0);return div;}
 function getOffer(id,prefix){return{salary:Number(document.getElementById(`${prefix}-sal-${id}`).value)||1,years:Number(document.getElementById(`${prefix}-years-${id}`).value)||2,role:document.getElementById(`${prefix}-role-${id}`).value,bonus:Number(document.getElementById(`${prefix}-bonus-${id}`).value)||0,replaceDriverId:document.getElementById(`${prefix}-replace-${id}`)?.value||''};}
 function refreshEval(id,prefix){const ev=Career.evaluateContractOffer(save,id,getOffer(id,prefix));const el=document.getElementById(`${prefix}-eval-${id}`);if(!el||!ev.ok)return;el.innerHTML=`Chance estimée : <b style="color:${ev.chance>=65?'var(--green)':ev.chance>=40?'var(--gold)':'var(--accent)'}">${ev.chance}%</b> · Rang équipe: P${ev.teamRank}<br>Demande probable : ${ev.demand.salary}M€/an, ${ev.demand.years} an(s), rôle ${roleLabel(ev.demand.role)}.`;}
-function quickOffer(id,prefix,type){const d=F1Data.drivers.find(x=>x.id===id);if(!d)return;const mult=type==='big'?1.35:1.12;document.getElementById(`${prefix}-sal-${id}`).value=Math.ceil((d.salary||1)*mult);document.getElementById(`${prefix}-bonus-${id}`).value=type==='big'?Math.round((d.salary||1)*1.1):Math.round((d.salary||1)*0.4);document.getElementById(`${prefix}-role-${id}`).value=type==='big'?'pilote1':'egal';document.getElementById(`${prefix}-years-${id}`).value=type==='big'?'3':'2';refreshEval(id,prefix);}
-function sendOffer(id,prefix){const res=Career.makeContractOffer(save,id,getOffer(id,prefix));save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderNewTalents();renderMarket();renderSeasonPreview(); if(res.counter){toast(`↪️ ${res.msg} Contre-offre: ${res.counter.salary}M€/an, ${res.counter.years} an(s).`,true);} else toast((res.accepted?'✅ ':'❌ ')+res.msg,!res.accepted);}
+function quickOffer(id,prefix,type){if((save.race||0)>0){toast('🚫 Mercato fermé ! Transferts uniquement avant la 1ère course.',true);return;}const d=F1Data.drivers.find(x=>x.id===id);if(!d)return;const mult=type==='big'?1.35:1.12;document.getElementById(`${prefix}-sal-${id}`).value=Math.ceil((d.salary||1)*mult);document.getElementById(`${prefix}-bonus-${id}`).value=type==='big'?Math.round((d.salary||1)*1.1):Math.round((d.salary||1)*0.4);document.getElementById(`${prefix}-role-${id}`).value=type==='big'?'pilote1':'egal';document.getElementById(`${prefix}-years-${id}`).value=type==='big'?'3':'2';refreshEval(id,prefix);}
+function sendOffer(id,prefix){if((save.race||0)>0){toast('🚫 Mercato fermé ! Transferts uniquement avant la 1ère course.',true);return;}const res=Career.makeContractOffer(save,id,getOffer(id,prefix));save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderMarket();renderSeasonPreview(); if(res.counter){toast(`↪️ ${res.msg} Contre-offre: ${res.counter.salary}M€/an, ${res.counter.years} an(s).`,true);} else toast((res.accepted?'✅ ':'❌ ')+res.msg,!res.accepted);}
 function renderMy(){const grid=document.getElementById('myGrid');grid.innerHTML='';const mine=F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);if(!mine.length){grid.innerHTML='<div class="empty">Aucun pilote dans ton équipe.</div>';return;}mine.forEach(d=>grid.appendChild(buildCard(d,true)));}
-
-function renderNewTalents(){
-  const panel = document.getElementById('newTalentsPanel');
-  const grid  = document.getElementById('newTalentsGrid');
-  if(!panel || !grid) return;
-  // Pilotes générés cette saison (seasons === 0 ou generated === true)
-  const talents = F1Data.drivers.filter(d => !d.retired && d.generated && !d.teamId);
-  if(!talents.length){ panel.style.display='none'; return; }
-  panel.style.display='block';
-  grid.innerHTML='';
-  talents.sort((a,b)=>Career.getDriverScore(b)-Career.getDriverScore(a));
-  talents.forEach(d => grid.appendChild(buildCard(d, false)));
-}
-
 function renderMarket(){const grid=document.getElementById('marketGrid');grid.innerHTML='';let arr=F1Data.drivers.filter(d=>!d.retired&&d.teamId!==save.playerTeamId);const q=(document.getElementById('search')?.value||'').toLowerCase();const f=document.getElementById('filter')?.value||'all';if(q)arr=arr.filter(d=>(`${d.firstName} ${d.name}`).toLowerCase().includes(q));if(f==='free')arr=arr.filter(d=>!d.teamId);if(f==='young')arr=arr.filter(d=>(d.age||25)<=24);if(f==='top')arr=arr.filter(d=>Career.getDriverScore(d)>=85);arr.sort((a,b)=>Career.getDriverScore(b)-Career.getDriverScore(a));if(!arr.length){grid.innerHTML='<div class="empty">Aucun pilote trouvé.</div>';return;}arr.forEach(d=>grid.appendChild(buildCard(d,false)));}
 
-function releaseMyDriver(id){
+function releaseMyDriver(id){if((save.race||0)>0){toast('🚫 Impossible de libérer un pilote en cours de saison.',true);return;}
   const d=F1Data.drivers.find(x=>x.id===id); if(!d)return;
   const penalty=Math.round((d.salary||1)*0.5);
   if(!confirm(`Libérer ${d.firstName||''} ${d.name} ?\nIndemnité: ${penalty}M€.\nLe pilote deviendra agent libre.`))return;
   const res=Career.releaseDriver(save,id);
-  save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderNewTalents();renderMarket();renderSeasonPreview();
+  save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderMarket();renderSeasonPreview();
   toast((res.ok?'✅ ':'❌ ')+res.msg,!res.ok);
 }
 function renderSeasonPreview(){
@@ -96,7 +82,7 @@ function renderSeasonPreview(){
 function confirmEndSeason(){
   if(!confirm(`Terminer la saison ${save.season||2025} ?\nLes statistiques de saison seront remises à zéro.`))return;
   const report=Career.endOfSeason(save);
-  save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderNewTalents();renderMarket();renderSeasonPreview();
+  save=Save.load();restoreDrivers();Career.ensureContractSystem(save);updateTop();renderMy();renderMarket();renderSeasonPreview();
   const box=document.getElementById('seasonReport');
   let html=`✅ Bienvenue en saison ${save.season}.`;
   if(report.retired?.length) html+=`<br>🏁 Retraites : ${report.retired.map(d=>(d.firstName||'')+' '+d.name).join(', ')}`;
