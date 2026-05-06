@@ -469,8 +469,6 @@ const CR = {
     if (!Race.state || !this.pathEl) return;
 
     const standings = Race.getStandings();
-    const leader    = standings.find(c => c.position === 1 && c.status === 'racing');
-    if (!leader) return;
 
     standings.forEach((car) => {
       const idx = Race.state.grid.indexOf(car);
@@ -480,29 +478,12 @@ const CR = {
         this.carSpeed[idx] = 0;
         return;
       }
-
-      const lastLap  = car.lapTimes.length > 0
+      const lastLap   = car.lapTimes.length > 0
         ? car.lapTimes[car.lapTimes.length - 1]
         : Race.state.circuit.baseLapTime;
-
       const baseSpeed = 1 / (getInterval() / 1000);
       const relSpeed  = Race.state.circuit.baseLapTime / lastLap;
       this.carSpeed[idx] = baseSpeed * relSpeed;
-
-      // Ajuster la position de départ selon le gap au leader
-      // Gap en secondes → fraction de tour décalée
-      if (car.gap != null && car.gap > 0 && Race.state.circuit.baseLapTime > 0) {
-        const gapFrac = (car.gap % Race.state.circuit.baseLapTime) / Race.state.circuit.baseLapTime;
-        const leaderFrac = this._displayFrac[Race.state.grid.indexOf(leader)] || 0;
-        // Positionner derrière le leader selon le gap
-        const targetFrac = ((leaderFrac - gapFrac) + 1) % 1;
-        // Transition douce vers la bonne position
-        const current = this._displayFrac[idx] || 0;
-        const diff = ((targetFrac - current) + 1) % 1;
-        if (diff > 0.02) { // seulement si écart significatif
-          this._displayFrac[idx] = (current + diff * 0.1) % 1;
-        }
-      }
     });
   },
 
@@ -1038,13 +1019,14 @@ function runSim() {
 
     CR.advanceLap();
 
-    // Mise à jour humidité piste
+    // Mise à jour humidité piste (async pour éviter le lag)
     if (typeof Weather !== 'undefined' && Race.state) {
-      updateHumidity(Race.state.currentLap);
-      // Mettre à jour le popup si ouvert
-      if (document.getElementById('weatherPopup')?.style.display !== 'none') {
-        renderWeatherPopup();
-      }
+      requestAnimationFrame(() => {
+        updateHumidity(Race.state.currentLap);
+        if (document.getElementById('weatherPopup')?.style.display !== 'none') {
+          renderWeatherPopup();
+        }
+      });
     }
 
     // Progress bar uniquement — compteur de tour géré par _syncLapCounter
