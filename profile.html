@@ -5,19 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fiche — F1 Manager</title>
 <style>
-:root{--bg:#050508;--surface:#111119;--surface2:#181824;--border:#2a2a38;--text:#f2f2f5;--muted:#8a8a98;--accent:#e10600;--gold:#ffd700;--green:#00e676;--fh:'Arial Narrow',Arial,sans-serif;--fb:Arial,sans-serif}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#050508,#0b0b14);color:var(--text);font-family:var(--fb);min-height:100vh}.topbar{height:52px;background:#0a0a12;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 16px;position:sticky;top:0;z-index:10}.logo{font-family:var(--fh);font-weight:900;font-size:22px;letter-spacing:1px}.logo span{color:var(--accent)}.nav-link{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:1px;text-transform:uppercase;padding:3px 7px}.nav-link:hover,.nav-link.active{color:var(--accent)}.page{max-width:1100px;margin:0 auto;padding:18px}.hero{background:linear-gradient(135deg,#151520,#0d0d15);border:1px solid var(--border);border-radius:10px;overflow:hidden}.hero-top{height:8px;background:var(--accent)}.hero-body{display:grid;grid-template-columns:96px 1fr auto;gap:16px;padding:18px;align-items:center}.avatar{width:82px;height:82px;border-radius:12px;background:#090911;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:42px}.title{font-family:var(--fh);font-weight:900;font-size:36px;line-height:1}.subtitle{font-family:var(--fh);font-size:15px;color:var(--muted);margin-top:6px}.score{font-family:var(--fh);font-weight:900;font-size:44px;color:var(--gold);text-align:right}.score small{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:14px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}.ph{height:38px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;font-family:var(--fh);font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:1px}.dot{width:3px;height:16px;background:var(--accent);border-radius:2px}.content{padding:14px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.stat{background:#0c0c14;border:1px solid var(--border);border-radius:6px;padding:10px}.stat b{display:block;font-family:var(--fh);font-size:24px}.stat span{font-family:var(--fh);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}.line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #20202c}.line:last-child{border-bottom:0}.label{font-family:var(--fh);color:var(--muted);text-transform:uppercase;font-size:12px}.value{font-family:var(--fh);font-weight:800}.desc{color:#cfcfd8;line-height:1.6;font-size:14px}.badge{display:inline-block;font-family:var(--fh);font-size:12px;font-weight:800;color:var(--gold);border:1px solid #4a3a00;background:#1a1400;border-radius:4px;padding:4px 8px;margin:4px 4px 0 0}.entity-link{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.entity-link:hover{color:var(--gold)}.back{display:inline-block;margin-bottom:12px;color:var(--muted);font-family:var(--fh);font-weight:800;text-decoration:none}.back:hover{color:var(--text)}.empty{padding:40px;text-align:center;color:var(--muted);font-family:var(--fh);font-size:18px}@media(max-width:760px){.hero-body{grid-template-columns:1fr}.score{text-align:left}.grid{grid-template-columns:1fr}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070d;--surface:#0f0f18;--surface2:#161622;--border:#22223a;
+  --text:#e4e4f0;--muted:#55556a;--accent:#e8003d;--gold:#f5c842;
+  --green:#00d97e;--blue:#3d7eff;--orange:#ff8c42;--purple:#a855f7;
+  --fh:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px}
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--fh);font-weight:900;font-size:22px;letter-spacing:3px;color:var(--accent)}
+.logo span{color:var(--text)}
+.top-pills{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pill{font-family:var(--fh);font-weight:700;font-size:13px;padding:4px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);white-space:nowrap}
+.pill-gold{color:var(--gold);border-color:#3a3400;background:#161200}
+.pill-muted{color:var(--muted)}
+.page{padding:12px;display:flex;flex-direction:column;gap:12px;max-width:800px;margin:0 auto}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ph{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 14px;font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.ph .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.ph .ml{margin-left:auto;font-weight:400;letter-spacing:0;font-size:11px}
+.sec-lbl{font-family:var(--fh);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--border)}
+.btn{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 14px;border:none;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s}
+.btn-red{background:var(--accent);color:#fff}.btn-red:hover{background:#ff1a52}.btn-red:disabled{background:#3a1a22;color:#664;cursor:not-allowed}
+.btn-gold{background:#161200;color:var(--gold);border:1px solid #3a3400}.btn-gold:hover{background:#2a2400}
+.btn-sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-sec:hover{border-color:var(--accent);color:var(--accent)}
+.btn-green{background:#001a0a;color:var(--green);border:1px solid #003a18}
+.sbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.sbar-fill{height:100%;border-radius:2px;transition:width .5s}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px;text-decoration:none;color:inherit;display:block;transition:background .1s}
+.tile:active{background:var(--surface2)}
+.tile-icon{font-size:20px;margin-bottom:6px;display:block}
+.tile-lbl{font-family:var(--fh);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.tile-val{font-family:var(--fh);font-weight:900;font-size:20px;line-height:1;margin-bottom:3px}
+.tile-sub{font-family:var(--fh);font-size:11px;color:var(--muted);line-height:1.4}
+.tiles-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:6px;padding:10px 18px;font-family:var(--fh);font-size:13px;z-index:500;transition:transform .3s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{border-left-color:var(--accent)}
+select{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:5px 8px;border-radius:4px;font-family:var(--fh);font-size:12px;outline:none}
+input[type=number],input[type=text]{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:5px 8px;border-radius:4px;font-family:var(--fh);font-size:12px;outline:none}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+/* === Page profile === */
+
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
 </head>
 <body>
 <div class="topbar">
-  <div class="logo">F1<span>MANAGER</span></div>
-  <a href="index.html" class="nav-link">🏠 Équipe</a>
-  <a href="race.html" class="nav-link">🏁 Course</a>
-  <a href="standings.html" class="nav-link">🏆 Champ.</a>
-  <a href="drivers.html" class="nav-link">👤 Pilotes</a>
-  <a href="staff.html" class="nav-link">🧑‍🔧 Staff</a>
-  <a href="news.html" class="nav-link">📰 News</a>
+  <div class="logo">F1<span>Manager</span></div>
+  <a href="index.html" style="font-family:var(--fh);font-size:12px;color:var(--muted);text-decoration:none;padding:4px 8px;border:1px solid var(--border);border-radius:4px">← Accueil</a>
+  <div class="top-pills">
+    <div class="pill pill-muted" id="seasonBadge">—</div>
+    <div class="pill pill-gold" id="budgetBadge">—</div>
+  </div>
+</div>
 </div>
 <div class="page">
   <a href="javascript:history.back()" class="back">← Retour</a>
@@ -29,7 +71,6 @@
 <script src="js/career.js"></script>
 <script src="js/profiles.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function() {
 const params = new URLSearchParams(location.search);
 const type = params.get('type');
 const id = params.get('id');
@@ -65,7 +106,6 @@ if (!entity) {
   root.innerHTML = hero(st.icon||'🧑‍🔧', displayName, `${fmt(st.role)} · ${fmt(st.age,'âge inconnu')}${st.age?' ans':''}`, fmt(Math.round(st.level||0)), '#ffd700')
     + `<div class="grid"><div class="panel"><div class="ph"><div class="dot"></div>Compétences</div><div class="content">${stats(Object.entries(impacts).map(([k,v])=>({label:k,value:'+'+v,color:'#ffd700'})))}<div class="desc" style="margin-top:12px">${fmt(st.desc,'Membre de staff qualifié.')}</div></div></div><div class="panel"><div class="ph"><div class="dot"></div>Contrat & passif</div><div class="content">${line('Spécialité', fmt(st.specialty || st.bonus))}${line('Salaire', `${fmt(st.salary)}M€/an`)}${line('Coût recrutement', `${fmt(st.cost)}M€`)}${line('Statut', save.staff?.map(Profiles.normalizeStaffId).includes(Profiles.normalizeStaffId(st.id))?'En poste':'Disponible')}<div class="badge">🔮 ${fmt(st.passive,'Bonus de performance')}</div></div></div></div>`;
 }
-}); // DOMContentLoaded
 </script>
 </body>
 </html>

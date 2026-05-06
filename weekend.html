@@ -4,132 +4,115 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>F1 Manager — Weekend</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3e;--text:#e8e8f0;--muted:#6a6a8a;--accent:#e8003d;--gold:#ffd700;--green:#00e676;--orange:#ff9944;--blue:#2979ff;--fh:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif}
-    html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px}
-
-    /* TOPBAR */
-    .topbar{background:var(--surface);border-bottom:2px solid var(--accent);padding:0 14px;height:50px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
-    .logo{font-family:var(--fh);font-weight:900;font-size:20px;color:var(--accent);letter-spacing:2px}
-    .logo span{color:var(--text)}
-    .nav-link{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:1px;text-transform:uppercase;padding:3px 7px}
-    .nav-link:hover,.nav-link.active{color:var(--accent)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070d;--surface:#0f0f18;--surface2:#161622;--border:#22223a;
+  --text:#e4e4f0;--muted:#55556a;--accent:#e8003d;--gold:#f5c842;
+  --green:#00d97e;--blue:#3d7eff;--orange:#ff8c42;--purple:#a855f7;
+  --fh:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px}
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--fh);font-weight:900;font-size:22px;letter-spacing:3px;color:var(--accent)}
+.logo span{color:var(--text)}
+.top-pills{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pill{font-family:var(--fh);font-weight:700;font-size:13px;padding:4px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);white-space:nowrap}
+.pill-gold{color:var(--gold);border-color:#3a3400;background:#161200}
+.pill-muted{color:var(--muted)}
+.page{padding:12px;display:flex;flex-direction:column;gap:12px;max-width:800px;margin:0 auto}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ph{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 14px;font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.ph .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.ph .ml{margin-left:auto;font-weight:400;letter-spacing:0;font-size:11px}
+.sec-lbl{font-family:var(--fh);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--border)}
+.btn{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 14px;border:none;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s}
+.btn-red{background:var(--accent);color:#fff}.btn-red:hover{background:#ff1a52}.btn-red:disabled{background:#3a1a22;color:#664;cursor:not-allowed}
+.btn-gold{background:#161200;color:var(--gold);border:1px solid #3a3400}.btn-gold:hover{background:#2a2400}
+.btn-sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-sec:hover{border-color:var(--accent);color:var(--accent)}
+.btn-green{background:#001a0a;color:var(--green);border:1px solid #003a18}
+.sbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.sbar-fill{height:100%;border-radius:2px;transition:width .5s}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px;text-decoration:none;color:inherit;display:block;transition:background .1s}
+.tile:active{background:var(--surface2)}
+.tile-icon{font-size:20px;margin-bottom:6px;display:block}
+.tile-lbl{font-family:var(--fh);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.tile-val{font-family:var(--fh);font-weight:900;font-size:20px;line-height:1;margin-bottom:3px}
+.tile-sub{font-family:var(--fh);font-size:11px;color:var(--muted);line-height:1.4}
+.tiles-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:6px;padding:10px 18px;font-family:var(--fh);font-size:13px;z-index:500;transition:transform .3s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{border-left-color:var(--accent)}
+select{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:5px 8px;border-radius:4px;font-family:var(--fh);font-size:12px;outline:none}
+input[type=number],input[type=text]{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:5px 8px;border-radius:4px;font-family:var(--fh);font-size:12px;outline:none}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+/* === Page weekend === */
+/* TOPBAR */
     .tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-    .pill{font-family:var(--fh);font-weight:700;font-size:13px;padding:4px 12px;border-radius:4px;background:var(--surface2);border:1px solid var(--border)}
 
     .page{padding:12px;display:flex;flex-direction:column;gap:10px;max-width:900px;margin:0 auto}
 
     /* PHASE INDICATOR */
-    .phases{display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:2px}
-    .phase{flex:1;padding:10px 6px;text-align:center;font-family:var(--fh);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-right:1px solid var(--border);transition:all .2s;cursor:pointer}
     .phase:last-child{border-right:0}
-    .phase.done{color:var(--green);background:#001a0a}
-    .phase.active{color:var(--gold);background:#1a1a00;border-bottom:3px solid var(--gold)}
     .phase.locked{opacity:.4;cursor:not-allowed}
     .phase-icon{font-size:18px;display:block;margin-bottom:3px}
 
     /* PANEL */
-    .panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-    .ph{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 14px;font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
-    .ph .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
     .ph .ml{margin-left:auto;font-size:11px;font-weight:400;letter-spacing:0}
     .content{padding:12px}
 
     /* CIRCUIT HERO */
     .circuit-hero{background:linear-gradient(135deg,#0a0a14,#12121f);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;gap:14px;align-items:center}
     .circuit-flag{font-size:40px}
-    .circuit-name{font-family:var(--fh);font-weight:900;font-size:24px;color:var(--text)}
-    .circuit-full{font-family:var(--fh);font-size:12px;color:var(--muted);margin-top:2px}
     .circuit-stats{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
-    .cstat{font-family:var(--fh);font-size:11px;color:var(--muted)}
-    .cstat span{color:var(--text);font-weight:700}
-    .weather-badge{font-family:var(--fh);font-weight:700;font-size:12px;padding:4px 12px;border-radius:12px;margin-left:auto;align-self:flex-start}
-    .w-dry{background:#1a2a1a;color:var(--green);border:1px solid #1e4a1e}
     .w-rain{background:#1a1a3a;color:#88aaff;border:1px solid #2a2a5a}
     .w-heavy{background:#0a0a2a;color:#6688ff;border:1px solid #2a2a6a}
 
     /* BOUTONS */
-    .btn{font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:7px 16px;border:none;border-radius:4px;cursor:pointer;transition:all .15s;white-space:nowrap;text-decoration:none;display:inline-block}
-    .btn-red{background:var(--accent);color:#fff}
     .btn-red:hover{background:#ff1a52}
     .btn-red:disabled{background:#3a1a22;color:#664;cursor:not-allowed}
-    .btn-sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
-    .btn-sec:hover{border-color:var(--accent);color:var(--accent)}
-    .btn-gold{background:#1a1a00;color:var(--gold);border:1px solid #3a3a00}
     .btn-gold:hover{background:#2a2a00}
-    .btn-green{background:#001a0a;color:var(--green);border:1px solid #003a18}
 
     /* FP SESSION CARD */
     .fp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     @media(max-width:600px){.fp-grid{grid-template-columns:1fr}}
-    .fp-card{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px}
-    .fp-card.done{border-color:var(--green)}
-    .fp-title{font-family:var(--fh);font-weight:900;font-size:15px;margin-bottom:6px}
-    .fp-driver{font-family:var(--fh);font-size:12px;color:var(--muted);margin-bottom:8px}
     .select-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
-    .lbl{font-family:var(--fh);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;min-width:50px}
-    select.sel{font-family:var(--fh);font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);padding:4px 8px;border-radius:4px;outline:none;flex:1}
-    .fp-result{background:#0a0a14;border-radius:4px;padding:8px;margin-top:6px;font-family:var(--fh);font-size:11px}
-    .fp-result .best{color:var(--gold);font-size:15px;font-weight:900}
     .fp-result .laps-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
-    .fp-result .lap{background:var(--surface2);padding:2px 6px;border-radius:3px;font-size:10px;color:var(--muted)}
-    .fp-result .lap.best-lap{color:var(--gold);border:1px solid #3a3a00;background:#1a1a00}
     .tyre-bar-wrap{height:3px;background:#0a0a14;border-radius:2px;margin-top:5px;overflow:hidden}
     .tyre-bar-fill{height:100%;border-radius:2px;transition:width .4s}
-    .knowledge-box{background:#001a0a;border:1px solid #003a18;border-radius:5px;padding:10px 12px;font-family:var(--fh);font-size:12px}
-    .knowledge-title{color:var(--green);font-weight:700;font-size:13px;margin-bottom:5px}
 
     /* QUALI */
     .quali-setup{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     @media(max-width:600px){.quali-setup{grid-template-columns:1fr}}
-    .driver-quali-card{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px}
-    .dqc-name{font-family:var(--fh);font-weight:900;font-size:16px;margin-bottom:6px}
 
     /* RÉSULTATS QUALI */
     .quali-results{display:flex;flex-direction:column;gap:3px}
-    .qrow{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;font-family:var(--fh);font-size:13px}
     .qrow.player{background:#1a1a00;border:1px solid #3a3a00}
     .qrow.pole{background:#1a0a00;border:1px solid #5a2a00}
     .qpos{font-weight:900;font-size:16px;width:28px;text-align:center}
-    .qpos.p1{color:var(--gold)} .qpos.p2{color:#c0c0c0} .qpos.p3{color:#cd7f32}
-    .qnum{font-size:11px;color:var(--muted);width:22px}
     .qbar{width:3px;height:20px;border-radius:2px;flex-shrink:0}
     .qname{flex:1;font-weight:700}
-    .qtime{font-size:12px;color:var(--muted);text-align:right}
-    .qgap{font-size:11px;color:var(--muted);width:70px;text-align:right}
     .q-elim{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:#2a0a0a;color:#ff6666;border:1px solid #5a1a1a}
-    .q-player-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:#1a1a00;color:var(--gold);border:1px solid #3a3a00}
 
     /* STRATÉGIE PRÉ-COURSE */
     .strat-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--border)}
     .strat-row:last-child{border-bottom:0}
-    .strat-name{min-width:80px;font-family:var(--fh);font-weight:700;font-size:14px}
-    .strat-grid-pos{font-family:var(--fh);font-weight:900;font-size:18px;color:var(--gold);width:30px;text-align:center}
-    .mini-sel{background:#101018;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--fh);font-size:12px;outline:none}
 
     /* TOAST */
-    .toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:5px;padding:12px 16px;font-family:var(--fh);font-size:13px;z-index:500;transform:translateX(120%);transition:transform .3s;max-width:300px}
-    .toast.show{transform:translateX(0)}
-    .toast.error{border-left-color:var(--accent)}
-
-    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-  </style>
+</style>
 </head>
 <body>
-
 <div class="topbar">
   <div class="logo">F1<span>Manager</span></div>
-  <a href="index.html"     class="nav-link">🏠 Équipe</a>
-  <a href="weekend.html"   class="nav-link active">🏁 Weekend</a>
-  <a href="standings.html" class="nav-link">🏆 Champ.</a>
-  <a href="drivers.html"   class="nav-link">👤 Pilotes</a>
-  <div class="tb-right">
-    <div class="pill" id="seasonBadge">—</div>
-    <div class="pill" id="raceBadge" style="color:var(--gold)">—</div>
+  <a href="index.html" style="font-family:var(--fh);font-size:12px;color:var(--muted);text-decoration:none;padding:4px 8px;border:1px solid var(--border);border-radius:4px">← Accueil</a>
+  <div class="top-pills">
+    <div class="pill pill-muted" id="seasonBadge">—</div>
+    <div class="pill pill-gold" id="budgetBadge">—</div>
   </div>
 </div>
+    <div class="pill" id="raceBadge" style="color:var(--gold)">—</div>
+  </div>
 
 <div class="page">
 

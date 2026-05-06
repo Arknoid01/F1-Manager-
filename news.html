@@ -4,53 +4,68 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>F1 Manager — News</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3e;--text:#e8e8f0;--muted:#6a6a8a;--accent:#e8003d;--gold:#ffd700;--green:#00e676;--orange:#ff9944;--fh:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif}
-    html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px}
-
-    .topbar{background:var(--surface);border-bottom:2px solid var(--accent);padding:0 14px;height:50px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
-    .logo{font-family:var(--fh);font-weight:900;font-size:20px;color:var(--accent);letter-spacing:2px}
-    .logo span{color:var(--text)}
-    .nav-link{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:1px;text-transform:uppercase;padding:4px 8px}
-    .nav-link:hover,.nav-link.active{color:var(--accent)}
-    .tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-    .badge-pill{font-family:var(--fh);font-weight:700;font-size:13px;padding:4px 12px;border-radius:4px;background:var(--surface2);border:1px solid var(--border)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070d;--surface:#0f0f18;--surface2:#161622;--border:#22223a;
+  --text:#e4e4f0;--muted:#55556a;--accent:#e8003d;--gold:#f5c842;
+  --green:#00d97e;--blue:#3d7eff;--orange:#ff8c42;--purple:#a855f7;
+  --fh:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px}
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--fh);font-weight:900;font-size:22px;letter-spacing:3px;color:var(--accent)}
+.logo span{color:var(--text)}
+.top-pills{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pill{font-family:var(--fh);font-weight:700;font-size:13px;padding:4px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);white-space:nowrap}
+.pill-gold{color:var(--gold);border-color:#3a3400;background:#161200}
+.pill-muted{color:var(--muted)}
+.page{padding:12px;display:flex;flex-direction:column;gap:12px;max-width:800px;margin:0 auto}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ph{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 14px;font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.ph .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.ph .ml{margin-left:auto;font-weight:400;letter-spacing:0;font-size:11px}
+.sec-lbl{font-family:var(--fh);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--border)}
+.btn{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 14px;border:none;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s}
+.btn-red{background:var(--accent);color:#fff}.btn-red:hover{background:#ff1a52}.btn-red:disabled{background:#3a1a22;color:#664;cursor:not-allowed}
+.btn-gold{background:#161200;color:var(--gold);border:1px solid #3a3400}.btn-gold:hover{background:#2a2400}
+.btn-sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-sec:hover{border-color:var(--accent);color:var(--accent)}
+.btn-green{background:#001a0a;color:var(--green);border:1px solid #003a18}
+.sbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.sbar-fill{height:100%;border-radius:2px;transition:width .5s}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px;text-decoration:none;color:inherit;display:block;transition:background .1s}
+.tile:active{background:var(--surface2)}
+.tile-icon{font-size:20px;margin-bottom:6px;display:block}
+.tile-lbl{font-family:var(--fh);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.tile-val{font-family:var(--fh);font-weight:900;font-size:20px;line-height:1;margin-bottom:3px}
+.tile-sub{font-family:var(--fh);font-size:11px;color:var(--muted);line-height:1.4}
+.tiles-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:6px;padding:10px 18px;font-family:var(--fh);font-size:13px;z-index:500;transition:transform .3s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{border-left-color:var(--accent)}
+select{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:5px 8px;border-radius:4px;font-family:var(--fh);font-size:12px;outline:none}
+input[type=number],input[type=text]{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:5px 8px;border-radius:4px;font-family:var(--fh);font-size:12px;outline:none}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+/* === Page news === */
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 
     .page{padding:14px;display:flex;flex-direction:column;gap:12px;max-width:800px;margin:0 auto}
 
-    .panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-    .ph{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 14px;font-family:var(--fh);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
-    .ph .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
     .ph .ml{margin-left:auto;font-size:11px}
 
     /* FILTRES */
-    .filters{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border)}
-    .filter-btn{font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border:1px solid var(--border);border-radius:3px;background:none;color:var(--muted);cursor:pointer;transition:all .15s}
-    .filter-btn:hover{color:var(--text);border-color:var(--text)}
-    .filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 
     /* NEWS ITEMS */
     .news-list{padding:10px;display:flex;flex-direction:column;gap:8px}
-    .news-item{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px;display:flex;gap:12px;transition:border-color .2s;cursor:default}
     .news-item:hover{border-color:#3a3a5a}
-    .news-item.breaking{border-left:3px solid var(--accent)}
-    .news-item.positive{border-left:3px solid var(--green)}
     .news-item.negative{border-left:3px solid #ff4444}
-    .news-item.neutral{border-left:3px solid var(--muted)}
     .news-icon{font-size:24px;width:36px;text-align:center;flex-shrink:0;padding-top:2px}
     .news-content{flex:1}
     .news-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px}
-    .news-title{font-family:var(--fh);font-weight:700;font-size:15px;line-height:1.2}
-    .news-meta{font-family:var(--fh);font-size:10px;color:var(--muted);white-space:nowrap;padding-top:2px}
-    .news-text{font-size:12px;color:var(--muted);line-height:1.5}
-    .news-category{display:inline-block;font-family:var(--fh);font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-top:5px;letter-spacing:1px;text-transform:uppercase}
 
     /* CATÉGORIE COULEURS */
-    .cat-race_result{background:#1a1a00;color:var(--gold);border:1px solid #3a3a00}
     .cat-pre{background:#001a2a;color:#4488ff;border:1px solid #003a5a}
-    .cat-post{background:#001a0a;color:var(--green);border:1px solid #003a18}
     .cat-technical{background:#1a0a00;color:var(--orange);border:1px solid #3a1a00}
     .cat-financial{background:#001a00;color:#00cc44;border:1px solid #003a00}
     .cat-mercato{background:#1a001a;color:#cc44ff;border:1px solid #3a003a}
@@ -58,34 +73,21 @@
     .cat-board{background:#0a0a1a;color:#8888ff;border:1px solid #1a1a3a}
     .cat-media{background:#0a1a1a;color:#44cccc;border:1px solid #1a3a3a}
     .cat-competitor{background:#1a0a1a;color:#ff44ff;border:1px solid #3a1a3a}
-    .cat-transfer{background:#1a1a00;color:var(--gold);border:1px solid #3a3a00}
-    .cat-general,.cat-internal{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
 
     /* STATS RAPIDES */
     .quick-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
-    .qs{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center}
-    .qs-val{font-family:var(--fh);font-weight:900;font-size:22px;color:var(--gold)}
-    .qs-lbl{font-family:var(--fh);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
-
-    .empty{padding:28px;text-align:center;color:var(--muted);font-family:var(--fh);font-size:16px}
-
-    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-  </style>
+</style>
 </head>
 <body>
-
 <div class="topbar">
   <div class="logo">F1<span>Manager</span></div>
-  <a href="index.html"     class="nav-link">🏠 Équipe</a>
-  <a href="race.html"      class="nav-link">🏁 Course</a>
-  <a href="standings.html" class="nav-link">🏆 Champ.</a>
-  <a href="drivers.html"   class="nav-link">👤 Pilotes</a>
-  <a href="board.html"     class="nav-link">🏢 Direction</a>
-  <a href="news.html"      class="nav-link active">📰 News</a>
-  <div class="tb-right">
-    <div class="badge-pill" id="seasonBadge">Saison —</div>
+  <a href="index.html" style="font-family:var(--fh);font-size:12px;color:var(--muted);text-decoration:none;padding:4px 8px;border:1px solid var(--border);border-radius:4px">← Accueil</a>
+  <div class="top-pills">
+    <div class="pill pill-muted" id="seasonBadge">—</div>
+    <div class="pill pill-gold" id="budgetBadge">—</div>
   </div>
 </div>
+  </div>
 
 <div class="page">
 
