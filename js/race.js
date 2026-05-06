@@ -121,17 +121,22 @@ const Race = {
     const lap       = s.currentLap;
     const lapEvents = [];
 
-    // ── Météo dynamique ───────────────────────────────────────
-    if (s.weather === 'dry' && lap > 5 && Math.random() < 0.016) {
-      s.weather = 'light_rain';
-      lapEvents.push({ lap, type: 'weather', message: '🌧️ La pluie commence à tomber !' });
-    } else if (s.weather === 'light_rain' && Math.random() < 0.022) {
-      s.weather = 'heavy_rain';
-      s.safetyCar = { active: true, remainingLaps: 5 };
-      lapEvents.push({ lap, type: 'weather', message: '⛈️ Forte pluie ! Safety Car déployée.' });
-    } else if (s.weather !== 'dry' && lap > 15 && Math.random() < 0.030) {
-      s.weather = 'dry';
-      lapEvents.push({ lap, type: 'weather', message: '☀️ La piste sèche !' });
+    // ── Météo — synchronisée avec l'humidité (weather.js) ────
+    // currentHumidity est mis à jour dans race.html avant simulateLap()
+    if (typeof currentHumidity !== 'undefined') {
+      const prevWeather = s.weather;
+      if      (currentHumidity > 70) s.weather = 'heavy_rain';
+      else if (currentHumidity > 30) s.weather = 'light_rain';
+      else                            s.weather = 'dry';
+
+      if (prevWeather !== s.weather) {
+        if (s.weather === 'heavy_rain')
+          lapEvents.push({ lap, type:'weather', message:'⛈️ Forte pluie ! Safety Car déployée.' });
+        else if (s.weather === 'light_rain')
+          lapEvents.push({ lap, type:'weather', message:'🌧️ La pluie commence à tomber !' });
+        else
+          lapEvents.push({ lap, type:'weather', message:'☀️ La piste sèche !' });
+      }
     }
 
     // ── Safety Car ────────────────────────────────────────────
@@ -204,7 +209,62 @@ const Race = {
         car.tyre = { compound: nextCompound, condition: 1.0, age: 0 };
         car.forcePit = false;
         car.requestedCompound = null;
-        car.totalTime += cir.pitLoss; // ← correction : cir et non circuit
+
+        // ── Calcul du temps pit réaliste ─────────────────────
+        // pitLoss = temps total incluant pit lane traversée
+        // Le temps mécanique (changement pneus) est ~2.5s min
+        // La pit lane traversée est incompressible (~15-22s selon circuit)
+        // Total minimum réaliste : ~17-22s
+
+        const basePitLoss   = cir.pitLoss; // déjà calibré par circuit
+        const minPitTime    = basePitLoss - 4.0; // max 4s de gain possible (staff élite)
+        let pitTime         = basePitLoss;
+
+        // Bonus staff pit stop (depuis save.staffBonuses)
+        try {
+          const sv = Save.load();
+          const sb = sv?.staffBonuses;
+
+          // Staff bonus : plafonné à -3s max (réaliste)
+          if (sb?.pitLossReduction) {
+            pitTime -= Math.min(3.0, sb.pitLossReduction);
+          }
+
+          // Bonus carDev pitstop : plafonné à -1s max
+          const pitDev = sv?.carDev?.pitstop;
+          if (pitDev?.upgrades) {
+            pitTime -= Math.min(1.0, pitDev.upgrades * 0.4);
+          }
+
+          // Jamais en dessous du minimum réaliste
+          pitTime = Math.max(minPitTime, pitTime);
+
+          // ── Arrêt raté ──────────────────────────────────────
+          const pitLevel    = pitDev?.level || 50;
+          const staffBonus  = sb?.pitstop   || 0;
+          const effectiveLvl= Math.min(100, pitLevel + staffBonus);
+          const missChance  = Math.max(0.01, 0.15 - effectiveLvl * 0.0014);
+
+          if (Math.random() < missChance) {
+            const severity = Math.random();
+            const penalty  = severity > 0.8 ? 10 + Math.random() * 5
+                           : severity > 0.5 ? 4  + Math.random() * 4
+                           :                  2  + Math.random() * 2;
+            pitTime += penalty;
+            lapEvents.push({
+              lap,
+              type: 'pit',
+              message: `⚠️ ${car.driver.name} — Arrêt raté ! (+${penalty.toFixed(1)}s)`,
+            });
+          }
+        } catch(e) { /* ignore */ }
+
+        car.totalTime += pitTime;
+
+        // Supprimer les pitLaps proches pour éviter un double arrêt
+        if (car.strategy?.pitLaps) {
+          car.strategy.pitLaps = car.strategy.pitLaps.filter(pl => pl > lap + 5);
+        }
 
         lapEvents.push({
           lap,
