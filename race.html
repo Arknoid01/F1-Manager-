@@ -1402,8 +1402,15 @@ const Telem = {
   },
   drawChart(id,datasets,opts={}){
     const canvas=document.getElementById(id);if(!canvas)return;
+    // Debug: log si données vides
+    const hasData = datasets.some(d=>d.data.length>0);
+    if(!hasData && Race.state?.currentLap > 3) {
+      console.warn('[Telem] drawChart',id,'- données vides. Keys tyreH:',Object.keys(this.tyreH).length,'datasets:',datasets.map(d=>d.data.length));
+    }
     const ctx=canvas.getContext('2d');
-    const W=canvas.offsetWidth||350,H=175;
+    // Forcer une largeur correcte même si le canvas vient d'être rendu visible
+    const parentW = canvas.closest('.tab-pane')?.offsetWidth || canvas.parentElement?.offsetWidth || 0;
+    const W = Math.max(parentW - 20, canvas.offsetWidth || 0, 280), H = 175;
     canvas.width=W;canvas.height=H;
     ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,W,H);
     const p={l:36,r:10,t:8,b:22},pw=W-p.l-p.r,ph=H-p.t-p.b;
@@ -1414,11 +1421,11 @@ const Telem = {
     if(mn===mx){mn-=1;mx+=1;}
     const maxLen=Math.max(...datasets.map(d=>d.data.length),2);
     ctx.strokeStyle='#1a1a2a';ctx.lineWidth=1;
-    for(let i=0;i<=4;i++){
-      const y=p.t+ph-(i/4)*ph;
+    for(let gi=0;gi<=4;gi++){
+      const y=p.t+ph-(gi/4)*ph;
       ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(p.l+pw,y);ctx.stroke();
       ctx.fillStyle='#4a4a6a';ctx.font='10px Barlow Condensed';ctx.textAlign='right';
-      ctx.fillText(Math.round(mn+(i/4)*(mx-mn)),p.l-4,y+4);
+      ctx.fillText(Math.round(mn+(gi/4)*(mx-mn)),p.l-4,y+4);
     }
     if(opts.dangerLine!==undefined){
       const yD=p.t+ph-((opts.dangerLine-mn)/(mx-mn))*ph;
@@ -1428,17 +1435,17 @@ const Telem = {
     datasets.forEach(ds=>{
       if(!ds.data.length)return;
       ctx.strokeStyle=ds.color;ctx.lineWidth=2;ctx.beginPath();
-      ds.data.forEach((v,i)=>{
-        const x=p.l+(i/(maxLen-1||1))*pw,y=p.t+ph-((v-mn)/(mx-mn))*ph;
-        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      ds.data.forEach((v,vi)=>{
+        const x=p.l+(vi/(maxLen-1||1))*pw,y=p.t+ph-((v-mn)/(mx-mn))*ph;
+        vi===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
       });
       ctx.stroke();
-      const li=ds.data.length-1,x=p.l+(li/(maxLen-1||1))*pw,y=p.t+ph-((ds.data[li]-mn)/(mx-mn))*ph;
+      const dli=ds.data.length-1,x=p.l+(dli/(maxLen-1||1))*pw,y=p.t+ph-((ds.data[dli]-mn)/(mx-mn))*ph;
       ctx.fillStyle=ds.color;ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
     });
     ctx.fillStyle='#4a4a6a';ctx.textAlign='center';ctx.font='10px Barlow Condensed';
     const xt=Math.min(maxLen,8);
-    for(let i=0;i<xt;i++){const li=Math.round(i/(xt-1||1)*(maxLen-1));ctx.fillText('T'+(li+1),p.l+(li/(maxLen-1||1))*pw,H-4);}
+    for(let xi=0;xi<xt;xi++){const li=Math.round(xi/(xt-1||1)*(maxLen-1));ctx.fillText('T'+(li+1),p.l+(li/(maxLen-1||1))*pw,H-4);}
   },
   updateAll(){
     if(!Race.state)return;
@@ -1469,7 +1476,8 @@ function showTab(id){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>{if(b.getAttribute('onclick')===`showTab('${id}')`)b.classList.add('active');});
-  if(Race.state)Telem.updateAll();
+  // Attendre que le DOM soit visible avant de dessiner les canvas
+  requestAnimationFrame(()=>{ if(Race.state)Telem.updateAll(); });
 }
 
 
