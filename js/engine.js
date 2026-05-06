@@ -84,7 +84,14 @@ const Engine = {
     }
 
 
-    // ── 8. Météo + trait pluie ────────────────────────────
+    // ── 8. Pénalité pneu / humidité piste ─────────────────
+    // Si on est sur le mauvais pneu pour l'humidité actuelle
+    if (typeof Weather !== 'undefined' && typeof currentHumidity !== 'undefined') {
+      const mismatch = Weather.getTyreMismatchPenalty(tyreState.compound, currentHumidity);
+      if (mismatch > 0) lapTime += mismatch;
+    }
+
+    // ── 9. Météo + trait pluie ────────────────────────────
     if (weather === 'light_rain') {
       let wetSkill = driver.wetSkill;
       if (driver.trait === 'rain_master') wetSkill = Math.min(99, wetSkill + 5);
