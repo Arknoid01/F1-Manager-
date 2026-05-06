@@ -198,7 +198,7 @@ function init() {
     save = Save.load();
     if (!save || !save.playerTeamId) { showTeamSelection(); return; }
     restoreDriverStates(save);
-    if (typeof Career !== 'undefined') Career.restoreTeamStates(save);
+    if (typeof Career !== 'undefined' && typeof Career.restoreTeamStates === 'function') Career.restoreTeamStates(save);
     migrateSave(save);
     showDashboard();
   } catch(err) {
