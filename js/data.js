@@ -40,46 +40,88 @@ const F1Data = {
     { id:'abudhabi',    name:'Abu Dhabi',   fullName:'Yas Marina Circuit',                     laps:58, lapDistance:5.281, baseLapTime:87.5,  pitLoss:22, overtakingDifficulty:0.52, tyreDegradation:0.98, drsZones:2, fuelPerLap:1.85 },
   ],
 
-  // ── ÉQUIPES ───────────────────────────────────────────────
+  // ── ÉQUIPES 2025 (+ Cadillac 2026) ───────────────────────
   teams: [
-    { id:'redbull',     name:'Red Bull Racing', shortName:'RBR', color:'#1E3A6E', accentColor:'#FFD700', budget:500, performance:95, reliability:88, aero:96, chassis:94, engine:93, isPlayer:false },
-    { id:'ferrari',     name:'Ferrari',         shortName:'FER', color:'#CC0000', accentColor:'#FFD700', budget:480, performance:92, reliability:84, aero:91, chassis:92, engine:95, isPlayer:false },
-    { id:'mercedes',    name:'Mercedes',        shortName:'MER', color:'#00D2BE', accentColor:'#FFFFFF', budget:490, performance:90, reliability:90, aero:89, chassis:93, engine:96, isPlayer:false },
-    { id:'mclaren',     name:'McLaren',         shortName:'MCL', color:'#FF8000', accentColor:'#FFFFFF', budget:420, performance:88, reliability:85, aero:90, chassis:87, engine:90, isPlayer:false },
-    { id:'aston',       name:'Aston Martin',    shortName:'AMR', color:'#006F62', accentColor:'#FFD700', budget:380, performance:82, reliability:83, aero:81, chassis:83, engine:88, isPlayer:false },
-    { id:'alpine',      name:'Alpine',          shortName:'ALP', color:'#0090FF', accentColor:'#FF0000', budget:320, performance:75, reliability:78, aero:76, chassis:74, engine:82, isPlayer:false },
-    { id:'williams',    name:'Williams',        shortName:'WIL', color:'#005AFF', accentColor:'#FFFFFF', budget:200, performance:65, reliability:75, aero:64, chassis:66, engine:85, isPlayer:false },
-    { id:'haas',        name:'Haas',            shortName:'HAA', color:'#FFFFFF', accentColor:'#FF0000', budget:180, performance:62, reliability:72, aero:61, chassis:63, engine:85, isPlayer:false },
-    { id:'sauber',      name:'Kick Sauber',     shortName:'SAU', color:'#00E701', accentColor:'#FFFFFF', budget:190, performance:60, reliability:73, aero:59, chassis:61, engine:84, isPlayer:false },
-    { id:'racingbulls', name:'Racing Bulls',    shortName:'RCB', color:'#4477FF', accentColor:'#FFD700', budget:210, performance:68, reliability:76, aero:67, chassis:69, engine:85, isPlayer:false },
+    // McLaren — Champions constructeurs 2024, dominants 2025
+    { id:'mclaren',     name:'McLaren',         shortName:'MCL', color:'#FF8000', accentColor:'#FFFFFF', budget:480, performance:95, reliability:88, aero:96, chassis:94, engine:90, isPlayer:false },
+    // Ferrari — Leclerc + Hamilton, challenger principal
+    { id:'ferrari',     name:'Ferrari',         shortName:'FER', color:'#CC0000', accentColor:'#FFD700', budget:490, performance:92, reliability:85, aero:91, chassis:90, engine:96, isPlayer:false },
+    // Red Bull — Verstappen + Tsunoda (après swap Lawson)
+    { id:'redbull',     name:'Red Bull Racing', shortName:'RBR', color:'#1E3A6E', accentColor:'#FFD700', budget:500, performance:90, reliability:86, aero:92, chassis:90, engine:93, isPlayer:false },
+    // Mercedes — Russell + Antonelli (rookie)
+    { id:'mercedes',    name:'Mercedes',        shortName:'MER', color:'#00D2BE', accentColor:'#FFFFFF', budget:490, performance:87, reliability:90, aero:86, chassis:88, engine:96, isPlayer:false },
+    // Aston Martin — Newey recruté, gros projet 2026
+    { id:'aston',       name:'Aston Martin',    shortName:'AMR', color:'#006F62', accentColor:'#FFD700', budget:420, performance:78, reliability:82, aero:77, chassis:79, engine:88, isPlayer:false },
+    // Alpine — Saison chaotique, Gasly + Colapinto (remplace Doohan)
+    { id:'alpine',      name:'Alpine',          shortName:'ALP', color:'#0090FF', accentColor:'#FF0000', budget:320, performance:70, reliability:76, aero:70, chassis:69, engine:82, isPlayer:false },
+    // Williams — Albon + Sainz, remontée sous Vowles
+    { id:'williams',    name:'Williams',        shortName:'WIL', color:'#005AFF', accentColor:'#FFFFFF', budget:220, performance:68, reliability:76, aero:67, chassis:69, engine:85, isPlayer:false },
+    // Haas — Bearman + Ocon, nouvelle ère
+    { id:'haas',        name:'Haas',            shortName:'HAA', color:'#E8002D', accentColor:'#FFFFFF', budget:185, performance:63, reliability:73, aero:62, chassis:64, engine:85, isPlayer:false },
+    // Kick Sauber — Hülkenberg + Bortoleto, transition Audi
+    { id:'sauber',      name:'Kick Sauber',     shortName:'SAU', color:'#00E701', accentColor:'#FFFFFF', budget:210, performance:61, reliability:74, aero:60, chassis:62, engine:84, isPlayer:false },
+    // Racing Bulls — Lawson + Hadjar (après swap Tsunoda→Red Bull)
+    { id:'racingbulls', name:'Racing Bulls',    shortName:'RCB', color:'#6692FF', accentColor:'#FFD700', budget:215, performance:72, reliability:77, aero:71, chassis:73, engine:85, isPlayer:false },
+    // Cadillac — 11ème équipe 2026, Pérez + Bottas
+    { id:'cadillac',    name:'Cadillac',        shortName:'CAD', color:'#1A1A1A', accentColor:'#FFFFFF', budget:280, performance:55, reliability:65, aero:54, chassis:56, engine:82, isPlayer:false },
   ],
 
-  // ── PILOTES (avec âge, trait, potentiel) ──────────────────
+  // ── PILOTES 2025-2026 ────────────────────────────────────
   drivers: [
-    // id, name, firstName, teamId, number, age, pace, consistency, wetSkill, overtaking, defending, salary, trait, potential, retired
-    { id:'VER', name:'Verstappen', firstName:'Max',       teamId:'redbull',     number:1,  age:27, pace:97, consistency:95, wetSkill:96, overtaking:94, defending:92, salary:55, trait:'aggressive',  potential:99, retired:false },
-    { id:'PER', name:'Pérez',      firstName:'Sergio',    teamId:'redbull',     number:11, age:34, pace:87, consistency:82, wetSkill:80, overtaking:83, defending:85, salary:12, trait:'consistent',  potential:88, retired:false },
-    { id:'LEC', name:'Leclerc',    firstName:'Charles',   teamId:'ferrari',     number:16, age:27, pace:93, consistency:86, wetSkill:91, overtaking:88, defending:84, salary:25, trait:'qualifier',   potential:96, retired:false },
-    { id:'SAI', name:'Sainz',      firstName:'Carlos',    teamId:'ferrari',     number:55, age:30, pace:89, consistency:90, wetSkill:85, overtaking:85, defending:87, salary:10, trait:'consistent',  potential:91, retired:false },
-    { id:'HAM', name:'Hamilton',   firstName:'Lewis',     teamId:'mercedes',    number:44, age:40, pace:94, consistency:92, wetSkill:95, overtaking:93, defending:91, salary:40, trait:'rain_master', potential:99, retired:false },
-    { id:'RUS', name:'Russell',    firstName:'George',    teamId:'mercedes',    number:63, age:27, pace:90, consistency:88, wetSkill:87, overtaking:87, defending:83, salary:8,  trait:'qualifier',   potential:94, retired:false },
-    { id:'NOR', name:'Norris',     firstName:'Lando',     teamId:'mclaren',     number:4,  age:25, pace:92, consistency:87, wetSkill:88, overtaking:89, defending:82, salary:15, trait:'aggressive',  potential:96, retired:false },
-    { id:'PIA', name:'Piastri',    firstName:'Oscar',     teamId:'mclaren',     number:81, age:24, pace:88, consistency:85, wetSkill:83, overtaking:84, defending:80, salary:6,  trait:'consistent',  potential:95, retired:false },
-    { id:'ALO', name:'Alonso',     firstName:'Fernando',  teamId:'aston',       number:14, age:43, pace:91, consistency:89, wetSkill:93, overtaking:90, defending:95, salary:20, trait:'defender',    potential:99, retired:false },
-    { id:'STR', name:'Stroll',     firstName:'Lance',     teamId:'aston',       number:18, age:26, pace:78, consistency:75, wetSkill:73, overtaking:74, defending:76, salary:8,  trait:'consistent',  potential:82, retired:false },
-    { id:'GAS', name:'Gasly',      firstName:'Pierre',    teamId:'alpine',      number:10, age:28, pace:83, consistency:81, wetSkill:82, overtaking:80, defending:79, salary:5,  trait:'aggressive',  potential:87, retired:false },
-    { id:'OCO', name:'Ocon',       firstName:'Esteban',   teamId:'alpine',      number:31, age:28, pace:80, consistency:79, wetSkill:78, overtaking:77, defending:78, salary:4,  trait:'consistent',  potential:84, retired:false },
-    { id:'ALB', name:'Albon',      firstName:'Alexander', teamId:'williams',    number:23, age:28, pace:81, consistency:80, wetSkill:79, overtaking:79, defending:77, salary:3,  trait:'overtaker',   potential:86, retired:false },
-    { id:'SAR', name:'Sargeant',   firstName:'Logan',     teamId:'williams',    number:2,  age:24, pace:72, consistency:70, wetSkill:68, overtaking:69, defending:71, salary:1,  trait:'consistent',  potential:80, retired:false },
-    { id:'HUL', name:'Hülkenberg', firstName:'Nico',      teamId:'haas',        number:27, age:37, pace:82, consistency:83, wetSkill:80, overtaking:78, defending:80, salary:3,  trait:'consistent',  potential:86, retired:false },
-    { id:'MAG', name:'Magnussen',  firstName:'Kevin',     teamId:'haas',        number:20, age:32, pace:77, consistency:74, wetSkill:76, overtaking:75, defending:77, salary:2,  trait:'aggressive',  potential:80, retired:false },
-    { id:'BOT', name:'Bottas',     firstName:'Valtteri',  teamId:'sauber',      number:77, age:35, pace:82, consistency:81, wetSkill:80, overtaking:78, defending:79, salary:4,  trait:'consistent',  potential:86, retired:false },
-    { id:'ZHO', name:'Zhou',       firstName:'Guanyu',    teamId:'sauber',      number:24, age:25, pace:75, consistency:74, wetSkill:72, overtaking:72, defending:73, salary:2,  trait:'consistent',  potential:82, retired:false },
-    { id:'TSU', name:'Tsunoda',    firstName:'Yuki',      teamId:'racingbulls', number:22, age:24, pace:83, consistency:78, wetSkill:79, overtaking:81, defending:75, salary:3,  trait:'aggressive',  potential:89, retired:false },
-    { id:'RIC', name:'Ricciardo',  firstName:'Daniel',    teamId:'racingbulls', number:3,  age:35, pace:84, consistency:79, wetSkill:81, overtaking:86, defending:78, salary:5,  trait:'overtaker',   potential:90, retired:false },
+    // ── McLAREN ──────────────────────────────────────────────
+    { id:'NOR', name:'Norris',      firstName:'Lando',    teamId:'mclaren',     number:4,  age:25, pace:94, consistency:89, wetSkill:89, overtaking:91, defending:84, salary:20, trait:'aggressive',  potential:97, retired:false },
+    { id:'PIA', name:'Piastri',     firstName:'Oscar',    teamId:'mclaren',     number:81, age:24, pace:91, consistency:87, wetSkill:84, overtaking:86, defending:81, salary:10, trait:'consistent',  potential:96, retired:false },
+
+    // ── FERRARI ──────────────────────────────────────────────
+    { id:'LEC', name:'Leclerc',     firstName:'Charles',  teamId:'ferrari',     number:16, age:27, pace:94, consistency:87, wetSkill:92, overtaking:89, defending:85, salary:30, trait:'qualifier',   potential:97, retired:false },
+    { id:'HAM', name:'Hamilton',    firstName:'Lewis',    teamId:'ferrari',     number:44, age:40, pace:93, consistency:91, wetSkill:96, overtaking:92, defending:90, salary:45, trait:'rain_master', potential:99, retired:false },
+
+    // ── RED BULL ─────────────────────────────────────────────
+    { id:'VER', name:'Verstappen',  firstName:'Max',      teamId:'redbull',     number:1,  age:27, pace:98, consistency:96, wetSkill:96, overtaking:95, defending:93, salary:60, trait:'aggressive',  potential:99, retired:false },
+    // Tsunoda promu chez Red Bull après 2 courses (remplace Lawson)
+    { id:'TSU', name:'Tsunoda',     firstName:'Yuki',     teamId:'redbull',     number:22, age:25, pace:84, consistency:79, wetSkill:80, overtaking:82, defending:76, salary:4,  trait:'aggressive',  potential:89, retired:false },
+
+    // ── MERCEDES ─────────────────────────────────────────────
+    { id:'RUS', name:'Russell',     firstName:'George',   teamId:'mercedes',    number:63, age:27, pace:91, consistency:89, wetSkill:88, overtaking:88, defending:84, salary:12, trait:'qualifier',   potential:95, retired:false },
+    // Kimi Antonelli — rookie 2025, immense talent
+    { id:'ANT', name:'Antonelli',   firstName:'Andrea Kimi', teamId:'mercedes', number:12, age:19, pace:87, consistency:78, wetSkill:82, overtaking:83, defending:74, salary:3,  trait:'prodigy',     potential:98, retired:false },
+
+    // ── ASTON MARTIN ─────────────────────────────────────────
+    { id:'ALO', name:'Alonso',      firstName:'Fernando', teamId:'aston',       number:14, age:43, pace:91, consistency:90, wetSkill:94, overtaking:91, defending:96, salary:20, trait:'defender',    potential:99, retired:false },
+    { id:'STR', name:'Stroll',      firstName:'Lance',    teamId:'aston',       number:18, age:26, pace:79, consistency:76, wetSkill:74, overtaking:75, defending:77, salary:8,  trait:'consistent',  potential:83, retired:false },
+
+    // ── ALPINE ───────────────────────────────────────────────
+    { id:'GAS', name:'Gasly',       firstName:'Pierre',   teamId:'alpine',      number:10, age:29, pace:84, consistency:82, wetSkill:83, overtaking:81, defending:80, salary:6,  trait:'aggressive',  potential:88, retired:false },
+    // Colapinto remplace Doohan après 6 courses
+    { id:'COL', name:'Colapinto',   firstName:'Franco',   teamId:'alpine',      number:43, age:22, pace:82, consistency:76, wetSkill:79, overtaking:80, defending:74, salary:2,  trait:'aggressive',  potential:92, retired:false },
+
+    // ── WILLIAMS ─────────────────────────────────────────────
+    { id:'ALB', name:'Albon',       firstName:'Alexander',teamId:'williams',    number:23, age:29, pace:82, consistency:81, wetSkill:80, overtaking:80, defending:78, salary:4,  trait:'overtaker',   potential:87, retired:false },
+    { id:'SAI', name:'Sainz',       firstName:'Carlos',   teamId:'williams',    number:55, age:30, pace:90, consistency:91, wetSkill:86, overtaking:86, defending:88, salary:12, trait:'consistent',  potential:93, retired:false },
+
+    // ── HAAS ─────────────────────────────────────────────────
+    // Bearman — rookie très prometteur, ex-Ferrari junior
+    { id:'BEA', name:'Bearman',     firstName:'Ollie',    teamId:'haas',        number:87, age:20, pace:83, consistency:77, wetSkill:78, overtaking:79, defending:75, salary:2,  trait:'prodigy',     potential:93, retired:false },
+    // Ocon — vient d'Alpine, expérimenté
+    { id:'OCO', name:'Ocon',        firstName:'Esteban',  teamId:'haas',        number:31, age:29, pace:81, consistency:80, wetSkill:79, overtaking:78, defending:79, salary:5,  trait:'consistent',  potential:85, retired:false },
+
+    // ── KICK SAUBER ──────────────────────────────────────────
+    { id:'HUL', name:'Hülkenberg',  firstName:'Nico',     teamId:'sauber',      number:27, age:37, pace:83, consistency:84, wetSkill:81, overtaking:79, defending:81, salary:6,  trait:'consistent',  potential:87, retired:false },
+    // Bortoleto — rookie F2 champion 2024, énorme potentiel
+    { id:'BOR', name:'Bortoleto',   firstName:'Gabriel',  teamId:'sauber',      number:5,  age:20, pace:84, consistency:78, wetSkill:80, overtaking:82, defending:73, salary:2,  trait:'prodigy',     potential:95, retired:false },
+
+    // ── RACING BULLS ─────────────────────────────────────────
+    // Lawson revenu de Red Bull après swap
+    { id:'LAW', name:'Lawson',      firstName:'Liam',     teamId:'racingbulls', number:30, age:23, pace:83, consistency:80, wetSkill:79, overtaking:81, defending:76, salary:3,  trait:'aggressive',  potential:91, retired:false },
+    // Hadjar — rookie F2 runner-up 2024
+    { id:'HAD', name:'Hadjar',      firstName:'Isack',    teamId:'racingbulls', number:6,  age:20, pace:82, consistency:77, wetSkill:76, overtaking:80, defending:72, salary:2,  trait:'qualifier',   potential:92, retired:false },
+
+    // ── CADILLAC (2026) ──────────────────────────────────────
+    { id:'PER', name:'Pérez',       firstName:'Sergio',   teamId:'cadillac',    number:11, age:35, pace:84, consistency:81, wetSkill:79, overtaking:82, defending:84, salary:10, trait:'consistent',  potential:87, retired:false },
+    { id:'BOT', name:'Bottas',      firstName:'Valtteri', teamId:'cadillac',    number:77, age:36, pace:81, consistency:82, wetSkill:80, overtaking:77, defending:79, salary:6,  trait:'consistent',  potential:85, retired:false },
   ],
 
-  // ── TRAITS PILOTES ────────────────────────────────────────
+    // ── TRAITS PILOTES ────────────────────────────────────────
   traits: {
     aggressive:  { label:'Agressif',       icon:'🔥', desc:'Dépassements plus faciles, pneus plus usés',        paceBonus:0.15,  tyreMultiplier:1.20, overtakingBonus:3,  wetPenalty:0  },
     consistent:  { label:'Régulier',       icon:'📊', desc:'Rythme stable, gère bien les longs relais',          paceBonus:0,     tyreMultiplier:0.88, overtakingBonus:0,  wetPenalty:0  },
@@ -92,7 +134,7 @@ const F1Data = {
   },
 
   // ── NUMÉROS DISPONIBLES pour nouveaux pilotes ─────────────
-  availableNumbers: [5,6,7,8,9,12,13,15,17,19,21,25,26,28,29,30,32,33,34,35,36,37,38,39,40,41,42,43,45,46,47,48,49,50,51,52,53,54,56,57,58,59,60],
+  availableNumbers: [2,3,7,8,9,13,15,17,19,20,21,24,25,26,28,29,32,33,34,35,36,37,38,39,40,41,42,45,46,47,48,49,50,51,52,53,54,56,57,58,59,60,61,62,64,65,66,67,68,69,70,71,72,73,74,75,76,78,79,80,82,83,84,85,86,88,89,90,91,92,93,94,95,96,97,98],
 
   // ── BASE DE NOMS ─────────────────────────────────────────
   driverNames: {
