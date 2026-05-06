@@ -214,8 +214,8 @@
   <div class="controls">
     <select id="circSel" class="sel"></select>
     <button class="btn btn-red"  id="btnStart" onclick="startRace()">▶ Démarrer</button>
-    <button class="btn btn-gold" id="btnSlow"  onclick="setMode('slow')"  disabled>🐢 Lent</button>
-    <button class="btn btn-sec"  id="btnPause" onclick="setMode('pause')" disabled>⏸ Pause</button>
+    <button class="btn btn-gold" id="btnSlow"  onclick="setSimSpeed('slow')"  disabled>🐢 Lent</button>
+    <button class="btn btn-sec"  id="btnPause" onclick="togglePause()"        disabled>⏸ Pause</button>
     <button class="btn btn-sec"  id="btnSkip"  onclick="skipEnd()"        disabled>⏩ Fin de course</button>
   </div>
 
@@ -1050,9 +1050,21 @@ function runSim() {
   }, getInterval());
 }
 
+function setSimSpeed(mode) {
+  if (mode === 'slow') {
+    isPaused = false;
+    document.getElementById('btnSlow').classList.add('on');
+    document.getElementById('btnPause').classList.remove('on');
+    document.getElementById('btnPause').textContent = '⏸ Pause';
+    if (!simInterval) runSim();
+  }
+}
+
 function togglePause() {
   isPaused = !isPaused;
+  document.getElementById('btnPause').classList.toggle('on', isPaused);
   document.getElementById('btnPause').textContent = isPaused ? '▶ Reprendre' : '⏸ Pause';
+  document.getElementById('btnSlow').classList.toggle('on', !isPaused);
 }
 
 
