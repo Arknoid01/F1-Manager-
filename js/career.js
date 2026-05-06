@@ -349,6 +349,12 @@ const Career = {
     // 10. Reset le flag bannière
     delete save._bannerDismissed;
 
+    // 11. Traiter le staff généré (vieillissement + nouveaux + mouvements IA)
+    const staffReport          = this.processStaffEndOfSeason(save);
+    report.retiredStaff        = staffReport.retired   || [];
+    report.newStaff            = staffReport.newStaff  || [];
+    report.progressedStaff     = staffReport.progressed|| [];
+
     Save.save(save);
     return report;
   },
@@ -671,5 +677,299 @@ const Career = {
     if (a <= 33) return { label: 'Expérimenté',  color: '#2979ff', icon: '🔵' };
     if (a <= 37) return { label: 'Déclin',       color: '#ff9944', icon: '📉' };
     return              { label: 'Vétéran',      color: '#ff4444', icon: '⚠️' };
+  },
+
+  // ══════════════════════════════════════════════════════════
+  //  SYSTÈME STAFF — GÉNÉRATION & ÉVOLUTION
+  // ══════════════════════════════════════════════════════════
+
+  // ── BASE DE NOMS STAFF ────────────────────────────────────
+  staffNames: {
+    firstNames: [
+      'Thomas','Lucas','Emma','Sophie','Liam','Noah','Olivia','James','Isabella','Oliver',
+      'Charlotte','Elijah','Amelia','William','Mia','Benjamin','Harper','Mason','Evelyn',
+      'Logan','Aria','Ethan','Ella','Michael','Scarlett','Alexander','Grace','Daniel',
+      'Chloe','Henry','Victoria','Jackson','Riley','Sebastian','Zoey','Aiden','Nora',
+      'Mateo','Lily','Jack','Eleanor','Owen','Hannah','Samuel','Lillian','David','Addison',
+      'Joseph','Aubrey','Luke','Ellie','Julian','Stella','Levi','Natalie','Isaac',
+      'Zoe','Gabriel','Leah','Anthony','Hazel','Dylan','Violet','Lincoln','Aurora',
+      'Jaxon','Savannah','Asher','Audrey','Christopher','Brooklyn','Josiah','Bella',
+      'Andrew','Claire','John','Skylar','Ryan','Lucy','Nathan','Paisley','Adrian',
+      'Everly','Christian','Anna','Wyatt','Caroline','Caleb','Genesis','Jayden','Aaliyah',
+      'Ryo','Yuki','Kenji','Sakura','Haruto','Aoi','Lars','Ingrid','Erik','Astrid',
+      'Carlos','Sofia','Miguel','Isabella','Alejandro','Valentina','Marco','Giulia',
+      'Priya','Arjun','Ananya','Vikram','Fatima','Omar','Yasmin','Ahmed',
+      'François','Marie','Pierre','Camille','Antoine','Léa','Nicolas','Chloé',
+    ],
+    lastNames: [
+      'Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Wilson',
+      'Anderson','Taylor','Thomas','Hernandez','Moore','Martin','Jackson','Lee','Perez',
+      'Thompson','White','Harris','Sanchez','Clark','Ramirez','Lewis','Robinson','Walker',
+      'Young','Allen','King','Wright','Scott','Torres','Nguyen','Hill','Flores','Green',
+      'Adams','Nelson','Baker','Hall','Rivera','Campbell','Mitchell','Carter','Roberts',
+      'Müller','Schmidt','Schneider','Fischer','Weber','Meyer','Wagner','Becker','Schulz',
+      'Tanaka','Sato','Suzuki','Watanabe','Ito','Yamamoto','Nakamura','Kobayashi',
+      'Marchetti','Ferrari','Romano','Conti','Ricci','Esposito','Bianchi','Colombo',
+      'Dubois','Dupont','Laurent','Lefebvre','Moreau','Simon','Michel','Leroy',
+      'García','Martínez','López','González','Rodríguez','Fernández','Sánchez',
+      'Silva','Santos','Oliveira','Pereira','Costa','Ferreira','Alves','Carvalho',
+      'Nielsen','Andersen','Jensen','Larsen','Sørensen','Christensen','Poulsen',
+      'Eriksson','Johansson','Lindqvist','Bergström','Gustafsson','Persson','Magnusson',
+      'Kowalski','Nowak','Wiśniewski','Wójcik','Kowalczyk','Kamiński','Lewandowski',
+      'Nair','Patel','Shah','Kumar','Sharma','Mehta','Singh','Gupta','Joshi',
+    ],
+  },
+
+  // Icônes et labels par spécialité
+  staffSpecialties: {
+    aero:        { icon:'🌊', label:'Aérodynamique', roles:['Ingénieur Aéro','Analyste CFD','Responsable Soufflerie','Chef Aérodynamicien'] },
+    chassis:     { icon:'🏗️', label:'Châssis',       roles:['Ingénieur Châssis','Spécialiste Suspensions','Ingénieur Setup','Dynamicien Véhicule'] },
+    engine:      { icon:'⚡', label:'Moteur/ERS',    roles:['Ingénieur Moteur','Spécialiste ERS','Thermicien','Responsable Groupe Propulseur'] },
+    pitstop:     { icon:'⏱️', label:'Pit Stop',      roles:['Chef Mécanicien','Responsable Pit Stop','Coordinateur Stand','Chef d\'Équipe Pit'] },
+    reliability: { icon:'🛡️', label:'Fiabilité',     roles:['Ingénieur Fiabilité','Analyste Données','Responsable Qualité','Chef Maintenance'] },
+  },
+
+  // ── GÉNÉRER UN MEMBRE DE STAFF ────────────────────────────
+  generateStaff(save) {
+    const names    = this.staffNames;
+    const specs    = Object.keys(this.staffSpecialties);
+    const specialty= specs[Math.floor(Math.random() * specs.length)];
+    const specData = this.staffSpecialties[specialty];
+
+    const firstName = names.firstNames[Math.floor(Math.random() * names.firstNames.length)];
+    const lastName  = names.lastNames [Math.floor(Math.random() * names.lastNames.length)];
+    const role      = specData.roles  [Math.floor(Math.random() * specData.roles.length)];
+
+    // Âge : 25-45 ans (staff plus mature que les pilotes)
+    const age = 25 + Math.floor(Math.random() * 20);
+
+    // Niveau selon l'âge (expérience = niveau plus élevé)
+    const ageBonus = Math.min(15, Math.floor((age - 25) / 2));
+    const baseLevel = 58 + Math.floor(Math.random() * 20) + ageBonus; // 58-93
+
+    // Potentiel : plafond de progression (moins varié que les pilotes)
+    const potential = Math.min(97, baseLevel + 2 + Math.floor(Math.random() * 12));
+
+    // Elite très rare (2%)
+    const isElite = Math.random() < 0.02;
+
+    // Niveau d'impact basé sur le level
+    const impactBase = Math.round((baseLevel - 55) / 4); // 1-9
+    const impacts    = { [specialty]: impactBase };
+
+    // Parfois impact secondaire
+    if (Math.random() > 0.5) {
+      const secondarySpecs = specs.filter(s => s !== specialty);
+      const secondary      = secondarySpecs[Math.floor(Math.random() * secondarySpecs.length)];
+      impacts[secondary]   = Math.max(1, Math.round(impactBase * 0.4));
+    }
+
+    const salary = Math.max(1, Math.round(baseLevel * 0.08));
+    const cost   = Math.max(3, Math.round(salary * 2.2));
+
+    const passives = {
+      aero:        [`Améliore l'efficacité aéro de ${impactBase}%`, `+${Math.ceil(impactBase/3)} token R&D / 4 courses`, `Réduit l'écart soufflerie/piste`],
+      chassis:     [`Améliore la dégradation pneus de ${impactBase}%`, `Optimise le comportement en virage`, `Réduit les coûts d'upgrade châssis`],
+      engine:      [`Réduit les DNF moteur de ${impactBase*5}%`, `Optimise le déploiement ERS`, `Améliore la gestion thermique`],
+      pitstop:     [`Réduit le pitLoss de ${(impactBase*0.15).toFixed(1)}s`, `Améliore la coordination mécaniciens`, `Réduit les erreurs de pit de ${impactBase*8}%`],
+      reliability: [`Réduit les DNF de ${impactBase*4}%`, `Détecte les pannes prématurément`, `Améliore la durabilité des pièces`],
+    };
+    const passive = passives[specialty][Math.floor(Math.random() * passives[specialty].length)];
+
+    return {
+      id:        `STAFF_${Date.now()}_${Math.floor(Math.random()*9999)}`,
+      name:      lastName,
+      firstName,
+      fullName:  `${firstName} ${lastName}`,
+      icon:      specData.icon,
+      role,
+      specialty,
+      age,
+      yearsInF1: 0,
+      level:     baseLevel,
+      potential,
+      salary,
+      cost,
+      elite:     isElite,
+      generated: true,
+      retired:   false,
+      impacts,
+      passive,
+      desc:      `${role} spécialisé en ${specData.label.toLowerCase()}. ${age} ans d'expérience progressive.`,
+    };
+  },
+
+  // ── VIEILLISSEMENT DU STAFF ───────────────────────────────
+  ageAllStaff(save) {
+    if (!save) return { retired:[], progressed:[] };
+    save.generatedStaff = save.generatedStaff || [];
+
+    const retired    = [];
+    const progressed = [];
+
+    save.generatedStaff.forEach(st => {
+      if (st.retired) return;
+
+      st.age       = (st.age || 35) + 1;
+      st.yearsInF1 = (st.yearsInF1 || 0) + 1;
+
+      // Progression lente du level (réaliste : +0.3 à +0.8/an)
+      if (st.level < st.potential) {
+        const gain = 0.2 + Math.random() * 0.6;
+        st.level   = Math.min(st.potential, Math.round((st.level + gain) * 10) / 10);
+        // Mise à jour des impacts
+        Object.keys(st.impacts).forEach(spec => {
+          const newImpact = Math.round((st.level - 55) / 4);
+          if (newImpact > st.impacts[spec]) {
+            st.impacts[spec] = newImpact;
+            progressed.push(st);
+          }
+        });
+      }
+
+      // Retraite : possible à partir de 58 ans
+      if (st.age >= 58) {
+        const retireChance = (st.age - 57) * 0.20;
+        if (Math.random() < retireChance) {
+          st.retired = true;
+          // Libérer de l'équipe joueur si recruté
+          if (save.staff?.includes(st.id)) {
+            save.staff = save.staff.filter(id => id !== st.id);
+          }
+          retired.push(st);
+        }
+      }
+
+      // Mise à jour du salary
+      st.salary = Math.max(1, Math.round(st.level * 0.08));
+      st.cost   = Math.max(3, Math.round(st.salary * 2.2));
+    });
+
+    return { retired, progressed };
+  },
+
+  // ── GÉNÉRER DE NOUVEAUX STAFFS ────────────────────────────
+  // Appelé en fin de saison — génère 3-6 nouveaux membres
+  generateNewStaff(save) {
+    save.generatedStaff = save.generatedStaff || [];
+    const season        = save.season || 2025;
+
+    // Générer tous les 1-2 ans (pas forcément chaque saison)
+    // Mais on génère toujours au moins 2 la première fois
+    const isFirst  = save.generatedStaff.length === 0;
+    const count    = isFirst
+      ? 6
+      : Math.random() < 0.6 ? 2 + Math.floor(Math.random() * 3) : 0;
+
+    const newStaff = [];
+    for (let i = 0; i < count; i++) {
+      const st = this.generateStaff(save);
+      save.generatedStaff.push(st);
+      newStaff.push(st);
+    }
+
+    return newStaff;
+  },
+
+  // ── DÉBAUCHAGES IA ────────────────────────────────────────
+  // Certains staffs générés sont "recrutés" par des équipes IA
+  aiStaffMovements(save) {
+    if (!save?.generatedStaff) return;
+
+    // 10% de chance qu'un staff libre soit "approché" par une IA
+    const freeStaff = save.generatedStaff.filter(st =>
+      !st.retired && !save.staff?.includes(st.id)
+    );
+
+    freeStaff.forEach(st => {
+      if (Math.random() < 0.08) {
+        // Staff "pris" par une IA — on le marque comme non disponible pendant 1-3 saisons
+        st.aiContracted    = true;
+        st.aiContractUntil = (save.season||2025) + 1 + Math.floor(Math.random() * 3);
+
+        if (typeof CareerEvents !== 'undefined' && save) {
+          CareerEvents.log(save, {
+            phase:'mercato', icon:'🔄', category:'competitor',
+            title:'Staff débauché',
+            text:`${st.firstName} ${st.name} (${st.role}) a rejoint une équipe rivale.`,
+          });
+        }
+      }
+
+      // Libérer si contrat IA expiré
+      if (st.aiContracted && (save.season||2025) >= (st.aiContractUntil||9999)) {
+        st.aiContracted    = false;
+        st.aiContractUntil = null;
+      }
+    });
+  },
+
+  // ── FIN DE SAISON STAFF ───────────────────────────────────
+  // Intégré dans endOfSeason
+  processStaffEndOfSeason(save) {
+    const report = { retired:[], progressed:[], newStaff:[] };
+    if (!save) return report;
+
+    // 1. Vieillir tous les staffs générés
+    const ageResult = this.ageAllStaff(save);
+    report.retired   = ageResult.retired;
+    report.progressed= ageResult.progressed;
+
+    // 2. Nouveaux staffs disponibles
+    report.newStaff  = this.generateNewStaff(save);
+
+    // 3. Mouvements IA
+    this.aiStaffMovements(save);
+
+    // 4. Persister
+    save.staffStates = {};
+    (save.generatedStaff || []).forEach(st => {
+      save.staffStates[st.id] = { ...st };
+    });
+
+    return report;
+  },
+
+  // ── RESTAURER LES STAFFS GÉNÉRÉS ─────────────────────────
+  // À appeler au chargement de chaque page
+  restoreGeneratedStaff(save) {
+    if (!save?.generatedStaff) return;
+
+    // Mettre à jour depuis staffStates si disponible
+    if (save.staffStates) {
+      save.generatedStaff.forEach((st, idx) => {
+        const state = save.staffStates[st.id];
+        if (state) save.generatedStaff[idx] = { ...state };
+      });
+    }
+  },
+
+  // ── HELPER : staffs disponibles au recrutement ────────────
+  getAvailableGeneratedStaff(save) {
+    if (!save?.generatedStaff) return [];
+    const season = save.season || 2025;
+    return save.generatedStaff.filter(st =>
+      !st.retired &&
+      !save.staff?.includes(st.id) &&
+      !(st.aiContracted && season < (st.aiContractUntil||0))
+    );
+  },
+
+  // ── LABEL NIVEAU STAFF ────────────────────────────────────
+  getStaffLevelLabel(level) {
+    if (level >= 92) return { label:'Légendaire', color:'#ff6600' };
+    if (level >= 85) return { label:'Élite',      color:'#ffd700' };
+    if (level >= 78) return { label:'Expert',     color:'#00e676' };
+    if (level >= 70) return { label:'Confirmé',   color:'#2979ff' };
+    if (level >= 62) return { label:'Junior',     color:'#6a6a8a' };
+    return                  { label:'Stagiaire',  color:'#444'    };
+  },
+
+  getStaffAgePhase(age) {
+    if (age <= 28) return { label:'Prometteur', color:'#00e676', icon:'🌱' };
+    if (age <= 38) return { label:'Prime',      color:'#ffd700', icon:'⭐' };
+    if (age <= 48) return { label:'Expérimenté',color:'#2979ff', icon:'🔵' };
+    if (age <= 55) return { label:'Senior',     color:'#ff9944', icon:'📉' };
+    return                { label:'Retraite proche', color:'#ff4444', icon:'⚠️' };
   },
 };
