@@ -930,11 +930,27 @@ function startRace() {
 
   Telem.reset();
 
-  // Lire les stratégies : weekend en priorité, sinon collectPreRaceStrategies
+  // Lire les stratégies : weekend en priorité, sinon générer par défaut
   const wSave = Save.load();
   const weekendStrats = wSave?.raceStrategies || null;
   const weather = wSave?.weekendWeather || 'dry';
-  const strategies = weekendStrats || collectPreRaceStrategies();
+
+  let strategies = weekendStrats;
+  if (!strategies) {
+    // Générer des stratégies par défaut pour les pilotes joueur
+    strategies = {};
+    const circ = F1Data.circuits.find(c => c.id === cid) || F1Data.circuits[0];
+    getPlayerDrivers().forEach((driver, idx) => {
+      const defPit = circ.tyreDegradation > 1.2 || circ.laps > 65
+        ? [Math.round(circ.laps * 0.33), Math.round(circ.laps * 0.66)]
+        : [Math.round(circ.laps * 0.48)];
+      strategies[driver.id] = {
+        compounds: idx === 0 ? ['MEDIUM','HARD'] : ['SOFT','HARD'],
+        pitLaps:   [defPit[0]],
+      };
+    });
+  }
+
   Race.init(cid, weather, strategies);
 
   // Initialiser le système météo dynamique
@@ -979,18 +995,16 @@ function startRace() {
   document.getElementById('btnSlow').disabled  = false;
   document.getElementById('btnPause').disabled = false;
   document.getElementById('btnSkip').disabled  = false;
-  document.getElementById('btnSlow').classList.add('on'); // lent par défaut
-  document.getElementById('circSel').disabled     = true;
-  document.querySelectorAll('#preRaceStrategy select,#preRaceStrategy input').forEach(el => el.disabled = true);
+  document.getElementById('btnSlow').classList.add('on');
+  document.getElementById('circSel').disabled  = true;
 
   CR.init(cid);
   CR.startAnim();
 
   renderStandings();
-  renderStratReco(); // ← afficher les recommandations dès le départ
+  renderStratReco();
   renderPlayerControls();
 
-  // Séquence feux de départ → puis simulation
   CR.startLights(() => runSim());
 }
 
@@ -1335,7 +1349,7 @@ function resetRace() {
   document.getElementById('btnPause').disabled  = true;
   document.getElementById('btnSkip').disabled   = true;
   document.getElementById('circSel').disabled   = false;
-  document.querySelectorAll('#preRaceStrategy select,#preRaceStrategy input').forEach(el => el.disabled = false);
+  
   document.getElementById('tLap').innerHTML     = 'Tour <b>0</b>/<span id="tTotal">—</span>';
   document.getElementById('svgLap').textContent = '0';
   document.getElementById('svgTotal').textContent = '—';
