@@ -489,7 +489,9 @@ function init() {
   // Restaurer les staffs générés depuis la save
   if (typeof Career !== 'undefined') {
     Career.restoreGeneratedStaff(save);
-  
+    if (typeof Career.restoreTeamStates === 'function') {
+      Career.restoreTeamStates(save); // restaurer stats équipes IA si la fonction existe
+    }
     // Générer le premier lot si jamais fait
     if (!save.generatedStaff || save.generatedStaff.length === 0) {
       Career.generateNewStaff(save);
@@ -508,6 +510,25 @@ function init() {
 }
 
 // ══════════════════════════════════════════════════════════
+//  HELPERS STAFF
+// ══════════════════════════════════════════════════════════
+function sameStaffId(a, b) {
+  return String(a) === String(b);
+}
+
+function getAllStaff() {
+  return [...(typeof STAFF_DB !== 'undefined' ? STAFF_DB : []), ...(save?.generatedStaff || [])];
+}
+
+function findStaffById(id) {
+  return getAllStaff().find(s => sameStaffId(s.id, id));
+}
+
+function isStaffHired(id) {
+  return (save.staff || []).some(hiredId => sameStaffId(hiredId, id));
+}
+
+// ══════════════════════════════════════════════════════════
 //  IMPACT PASSIF DU STAFF
 // ══════════════════════════════════════════════════════════
 function applyStaffPassives() {
@@ -516,7 +537,7 @@ function applyStaffPassives() {
   if (!team) return;
 
   // Recalculer les stats équipe depuis la base + carDev + staff
-  const hiredStaff = STAFF_DB.filter(s => save.staff.includes(s.id));
+  const hiredStaff = getAllStaff().filter(s => isStaffHired(s.id));
 
   // Reset staff bonuses (on les recalcule à chaque fois)
   save.staffBonuses = {
@@ -588,10 +609,7 @@ function renderHired() {
 
   // Chercher chaque staff recruté dans STAFF_DB ET dans les générés
   hired.forEach(id => {
-    let st = STAFF_DB.find(s => s.id === id);
-    if (!st && save.generatedStaff) {
-      st = save.generatedStaff.find(s => s.id === id);
-    }
+    let st = findStaffById(id);
     if (st) grid.appendChild(buildCard(st, true));
   });
 }
@@ -615,7 +633,7 @@ function renderMarket() {
   grid.innerHTML = '';
 
   // Staff statiques (STAFF_DB) non recrutés
-  let staticPool = STAFF_DB.filter(s => !hired.includes(s.id));
+  let staticPool = STAFF_DB.filter(s => !isStaffHired(s.id));
 
   // Staff générés disponibles
   let generatedPool = typeof Career !== 'undefined'
@@ -733,10 +751,7 @@ function buildCard(st, isHired) {
 // ══════════════════════════════════════════════════════════
 function hireStaff(id) {
   // Chercher dans STAFF_DB d'abord, puis dans les générés
-  let st = STAFF_DB.find(s => s.id === id);
-  if (!st && save.generatedStaff) {
-    st = save.generatedStaff.find(s => s.id === id);
-  }
+  let st = findStaffById(id);
   if (!st) return;
 
   // Vérifier les limites
@@ -757,7 +772,7 @@ function hireStaff(id) {
   // Vérifier l'exclusivité (1 seul DT)
   if (st.exclusive) {
     const hasDT = save.staff.some(id2 => {
-      const s2 = STAFF_DB.find(x => x.id === id2);
+      const s2 = findStaffById(id2);
       return s2?.exclusive;
     });
     if (hasDT) {
@@ -799,17 +814,14 @@ function hireStaff(id) {
 }
 
 function fireStaff(id) {
-  let st = STAFF_DB.find(s => s.id === id);
-  if (!st && save.generatedStaff) {
-    st = save.generatedStaff.find(s => s.id === id);
-  }
+  let st = findStaffById(id);
   if (!st) return;
 
   const penalty = Math.round(st.salary * 0.8);
   if (!confirm(`Licencier ${st.name} ?\nIndemnité : ${penalty}M€`)) return;
 
   save.budget = Math.round(((save.budget||0) - penalty) * 10) / 10;
-  save.staff  = (save.staff||[]).filter(i => i !== id);
+  save.staff  = (save.staff||[]).filter(i => !sameStaffId(i, id));
 
   // Retirer les impacts directs
   if (save.carDev) {
@@ -843,7 +855,7 @@ function fireStaff(id) {
 //  MASSE SALARIALE
 // ══════════════════════════════════════════════════════════
 function renderSalaries() {
-  const hired    = (save.staff||[]).map(id => STAFF_DB.find(s=>s.id===id)).filter(Boolean);
+  const hired    = (save.staff||[]).map(id => findStaffById(id)).filter(Boolean);
   const myDrivers = F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
   const driverSalaries = myDrivers.reduce((s,d)=>s+(d.salary||0),0);
   const staffSalaries  = hired.reduce((s,st)=>s+st.salary,0);
