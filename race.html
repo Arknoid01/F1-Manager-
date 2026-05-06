@@ -189,12 +189,10 @@
   <!-- CONTROLS -->
   <div class="controls">
     <select id="circSel" class="sel"></select>
-    <button class="btn btn-red" id="btnStart" onclick="startRace()">▶ Démarrer</button>
-    <button class="btn btn-sec" id="btnPause" onclick="togglePause()" disabled>⏸ Pause</button>
-    <button class="btn btn-gold" id="btnSlow" onclick="toggleSlow()">🐢</button>
-    <button class="btn btn-gold" id="btnFast" onclick="toggleFast()">⚡</button>
-    <span class="spd" id="spdLbl">x1</span>
-    <button class="btn btn-sec" id="btnSkip" onclick="skipEnd()" disabled>⏩ Fin</button>
+    <button class="btn btn-red"  id="btnStart" onclick="startRace()">▶ Démarrer</button>
+    <button class="btn btn-gold" id="btnSlow"  onclick="setMode('slow')"  disabled>🐢 Lent</button>
+    <button class="btn btn-sec"  id="btnPause" onclick="setMode('pause')" disabled>⏸ Pause</button>
+    <button class="btn btn-sec"  id="btnSkip"  onclick="skipEnd()"        disabled>⏩ Fin de course</button>
   </div>
 
   <!-- MAIN ROW : circuit + classement -->
@@ -579,17 +577,14 @@ const CR = {
 // ══════════════════════════════════════════════
 let simInterval = null;
 let isPaused    = false;
-let isFast      = false;
-let isSlow      = false;
+let simMode = 'slow'; // 'slow' | 'pause'
 let started     = false;
 
 // Intervalles en ms par tour simulé
-const SPEEDS = { slow: 6000, normal: 2500, fast: 80 };
+const SPEEDS = { slow: 6000, pause: null };
 
 function getInterval() {
-  if (isSlow) return SPEEDS.slow;
-  if (isFast) return SPEEDS.fast;
-  return SPEEDS.normal;
+  return SPEEDS.slow; // toujours lent
 }
 
 function initSel() {
@@ -621,9 +616,11 @@ function startRace() {
   document.getElementById('tTotal').textContent   = cir.laps;
   document.getElementById('svgTotal').textContent = cir.laps;
   document.getElementById('circLabel').textContent= cir.name.toUpperCase();
-  document.getElementById('btnStart').disabled    = true;
-  document.getElementById('btnPause').disabled    = false;
-  document.getElementById('btnSkip').disabled     = false;
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnSlow').disabled  = false;
+  document.getElementById('btnPause').disabled = false;
+  document.getElementById('btnSkip').disabled  = false;
+  document.getElementById('btnSlow').classList.add('on'); // lent par défaut
   document.getElementById('circSel').disabled     = true;
   document.querySelectorAll('#preRaceStrategy select,#preRaceStrategy input').forEach(el => el.disabled = true);
 
@@ -674,23 +671,6 @@ function togglePause() {
   document.getElementById('btnPause').textContent = isPaused ? '▶ Reprendre' : '⏸ Pause';
 }
 
-function toggleSlow() {
-  isSlow = !isSlow;
-  if (isSlow) isFast = false;
-  document.getElementById('btnSlow').classList.toggle('on', isSlow);
-  document.getElementById('btnFast').classList.remove('on');
-  document.getElementById('spdLbl').textContent = isSlow ? '🐢 Lent' : 'x1';
-  if (started) runSim();
-}
-
-function toggleFast() {
-  isFast = !isFast;
-  if (isFast) isSlow = false;
-  document.getElementById('btnFast').classList.toggle('on', isFast);
-  document.getElementById('btnSlow').classList.remove('on');
-  document.getElementById('spdLbl').textContent = isFast ? '⚡ x15' : 'x1';
-  if (started) runSim();
-}
 
 function skipEnd() {
   clearInterval(simInterval);
