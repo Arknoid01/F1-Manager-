@@ -109,6 +109,20 @@
 
     .strat-panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; width:220px; flex-shrink:0; }
     @media(max-width:650px) { .strat-panel { width:100%; } }
+
+    /* Tuile stratégie pneus */
+    .strat-option { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:8px; font-family:var(--fh); }
+    .strat-option.recommended { border-color:var(--gold); background:#1a1a00; }
+    .strat-option.possible    { border-color:#2979ff44; }
+    .strat-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:3px; display:inline-block; margin-bottom:4px; }
+    .strat-badge.rec  { background:#2a2a00; color:var(--gold); border:1px solid #3a3a00; }
+    .strat-badge.alt  { background:#001a0a; color:var(--green); border:1px solid #003a18; }
+    .strat-badge.risky{ background:#1a0000; color:#ff6666; border:1px solid #3a0000; }
+    .strat-compounds { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin:3px 0; }
+    .strat-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .strat-arrow { font-size:10px; color:var(--muted); }
+    .strat-detail { font-size:10px; color:var(--muted); margin-top:3px; line-height:1.4; }
+    .strat-laps { font-size:11px; font-weight:700; color:var(--text); }
     .strat-body { padding:6px 10px; }
     .strat-row { display:flex; align-items:center; gap:5px; padding:3px 0; border-bottom:1px solid #10101a; }
     .strat-name { font-family:var(--fh); font-weight:700; font-size:12px; width:72px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -153,6 +167,14 @@
     .strat-name-t { font-family:var(--fh); font-weight:700; font-size:12px; width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .strat-stops { font-family:var(--fh); font-size:10px; color:var(--muted); margin-left:auto; }
 
+    /* POPUP MÉTÉO */
+    .humidity-bar { height:8px; background:var(--border); border-radius:4px; overflow:hidden; margin:4px 0; }
+    .humidity-fill { height:100%; border-radius:4px; transition:width .3s; }
+    .weather-msg { display:flex; gap:8px; align-items:flex-start; padding:5px 0; border-bottom:1px solid var(--border); font-family:var(--fh); font-size:11px; }
+    .weather-msg:last-child { border-bottom:0; }
+    .forecast-grid { display:flex; gap:6px; margin:8px 0; flex-wrap:wrap; }
+    .forecast-chip { background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:4px 8px; font-family:var(--fh); font-size:10px; text-align:center; }
+
     ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
     /* FEUX DE DÉPART */
@@ -172,7 +194,15 @@
   <a href="drivers.html" class="nav-link">👤 Pilotes & Contrats</a>
   <div class="tb-right">
     <div class="lap-pill" id="tLap">Tour <b>0</b>/<span id="tTotal">—</span></div>
-    <div id="wBadge" class="w-badge w-dry">☀️ SEC</div>
+    <div id="wBadge" class="w-badge w-dry" onclick="toggleWeatherPopup()" style="cursor:pointer" title="Voir les prévisions météo">☀️ SEC</div>
+    <!-- POPUP MÉTÉO -->
+    <div id="weatherPopup" style="display:none;position:fixed;top:56px;right:10px;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,.6)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-family:var(--fh);font-weight:900;font-size:14px;letter-spacing:2px;text-transform:uppercase">🌦️ Météo & Piste</div>
+        <button onclick="toggleWeatherPopup()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div id="weatherPopupContent"><div style="color:var(--muted);font-family:var(--fh);font-size:12px">Lance une course pour voir les prévisions.</div></div>
+    </div>
     <div id="scPill" class="sc-pill">🟡 SC</div>
   </div>
 </div>
@@ -243,8 +273,10 @@
       </div>
     </div>
     <div class="strat-panel">
-      <div class="panel-head"><div class="dot"></div> Stratégie Top 5</div>
-      <div id="stratBody" class="strat-body"><div style="color:var(--muted);font-size:11px;text-align:center">—</div></div>
+      <div class="panel-head"><div class="dot"></div> 🛞 Stratégies recommandées</div>
+      <div id="stratRecoBody" style="padding:8px;display:flex;flex-direction:column;gap:6px">
+        <div style="color:var(--muted);font-size:11px;text-align:center;padding:8px">Lance une course pour voir les recommandations.</div>
+      </div>
     </div>
   </div>
 
@@ -299,6 +331,7 @@
 
 <script src="js/data.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/weather.js"></script>
 <script src="js/weekend.js"></script>
 <script src="js/race.js"></script>
 <script src="js/save.js"></script>
@@ -582,6 +615,298 @@ function getInterval() {
   return SPEEDS.slow; // toujours lent
 }
 
+// ══════════════════════════════════════════════════════════
+//  RECOMMANDATIONS STRATÉGIE PNEUS
+// ══════════════════════════════════════════════════════════
+function calcTyreLifeFromEL(fpResults, circuit) {
+  // Retourne la durée estimée par compound depuis les données EL
+  const lifemap = {};
+  if (fpResults && fpResults.length) {
+    fpResults.forEach(r => {
+      if (!r.tyreLife || !r.laps) return;
+      const wearPerLap  = (100 - r.tyreLife) / r.laps;
+      if (wearPerLap <= 0) return;
+      const life        = Math.round(80 / wearPerLap); // jusqu'à 20% restant
+      if (!lifemap[r.compound] || life > lifemap[r.compound])
+        lifemap[r.compound] = Math.min(life, circuit.laps - 2);
+    });
+  }
+  // Fallback depuis les données circuit si EL manquent
+  ['SOFT','MEDIUM','HARD'].forEach(c => {
+    if (!lifemap[c]) {
+      const tyre       = F1Data.tyres[c];
+      const wearPerLap = tyre.degradationRate * circuit.tyreDegradation * 100;
+      lifemap[c]       = Math.min(Math.round(80 / wearPerLap), circuit.laps - 2);
+    }
+  });
+  return lifemap;
+}
+
+function buildStrategyOptions(circuit, lifeMap) {
+  const L = circuit.laps;
+  const options = [];
+
+  // ── 1 arrêt ────────────────────────────────────────────
+  [['MEDIUM','HARD'],['HARD','MEDIUM'],['SOFT','HARD'],['MEDIUM','MEDIUM']].forEach(([c1,c2]) => {
+    const life1 = lifeMap[c1] || 20;
+    const life2 = lifeMap[c2] || 30;
+    const pit1  = Math.min(life1, Math.round(L * 0.5));
+    if (pit1 >= 5 && pit1 <= L - 5 && (L - pit1) <= life2 + 5) {
+      options.push({
+        stops: 1,
+        compounds: [c1, c2],
+        pitLaps:   [pit1],
+        detail:    `${c1} ${pit1}t → ${c2} ${L - pit1}t`,
+        feasible:  pit1 <= life1 + 3 && (L - pit1) <= life2 + 5,
+      });
+    }
+  });
+
+  // ── 2 arrêts ───────────────────────────────────────────
+  [['SOFT','MEDIUM','HARD'],['SOFT','HARD','MEDIUM'],['MEDIUM','SOFT','HARD'],['SOFT','SOFT','HARD']].forEach(([c1,c2,c3]) => {
+    const life1 = lifeMap[c1] || 15;
+    const life2 = lifeMap[c2] || 20;
+    const life3 = lifeMap[c3] || 30;
+    const pit1  = Math.min(life1, Math.round(L * 0.30));
+    const pit2  = Math.min(pit1 + life2, Math.round(L * 0.62));
+    if (pit1 >= 4 && pit2 > pit1 && pit2 <= L - 5 && (L - pit2) <= life3 + 5) {
+      options.push({
+        stops: 2,
+        compounds: [c1, c2, c3],
+        pitLaps:   [pit1, pit2],
+        detail:    `${c1} ${pit1}t → ${c2} ${pit2-pit1}t → ${c3} ${L-pit2}t`,
+        feasible:  pit1 <= life1 + 2 && (pit2 - pit1) <= life2 + 3 && (L - pit2) <= life3 + 5,
+      });
+    }
+  });
+
+  // ── 3 arrêts (dégradation élevée) ─────────────────────
+  if (circuit.tyreDegradation > 1.2) {
+    const life = lifeMap['SOFT'] || 12;
+    const p1   = Math.round(L * 0.22);
+    const p2   = Math.round(L * 0.47);
+    const p3   = Math.round(L * 0.72);
+    if (p1 >= 4 && p2 > p1 && p3 > p2 && p3 <= L - 4) {
+      options.push({
+        stops: 3,
+        compounds: ['SOFT','SOFT','SOFT','HARD'],
+        pitLaps:   [p1, p2, p3],
+        detail:    `3× Soft + Hard · ${p1}t / ${p2-p1}t / ${p3-p2}t / ${L-p3}t`,
+        feasible:  life >= 12,
+      });
+    }
+  }
+
+  return options;
+}
+
+function renderStratReco() {
+  const box = document.getElementById('stratRecoBody');
+  if (!box) return;
+
+  if (!Race.state) {
+    box.innerHTML = '<div style="color:var(--muted);font-size:11px;text-align:center;padding:8px">Lance une course pour voir les recommandations.</div>';
+    return;
+  }
+
+  const circuit   = Race.state.circuit;
+  const wSave     = Save.load();
+  const fpResults = wSave?.weekendFPResults || [];
+  const lifeMap   = calcTyreLifeFromEL(fpResults, circuit);
+  const options   = buildStrategyOptions(circuit, lifeMap);
+
+  if (!options.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:8px">Pas assez de données pour calculer une stratégie.</div>';
+    return;
+  }
+
+  // Trier : options réalisables en premier, puis 1 arrêt > 2 > 3
+  options.sort((a, b) => {
+    if (a.feasible !== b.feasible) return b.feasible - a.feasible;
+    return a.stops - b.stops;
+  });
+
+  // Garder max 4 options
+  const shown = options.slice(0, 4);
+
+  // Légende durées pneus (depuis EL ou estimation)
+  const hasFP = fpResults.some(r => r.program === 'long_run' || r.program === 'quali_sim');
+  const legendSource = hasFP ? '📊 Données EL' : '📐 Estimation';
+
+  box.innerHTML = `
+    <div style="font-family:var(--fh);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;padding:0 2px">
+      ${legendSource} · ${circuit.laps} tours total
+    </div>
+    <div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-bottom:6px;padding:0 2px;display:flex;gap:8px;flex-wrap:wrap">
+      ${Object.entries(lifeMap).map(([c,l]) => {
+        const t = F1Data.tyres[c];
+        return `<span style="color:${t.color}">● ${t.name} ~${l}t</span>`;
+      }).join('')}
+    </div>
+    ${shown.map((opt, idx) => {
+      const isRec   = idx === 0 && opt.feasible;
+      const isRisky = !opt.feasible;
+      const badgeCls= isRec ? 'rec' : isRisky ? 'risky' : 'alt';
+      const badgeTxt= isRec ? '⭐ Recommandée' : isRisky ? '⚠️ Risquée' : '✅ Viable';
+
+      return `
+        <div class="strat-option ${isRec?'recommended':isRisky?'':'possible'}">
+          <span class="strat-badge ${badgeCls}">${badgeTxt}</span>
+          <div style="font-family:var(--fh);font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">
+            ${opt.stops} arrêt${opt.stops>1?'s':''}
+          </div>
+          <div class="strat-compounds">
+            ${opt.compounds.map((c, i) => {
+              const t = F1Data.tyres[c];
+              const laps = i === 0 ? opt.pitLaps[0]
+                : i < opt.pitLaps.length ? opt.pitLaps[i] - opt.pitLaps[i-1]
+                : circuit.laps - opt.pitLaps[opt.pitLaps.length-1];
+              return `
+                ${i > 0 ? '<span class="strat-arrow">→</span>' : ''}
+                <div class="strat-dot" style="background:${t.color}"></div>
+                <span class="strat-laps" style="color:${t.color}">${laps}t</span>
+              `;
+            }).join('')}
+          </div>
+          <div class="strat-detail">${opt.detail}</div>
+          ${opt.pitLaps.length ? `<div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-top:3px">Pit : tour${opt.pitLaps.length>1?'s':''} ${opt.pitLaps.join(' / ')}</div>` : ''}
+        </div>
+      `;
+    }).join('')}
+  `;
+}
+
+// ══════════════════════════════════════════════════════════
+//  MÉTÉO & HUMIDITÉ
+// ══════════════════════════════════════════════════════════
+let raceWeatherData = null; // profil météo complet de la course
+let currentHumidity = 0;   // humidité piste actuelle
+
+function initRaceWeather(circuit) {
+  if (typeof Weather === 'undefined') return;
+  raceWeatherData = Weather.initRaceWeather(circuit, circuit.laps);
+  currentHumidity = raceWeatherData.initialHumidity || 0;
+}
+
+function updateHumidity(lap) {
+  if (!raceWeatherData?.humidityProfile) return;
+  currentHumidity = raceWeatherData.humidityProfile[lap - 1] || 0;
+
+  // Mettre à jour le badge météo
+  const cond = Weather.getTrackCondition(currentHumidity);
+  const badge = document.getElementById('wBadge');
+  if (badge) {
+    badge.className = 'w-badge';
+    badge.classList.add(cond.weather === 'heavy_rain' ? 'w-heavy' : cond.weather === 'light_rain' ? 'w-rain' : 'w-dry');
+    badge.textContent = `${cond.icon} ${currentHumidity.toFixed(0)}%`;
+  }
+
+  // Alerte si changement de zone critique
+  const prev = lap > 1 ? (raceWeatherData.humidityProfile[lap - 2] || 0) : 0;
+  if (prev <= 30 && currentHumidity > 30) {
+    addEvents([{ lap, type:'weather', message:`🌧️ Piste mouillée ! (${currentHumidity.toFixed(0)}% humidité) — Passer en Intermédiaires ?` }]);
+  } else if (prev > 30 && currentHumidity <= 30) {
+    addEvents([{ lap, type:'weather', message:`☀️ Piste qui sèche ! (${currentHumidity.toFixed(0)}%) — Fenêtre slick bientôt !` }]);
+  } else if (prev <= 70 && currentHumidity > 70) {
+    addEvents([{ lap, type:'weather', message:`⛈️ Piste détrempée ! (${currentHumidity.toFixed(0)}%) — Full Wet obligatoires !` }]);
+  }
+}
+
+function toggleWeatherPopup() {
+  const popup = document.getElementById('weatherPopup');
+  if (!popup) return;
+  const isVisible = popup.style.display !== 'none';
+  popup.style.display = isVisible ? 'none' : 'block';
+  if (!isVisible) renderWeatherPopup();
+}
+
+function renderWeatherPopup() {
+  const box = document.getElementById('weatherPopupContent');
+  if (!box || !Race.state) return;
+
+  const lap     = Race.state.currentLap || 1;
+  const total   = Race.state.totalLaps;
+  const profile = raceWeatherData?.humidityProfile || [];
+
+  if (!profile.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-family:var(--fh);font-size:12px">Pas de données météo disponibles (course sans pluie prévue).</div>';
+    return;
+  }
+
+  const forecast  = Weather.getForecast(profile, lap, total);
+  const condition = Weather.getTrackCondition(currentHumidity);
+  const optimal   = Weather.getOptimalTyre(currentHumidity);
+
+  // Graphique simplifié humidité (20 prochains tours)
+  const nextLaps  = Math.min(20, total - lap);
+  const chartData = profile.slice(lap - 1, lap - 1 + nextLaps);
+  const maxH      = 100;
+
+  let html = `
+    <!-- Humidité actuelle -->
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-family:var(--fh);font-size:11px;margin-bottom:4px">
+        <span style="color:var(--muted)">Humidité piste</span>
+        <span style="color:${condition.color};font-weight:700">${currentHumidity.toFixed(0)}% — ${condition.label}</span>
+      </div>
+      <div class="humidity-bar">
+        <div class="humidity-fill" style="width:${currentHumidity}%;background:${condition.color}"></div>
+      </div>
+      <div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-top:3px">
+        Pneu optimal : <span style="color:${optimal==='slick'?'#fff':optimal==='INTER'?'#00cc44':'#4488ff'};font-weight:700">
+          ${optimal === 'slick' ? '🔴 Slick (Soft/Med/Hard)' : optimal === 'INTER' ? '🟢 Intermédiaire' : '🔵 Full Wet'}
+        </span>
+      </div>
+    </div>
+
+    <!-- Mini graphique profil humidité -->
+    <div style="margin-bottom:10px">
+      <div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-bottom:4px">Prévision ${nextLaps} prochains tours</div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:40px;background:#0a0a14;border-radius:4px;padding:4px">
+        ${chartData.map((h, i) => {
+          const c = Weather.getTrackCondition(h);
+          const heightPct = Math.max(4, (h / maxH) * 100);
+          return `<div style="flex:1;background:${c.color};border-radius:1px;height:${heightPct}%;opacity:${i===0?1:0.7};min-width:4px" title="T.${lap+i}: ${h.toFixed(0)}%"></div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:var(--fh);font-size:9px;color:var(--muted);margin-top:2px">
+        <span>T.${lap}</span>
+        <span>← 30% slick | 70% wet →</span>
+        <span>T.${lap + nextLaps}</span>
+      </div>
+      <!-- Lignes de seuil -->
+      <div style="display:flex;gap:8px;margin-top:4px;font-family:var(--fh);font-size:9px">
+        <span style="color:#ffcc00">— 30% inter</span>
+        <span style="color:#4488ff">— 70% wet</span>
+      </div>
+    </div>
+
+    <!-- Prévisions par blocs -->
+    <div class="forecast-grid">
+      ${(forecast?.predictions || []).map(p => `
+        <div class="forecast-chip" style="border-color:${p.condition.color}30">
+          <div style="color:${p.condition.color}">${p.condition.icon}</div>
+          <div style="color:var(--muted)">T.${p.lap}</div>
+          <div style="font-weight:700;color:var(--text)">${p.humidity.toFixed(0)}%</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Messages clés -->
+    <div style="margin-top:8px">
+      ${(forecast?.messages || []).map(m => `
+        <div class="weather-msg">
+          <span>${m.icon}</span>
+          <span style="color:${m.color}">${m.text}</span>
+        </div>
+      `).join('')}
+      ${!forecast?.messages?.length ? '<div style="color:var(--muted);font-family:var(--fh);font-size:11px">Aucun changement majeur prévu dans les 20 prochains tours.</div>' : ''}
+    </div>
+  `;
+
+  box.innerHTML = html;
+}
+
 function initSel() {
   const sel = document.getElementById('circSel');
   const save = Save.load();
@@ -611,6 +936,12 @@ function startRace() {
   const weather = wSave?.weekendWeather || 'dry';
   const strategies = weekendStrats || collectPreRaceStrategies();
   Race.init(cid, weather, strategies);
+
+  // Initialiser le système météo dynamique
+  if (typeof Weather !== 'undefined' && Race.state) {
+    initRaceWeather(Race.state.circuit);
+    currentHumidity = raceWeatherData?.initialHumidity || 0;
+  }
   started = true;
 
   // Appliquer la grille de départ depuis les qualifications
@@ -656,7 +987,7 @@ function startRace() {
   CR.startAnim();
 
   renderStandings();
-  renderStrat();
+  renderStratReco(); // ← afficher les recommandations dès le départ
   renderPlayerControls();
 
   // Séquence feux de départ → puis simulation
@@ -672,6 +1003,15 @@ function runSim() {
     if (!res) return;
 
     CR.advanceLap();
+
+    // Mise à jour humidité piste
+    if (typeof Weather !== 'undefined' && Race.state) {
+      updateHumidity(Race.state.currentLap);
+      // Mettre à jour le popup si ouvert
+      if (document.getElementById('weatherPopup')?.style.display !== 'none') {
+        renderWeatherPopup();
+      }
+    }
 
     // Progress bar uniquement — compteur de tour géré par _syncLapCounter
     document.getElementById('progFill').style.width =
