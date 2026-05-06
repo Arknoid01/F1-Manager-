@@ -1,8 +1,12 @@
 // ============================================================
-//  F1 Manager — data.js  (v4 — avec âges, traits, base noms)
+//  F1 Manager — data.js  (v5 — grid 2025-2026 + Cadillac)
 // ============================================================
 
 const F1Data = {
+
+  // Version des données — changer ce numéro force la mise à jour
+  // des équipes/pilotes de base (sans effacer la progression)
+  DATA_VERSION: 5,
 
   // ── PNEUS ─────────────────────────────────────────────────
   tyres: {

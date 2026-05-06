@@ -63,12 +63,54 @@ const Save = {
       const raw = localStorage.getItem(this.KEY);
       if (!raw) return null;
       const save = JSON.parse(raw);
+
+      // Migration DATA_VERSION — met à jour le grid si data.js a changé
+      const currentDataVersion = typeof F1Data !== 'undefined' ? (F1Data.DATA_VERSION || 1) : 1;
+      if ((save.dataVersion || 0) < currentDataVersion) {
+        this.migrateBaseData(save, currentDataVersion);
+      }
+
       this.applyDriverStates(save);
       return save;
     } catch (e) {
       console.error('[Save] Erreur chargement:', e);
       return null;
     }
+  },
+
+  migrateBaseData(save, newVersion) {
+    if (typeof F1Data === 'undefined') return;
+    if (!save.driverStates) { save.dataVersion = newVersion; return; }
+
+    F1Data.drivers.forEach(driver => {
+      const state = save.driverStates[driver.id];
+      if (!state) {
+        // Nouveau pilote (ex: Antonelli, Colapinto...) — initialiser
+        save.driverStates[driver.id] = {
+          age:driver.age, pace:driver.pace, consistency:driver.consistency,
+          wetSkill:driver.wetSkill, overtaking:driver.overtaking, defending:driver.defending,
+          salary:driver.salary, trait:driver.trait, potential:driver.potential,
+          retired:false, teamId:driver.teamId, seasons:0,
+        };
+      } else if (!state.teamId || state.teamId === save.playerTeamId) {
+        // Ne pas toucher aux pilotes recrutés par le joueur
+      } else if (state.teamId !== driver.teamId) {
+        // Pilote qui a changé d'équipe dans la réalité → mettre à jour
+        state.teamId = driver.teamId;
+      }
+    });
+
+    // Supprimer les états de pilotes qui n'existent plus
+    const currentIds = new Set(F1Data.drivers.map(d => d.id));
+    Object.keys(save.driverStates).forEach(id => {
+      if (!currentIds.has(id) && !(save.generatedDrivers||[]).find(g=>g.id===id)) {
+        delete save.driverStates[id];
+      }
+    });
+
+    save.dataVersion = newVersion;
+    try { localStorage.setItem(this.KEY, JSON.stringify(save)); } catch(e) {}
+    console.log(`[Save] Migration data v${newVersion} OK`);
   },
 
   // ── SYNCHRO PILOTES / MARCHÉ ──────────────────────────────
