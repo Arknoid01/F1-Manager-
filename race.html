@@ -87,8 +87,8 @@
     .dteam-s { font-family:var(--fh); font-size:9px; color:var(--muted); }
     .tyre-cell { display:flex; align-items:center; gap:3px; }
     .tyre-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .tyre-cond { width:28px; height:3px; background:#1a1a2a; border-radius:2px; overflow:hidden; }
-    .tyre-bar  { height:100%; border-radius:2px; transition:width .3s; }
+    .tyre-cond { width:44px; height:5px; background:#1a1a2a; border-radius:3px; overflow:hidden; }
+    .tyre-bar  { height:100%; border-radius:3px; transition:width .3s; }
     .gap-cell  { font-family:var(--fh); font-size:11px; font-weight:600; color:var(--muted); text-align:right; }
     .gap-cell.ldr { color:var(--green); font-size:10px; }
     .last-cell { font-family:var(--fh); font-size:10px; color:var(--muted); text-align:right; }
@@ -179,12 +179,6 @@
 
 <!-- PAGE -->
 <div class="page">
-
-  <div class="player-box" id="preRaceBox">
-    <div class="player-title">🧠 Stratégie pré-course</div>
-    <div style="color:var(--muted);font-size:11px;margin-bottom:8px">Planifie les relais. Les pilotes suivront automatiquement ces tours d'arrêt, sauf pluie forte, piste sèche ou Safety Car où l'IA adaptera le pit stop.</div>
-    <div id="preRaceStrategy"><span style="color:var(--muted);font-size:11px">Charge une carrière depuis la page Équipe pour préparer tes pilotes.</span></div>
-  </div>
 
   <!-- CONTROLS -->
   <div class="controls">
@@ -610,8 +604,41 @@ function startRace() {
   if (!cid) { alert('Choisis un circuit !'); return; }
 
   Telem.reset();
-  Race.init(cid, 'dry', collectPreRaceStrategies());
+
+  // Lire les stratégies : weekend en priorité, sinon collectPreRaceStrategies
+  const wSave = Save.load();
+  const weekendStrats = wSave?.raceStrategies || null;
+  const weather = wSave?.weekendWeather || 'dry';
+  const strategies = weekendStrats || collectPreRaceStrategies();
+  Race.init(cid, weather, strategies);
   started = true;
+
+  // Appliquer la grille de départ depuis les qualifications
+  const qualiGrid = wSave?.raceQualiGrid;
+  if (qualiGrid && Race.state) {
+    qualiGrid.forEach(q => {
+      const car = Race.state.grid.find(c => c.driver.id === q.driverId);
+      if (car) {
+        car.position  = q.gridPos;
+        // Décalage initial selon position quali (0.8s par place)
+        car.totalTime = (q.gridPos - 1) * 0.8;
+      }
+    });
+    Race.state.grid.sort((a,b) => a.position - b.position);
+  }
+
+  // Reset weekend après lecture
+  if (wSave && (wSave.weekendQualiDone || wSave.raceStrategies)) {
+    delete wSave.weekendWeather;
+    delete wSave.weekendCircuit;
+    delete wSave.weekendFPDone;
+    delete wSave.weekendQualiDone;
+    delete wSave.weekendFPResults;
+    delete wSave.qualiGrid;
+    delete wSave.raceQualiGrid;
+    delete wSave.raceStrategies;
+    Save.save(wSave);
+  }
 
   const cir = Race.state.circuit;
   document.getElementById('tTotal').textContent   = cir.laps;
@@ -707,6 +734,10 @@ function renderStandings() {
     const isLead = car.position === 1;
     const cond   = Math.round(car.tyre.condition * 100);
     const cc     = cond > 60 ? '#00e676' : cond > 30 ? '#ffea00' : '#ff4444';
+    // Estimer la pénalité pneu en secondes
+    const degradation = 1 - car.tyre.condition;
+    const tyrePenalty = degradation * 2.8 * (car.team?.tyreDegradation || 1.0);
+    const penaltyStr  = tyrePenalty > 0.5 ? ` +${tyrePenalty.toFixed(1)}s` : '';
     const last   = car.lapTimes.length > 0 ? fmtLap(car.lapTimes[car.lapTimes.length-1]) : '—';
     const gap    = isLead
       ? fmtTime(car.totalTime)
@@ -731,6 +762,7 @@ function renderStandings() {
         <div class="tyre-dot" style="background:${tyre.color}"></div>
         <div>
           <div class="tyre-cond"><div class="tyre-bar" style="width:${cond}%;background:${cc}"></div></div>
+          <div style="font-family:var(--fh);font-size:9px;color:${cc}">${cond}%${penaltyStr}</div>
           <div class="gap-cell ${isLead?'ldr':''}" style="margin-top:1px">${gap}</div>
         </div>
       </div>

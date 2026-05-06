@@ -574,10 +574,23 @@ function buildRaceBriefing() {
 
   // Fenêtres de pit recommandées depuis les EL
   const longRun = fpResults.filter(r => r.program === 'long_run')[0];
+
+  // Calculer l'estimation de durée par compound depuis les EL
+  const tyreEstimates = calcTyreEstimates();
+
   let pitWindow = '';
   if (longRun) {
-    const cliffLap = Math.round(longRun.tyreData.findIndex(c => c < 30) || (circuit.laps * 0.5));
-    pitWindow = `Cliff pneu détecté vers le tour ${cliffLap} (${longRun.compound})`;
+    const cliffIdx = longRun.tyreData.findIndex(c => c < 30);
+    if (cliffIdx > 0) {
+      // Extrapoler sur la durée d'un vrai relais
+      const wearPerLap = (100 - longRun.tyreLife) / longRun.laps;
+      const cliffLap   = Math.round((100 - 30) / wearPerLap);
+      pitWindow = `${F1Data.tyres[longRun.compound].name} : cliff estimé vers le tour ${Math.min(cliffLap, circuit.laps - 3)}`;
+    } else {
+      const wearPerLap = (100 - longRun.tyreLife) / longRun.laps;
+      const lifeTotal  = Math.round(70 / wearPerLap); // jusqu'à 30% restant
+      pitWindow = `${F1Data.tyres[longRun.compound].name} : durée estimée ~${Math.min(lifeTotal, circuit.laps)} tours`;
+    }
   }
 
   el.innerHTML = `
@@ -591,6 +604,12 @@ function buildRaceBriefing() {
             <div style="color:var(--muted)">Bonus pneus : <strong style="color:var(--green)">-${(knowledge.tyreBonus*100).toFixed(0)}% dégradation</strong></div>
             <div style="color:var(--muted)">Bonus setup : <strong style="color:var(--blue)">+${(knowledge.setupBonus*100).toFixed(0)}% stabilité</strong></div>
             ${pitWindow ? `<div style="color:var(--orange);margin-top:4px">⚠️ ${pitWindow}</div>` : ''}
+            ${tyreEstimates.length ? `
+              <div style="margin-top:6px;font-weight:700;color:var(--text)">Estimations durée pneus :</div>
+              ${tyreEstimates.map(e => `
+                <div style="color:${e.color}">● ${e.compound} : ~${e.life} tours · Dégradation ~${e.wearPerLap.toFixed(1)}%/tour</div>
+              `).join('')}
+            ` : ''}
           </div>
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px;font-family:var(--fh);font-size:12px">
             <div style="color:var(--gold);font-weight:700;margin-bottom:5px">🏎️ Grille de départ</div>
@@ -644,6 +663,44 @@ function tyreOpts(sel) {
   return ['SOFT','MEDIUM','HARD','INTER','WET'].map(c =>
     `<option value="${c}" ${c===sel?'selected':''}>${F1Data.tyres[c].name}</option>`
   ).join('');
+}
+
+// Calcule l'estimation de durée pour chaque compound testé en EL
+function calcTyreEstimates() {
+  const estimates = [];
+  const tested    = {};
+
+  fpResults.forEach(r => {
+    if (r.program !== 'long_run' && r.program !== 'quali_sim') return;
+    if (tested[r.compound]) return;
+    tested[r.compound] = true;
+
+    const wearPerLap = (100 - r.tyreLife) / r.laps;
+    if (wearPerLap <= 0) return;
+
+    // Estimer combien de tours avant d'atteindre 20% de vie (cliff)
+    const lifeTotal = Math.round(80 / wearPerLap);
+    const tyre      = F1Data.tyres[r.compound];
+
+    estimates.push({
+      compound:   r.compound,
+      color:      tyre.color,
+      life:       Math.min(lifeTotal, circuit.laps),
+      wearPerLap: wearPerLap,
+    });
+  });
+
+  // Si pas de données EL, estimer depuis les stats circuit
+  if (!estimates.length) {
+    ['SOFT','MEDIUM','HARD'].forEach(c => {
+      const tyre       = F1Data.tyres[c];
+      const wearPerLap = tyre.degradationRate * circuit.tyreDegradation * 100;
+      const lifeTotal  = Math.round(80 / wearPerLap);
+      estimates.push({ compound:c, color:tyre.color, life:Math.min(lifeTotal,circuit.laps), wearPerLap });
+    });
+  }
+
+  return estimates.sort((a,b) => a.life - b.life); // du plus fragile au plus dur
 }
 
 function goToRace() {
