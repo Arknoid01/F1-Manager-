@@ -29,6 +29,7 @@
 <script src="js/career.js"></script>
 <script src="js/profiles.js"></script>
 <script>
+document.addEventListener("DOMContentLoaded", function() {
 const params = new URLSearchParams(location.search);
 const type = params.get('type');
 const id = params.get('id');
@@ -64,6 +65,7 @@ if (!entity) {
   root.innerHTML = hero(st.icon||'🧑‍🔧', displayName, `${fmt(st.role)} · ${fmt(st.age,'âge inconnu')}${st.age?' ans':''}`, fmt(Math.round(st.level||0)), '#ffd700')
     + `<div class="grid"><div class="panel"><div class="ph"><div class="dot"></div>Compétences</div><div class="content">${stats(Object.entries(impacts).map(([k,v])=>({label:k,value:'+'+v,color:'#ffd700'})))}<div class="desc" style="margin-top:12px">${fmt(st.desc,'Membre de staff qualifié.')}</div></div></div><div class="panel"><div class="ph"><div class="dot"></div>Contrat & passif</div><div class="content">${line('Spécialité', fmt(st.specialty || st.bonus))}${line('Salaire', `${fmt(st.salary)}M€/an`)}${line('Coût recrutement', `${fmt(st.cost)}M€`)}${line('Statut', save.staff?.map(Profiles.normalizeStaffId).includes(Profiles.normalizeStaffId(st.id))?'En poste':'Disponible')}<div class="badge">🔮 ${fmt(st.passive,'Bonus de performance')}</div></div></div></div>`;
 }
+}); // DOMContentLoaded
 </script>
 </body>
 </html>
