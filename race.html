@@ -936,65 +936,56 @@ function startRace() {
   try { const s = Save.load(); if (s && typeof CareerEvents !== 'undefined') { const ev = CareerEvents.triggerPreRace(s); Save.save(s); if (ev) alert('Événement avant-course : '+ev.title+'\n'+ev.text); } } catch(e) { console.warn(e); }
   if (!cid) { alert('Choisis un circuit !'); return; }
 
+  console.log('[1] Telem');
   Telem.reset();
 
-  // Lire les stratégies : weekend en priorité, sinon générer par défaut
+  console.log('[2] Strategies');
   const wSave = Save.load();
   const weekendStrats = wSave?.raceStrategies || null;
   const weather = wSave?.weekendWeather || 'dry';
-
   let strategies = weekendStrats;
   if (!strategies) {
-    // Générer des stratégies par défaut pour les pilotes joueur
     strategies = {};
     const circ = F1Data.circuits.find(c => c.id === cid) || F1Data.circuits[0];
-    getPlayerDrivers().forEach((driver, idx) => {
+    getPlayerDrivers().forEach((driver, dIdx) => {
       const defPit = circ.tyreDegradation > 1.2 || circ.laps > 65
         ? [Math.round(circ.laps * 0.33), Math.round(circ.laps * 0.66)]
         : [Math.round(circ.laps * 0.48)];
       strategies[driver.id] = {
-        compounds: idx === 0 ? ['MEDIUM','HARD'] : ['SOFT','HARD'],
+        compounds: dIdx === 0 ? ['MEDIUM','HARD'] : ['SOFT','HARD'],
         pitLaps:   [defPit[0]],
       };
     });
   }
 
+  console.log('[3] Race.init');
   Race.init(cid, weather, strategies);
 
-  // Initialiser le système météo dynamique
+  console.log('[4] Weather');
   if (typeof Weather !== 'undefined' && Race.state) {
     initRaceWeather(Race.state.circuit);
     currentHumidity = raceWeatherData?.initialHumidity || 0;
   }
   started = true;
 
-  // Appliquer la grille de départ depuis les qualifications
+  console.log('[5] QualiGrid');
   const qualiGrid = wSave?.raceQualiGrid;
   if (qualiGrid && Race.state) {
     qualiGrid.forEach(q => {
       const car = Race.state.grid.find(c => c.driver.id === q.driverId);
-      if (car) {
-        car.position  = q.gridPos;
-        // Décalage initial selon position quali (0.8s par place)
-        car.totalTime = (q.gridPos - 1) * 0.8;
-      }
+      if (car) { car.position = q.gridPos; car.totalTime = (q.gridPos - 1) * 0.8; }
     });
     Race.state.grid.sort((a,b) => a.position - b.position);
   }
 
-  // Reset weekend après lecture
+  console.log('[6] Reset weekend');
   if (wSave && (wSave.weekendQualiDone || wSave.raceStrategies)) {
-    delete wSave.weekendWeather;
-    delete wSave.weekendCircuit;
-    delete wSave.weekendFPDone;
-    delete wSave.weekendQualiDone;
-    delete wSave.weekendFPResults;
-    delete wSave.qualiGrid;
-    delete wSave.raceQualiGrid;
-    delete wSave.raceStrategies;
+    ['weekendWeather','weekendCircuit','weekendFPDone','weekendQualiDone',
+     'weekendFPResults','qualiGrid','raceQualiGrid','raceStrategies'].forEach(k => delete wSave[k]);
     Save.save(wSave);
   }
 
+  console.log('[7] DOM');
   const cir = Race.state.circuit;
   document.getElementById('tTotal').textContent   = cir.laps;
   document.getElementById('svgTotal').textContent = cir.laps;
@@ -1006,18 +997,22 @@ function startRace() {
   document.getElementById('btnSlow').classList.add('on');
   document.getElementById('circSel').disabled  = true;
 
+  console.log('[8] CR.init');
   CR.init(cid);
   CR.startAnim();
 
+  console.log('[9] Render');
   renderStandings();
   renderStratReco();
   renderPlayerControls();
+  console.log('[10] Lights');
 
   CR.startLights(() => runSim());
 
   } catch(err) {
     console.error('startRace ERROR:', err);
-    alert('Erreur démarrage : ' + err.message);
+    console.error('Stack:', err.stack);
+    alert('Erreur démarrage : ' + err.message + '\n' + (err.stack||'').split('\n').slice(0,3).join('\n'));
   }
 }
 
@@ -1296,7 +1291,7 @@ function renderStrat() {
   Race.getStandings().slice(0,5).forEach(car => {
     const row = document.createElement('div');
     row.className = 'strat-row';
-    const pills = car.strategy.compounds.map((c,i) => {
+    const pills = car.strategy.compounds.map((c,pIdx2) => {
       const t = F1Data.tyres[c];
       const active = i === car.currentCompoundIndex;
       return `<span class="cpill" style="color:${t.color};border:1px solid ${active?t.color:'transparent'}">${t.name}</span>`;
@@ -1460,7 +1455,7 @@ const Telem = {
     if(paL)paL.innerHTML=top5.map(car=>{const col=F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const last=car.lapTimes.length>0?car.lapTimes[car.lapTimes.length-1].toFixed(3):'—';return`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div>${Profiles.linkDriver(car.driver)} ${last}s</div>`;}).join('');
     // Gaps
     const top8=standings.filter(c=>c.status==='racing').slice(0,8);
-    this.drawChart('canvasGaps',top8.map((car,i)=>({color:i===0?'#00e676':F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.gapH[car.driver.id]||[]})),{minY:0});
+    this.drawChart('canvasGaps',top8.map((car,gapIdx)=>({color:gapIdx===0?'#00e676':F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.gapH[car.driver.id]||[]})),{minY:0});
     const gaL=document.getElementById('gapsLegend');
     if(gaL)gaL.innerHTML=top8.map((car,gIdx)=>{const col=gIdx===0?'#00e676':F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const gapTxt=gIdx===0?'LEADER':'+'+car.gap.toFixed(1)+'s';return'<div class="legend-item"><div class="legend-dot" style="background:'+col+'"></div>'+Profiles.linkDriver(car.driver)+' '+gapTxt+'</div>';}).join('');
     // Stratégie
