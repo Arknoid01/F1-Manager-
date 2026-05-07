@@ -10,7 +10,7 @@ const Sponsors = {
     // ── TITLE SPONSORS (1 seul possible) ─────────────────────
     {
       id:'oracle',       name:'Oracle',         logo:'🔵', category:'tech',
-      type:'title',      baseValue:45, maxValue:60, duration:3,
+      type:'title',      baseValue:31, maxValue:42, duration:3,
       reputationMin:{ sport:55, media:45, tech:60, finance:50 },
       personality:'opportunist',
       techBonus:{ tokens:1 },
@@ -24,7 +24,7 @@ const Sponsors = {
     },
     {
       id:'aramco',       name:'Aramco',          logo:'🟢', category:'energy',
-      type:'title',      baseValue:55, maxValue:75, duration:3,
+      type:'title',      baseValue:38, maxValue:52, duration:3,
       reputationMin:{ sport:60, media:50, tech:45, finance:55 },
       personality:'loyal',
       techBonus:{ engine:2 },
@@ -32,13 +32,13 @@ const Sponsors = {
       clauses:[
         { type:'points',     target:80, bonus:10,  penalty:-5  },
         { type:'podiums',    target:4,  bonus:5,   penalty:0   },
-        { type:'media',      target:60, bonus:4,   penalty:-3  },
+        { type:'points_finishes', target:12, bonus:4,  penalty:-3  },
       ],
       exclusivity:'energy', breakClause:false,
     },
     {
       id:'petronas',     name:'Petronas',         logo:'🔷', category:'energy',
-      type:'title',      baseValue:50, maxValue:65, duration:2,
+      type:'title',      baseValue:35, maxValue:46, duration:2,
       reputationMin:{ sport:50, media:40, tech:50, finance:45 },
       personality:'developer',
       techBonus:{ engine:1, reliability:1 },
@@ -52,7 +52,7 @@ const Sponsors = {
     },
     {
       id:'cognizant',    name:'Cognizant',         logo:'🟠', category:'tech',
-      type:'title',      baseValue:35, maxValue:50, duration:2,
+      type:'title',      baseValue:24, maxValue:35, duration:2,
       reputationMin:{ sport:40, media:35, tech:45, finance:40 },
       personality:'developer',
       techBonus:{ tokens:1 },
@@ -67,13 +67,13 @@ const Sponsors = {
     // ── PRINCIPAL SPONSORS (2-3 max) ──────────────────────────
     {
       id:'heineken',     name:'Heineken 0.0',      logo:'🍺', category:'beverage',
-      type:'principal',  baseValue:22, maxValue:30, duration:2,
+      type:'principal',  baseValue:15, maxValue:21, duration:2,
       reputationMin:{ sport:35, media:45, tech:20, finance:30 },
       personality:'loyal',
       techBonus:{},
       desc:'Sponsor historique F1. Priorité à la visibilité TV et aux podiums.',
       clauses:[
-        { type:'media',      target:50, bonus:4,   penalty:-2  },
+        { type:'points_finishes', target:10, bonus:4,  penalty:-2  },
         { type:'podiums',    target:2,  bonus:3,   penalty:0   },
         { type:'top10',      target:12, bonus:2,   penalty:-2  },
       ],
@@ -81,7 +81,7 @@ const Sponsors = {
     },
     {
       id:'monster',      name:'Monster Energy',    logo:'🟢', category:'beverage',
-      type:'principal',  baseValue:25, maxValue:35, duration:2,
+      type:'principal',  baseValue:18, maxValue:24, duration:2,
       reputationMin:{ sport:40, media:45, tech:20, finance:30 },
       personality:'opportunist',
       techBonus:{},
@@ -89,13 +89,13 @@ const Sponsors = {
       clauses:[
         { type:'podiums',    target:4,  bonus:6,   penalty:-5  },
         { type:'top5',       target:6,  bonus:3,   penalty:-3  },
-        { type:'media',      target:40, bonus:2,   penalty:0   },
+        { type:'points_finishes', target:8,  bonus:2,  penalty:0   },
       ],
       exclusivity:'beverage', breakClause:true,
     },
     {
       id:'aws',          name:'AWS',               logo:'🟡', category:'tech',
-      type:'principal',  baseValue:18, maxValue:28, duration:2,
+      type:'principal',  baseValue:13, maxValue:20, duration:2,
       reputationMin:{ sport:25, media:25, tech:35, finance:30 },
       personality:'developer',
       techBonus:{ tokens:1 },
@@ -108,7 +108,7 @@ const Sponsors = {
     },
     {
       id:'dhl',          name:'DHL',               logo:'🟠', category:'logistics',
-      type:'principal',  baseValue:15, maxValue:22, duration:3,
+      type:'principal',  baseValue:10, maxValue:15, duration:3,
       reputationMin:{ sport:20, media:20, tech:20, finance:25 },
       personality:'loyal',
       techBonus:{ logistics:0.1 }, // -10% coût opérationnel GP
@@ -121,7 +121,7 @@ const Sponsors = {
     },
     {
       id:'rolex',        name:'Rolex',             logo:'⌚', category:'luxury',
-      type:'principal',  baseValue:30, maxValue:40, duration:3,
+      type:'principal',  baseValue:21, maxValue:28, duration:3,
       reputationMin:{ sport:60, media:55, tech:30, finance:60 },
       personality:'loyal',
       techBonus:{},
@@ -135,7 +135,7 @@ const Sponsors = {
     },
     {
       id:'shell',        name:'Shell',             logo:'🔴', category:'energy',
-      type:'principal',  baseValue:20, maxValue:28, duration:2,
+      type:'principal',  baseValue:14, maxValue:20, duration:2,
       reputationMin:{ sport:30, media:25, tech:35, finance:35 },
       personality:'developer',
       techBonus:{ engine:1 },
@@ -148,7 +148,7 @@ const Sponsors = {
     },
     {
       id:'bwt',          name:'BWT',               logo:'🩷', category:'tech',
-      type:'principal',  baseValue:12, maxValue:18, duration:2,
+      type:'principal',  baseValue:8, maxValue:13, duration:2,
       reputationMin:{ sport:15, media:15, tech:20, finance:15 },
       personality:'loyal',
       techBonus:{},
@@ -162,7 +162,7 @@ const Sponsors = {
     // ── TECHNICAL PARTNERS (illimité) ─────────────────────────
     {
       id:'pirelli_p',    name:'Pirelli Data',      logo:'🛞', category:'tyre',
-      type:'partner',    baseValue:5,  maxValue:8,  duration:1,
+      type:'partner',    baseValue:4,  maxValue:6,  duration:1,
       reputationMin:{ sport:15, media:10, tech:25, finance:15 },
       personality:'loyal',
       techBonus:{ tyreDeg:-0.05 }, // -5% dégradation
@@ -174,33 +174,33 @@ const Sponsors = {
     },
     {
       id:'google',       name:'Google Chrome',     logo:'🌐', category:'tech',
-      type:'partner',    baseValue:8,  maxValue:14, duration:2,
+      type:'partner',    baseValue:6,  maxValue:10, duration:2,
       reputationMin:{ sport:25, media:35, tech:35, finance:30 },
       personality:'opportunist',
       techBonus:{ tokens:1 },
       desc:'Visibilité digitale mondiale. Bonus tokens via analyse data.',
       clauses:[
-        { type:'media',      target:30, bonus:2,   penalty:-2  },
+        { type:'points_finishes', target:6,  bonus:2,  penalty:-2  },
         { type:'top10',      target:6,  bonus:1,   penalty:0   },
       ],
       exclusivity:'tech', breakClause:true,
     },
     {
       id:'castore',      name:'Castore',           logo:'👕', category:'apparel',
-      type:'partner',    baseValue:6,  maxValue:10, duration:2,
+      type:'partner',    baseValue:4,  maxValue:7, duration:2,
       reputationMin:{ sport:15, media:20, tech:10, finance:15 },
       personality:'developer',
       techBonus:{},
       desc:'Équipementier sportif. Évolue avec ta popularité.',
       clauses:[
         { type:'races',      target:15, bonus:1,   penalty:0   },
-        { type:'media',      target:20, bonus:2,   penalty:0   },
+        { type:'points_finishes', target:4,  bonus:2,  penalty:0   },
       ],
       exclusivity:'apparel', breakClause:false,
     },
     {
       id:'santander',    name:'Santander',         logo:'🏦', category:'finance',
-      type:'partner',    baseValue:14, maxValue:20, duration:2,
+      type:'partner',    baseValue:10, maxValue:14, duration:2,
       reputationMin:{ sport:40, media:35, tech:25, finance:50 },
       personality:'loyal',
       techBonus:{},
@@ -217,7 +217,7 @@ const Sponsors = {
     // Title
     {
       id:'lng_energy',   name:'LNG Energy',        logo:'⚡', category:'energy',
-      type:'title',      baseValue:38, maxValue:52, duration:2,
+      type:'title',      baseValue:27, maxValue:36, duration:2,
       reputationMin:{ sport:50, media:45, tech:45, finance:50 },
       personality:'developer',
       techBonus:{ engine:1 },
@@ -231,14 +231,14 @@ const Sponsors = {
     },
     {
       id:'stakes',       name:'Stakes.com',         logo:'🎰', category:'betting',
-      type:'title',      baseValue:42, maxValue:58, duration:2,
+      type:'title',      baseValue:29, maxValue:41, duration:2,
       reputationMin:{ sport:48, media:55, tech:35, finance:42 },
       personality:'opportunist',
       techBonus:{},
       desc:'Plateforme de paris en ligne. Très généreux mais exigeant.',
       clauses:[
         { type:'podiums',    target:5,  bonus:10,  penalty:-8  },
-        { type:'media',      target:55, bonus:5,   penalty:-4  },
+        { type:'points_finishes', target:11, bonus:5,  penalty:-4  },
         { type:'dnf_max',    target:4,  bonus:0,   penalty:-6  },
       ],
       exclusivity:'betting', breakClause:true,
@@ -247,20 +247,20 @@ const Sponsors = {
     // Principal
     {
       id:'crypto_com',   name:'Crypto.com',         logo:'💎', category:'crypto',
-      type:'principal',  baseValue:20, maxValue:30, duration:2,
+      type:'principal',  baseValue:14, maxValue:21, duration:2,
       reputationMin:{ sport:38, media:42, tech:38, finance:35 },
       personality:'opportunist',
       techBonus:{},
       desc:'Exchange crypto. Gros budget mais attend des résultats visibles.',
       clauses:[
-        { type:'media',      target:40, bonus:5,   penalty:-4  },
+        { type:'points_finishes', target:8,  bonus:5,  penalty:-4  },
         { type:'top10',      target:10, bonus:3,   penalty:-3  },
       ],
       exclusivity:'crypto', breakClause:true,
     },
     {
       id:'msport',       name:'MSport',             logo:'🏁', category:'motorsport',
-      type:'principal',  baseValue:16, maxValue:24, duration:3,
+      type:'principal',  baseValue:11, maxValue:17, duration:3,
       reputationMin:{ sport:32, media:28, tech:28, finance:28 },
       personality:'loyal',
       techBonus:{},
@@ -273,7 +273,7 @@ const Sponsors = {
     },
     {
       id:'netapp',       name:'NetApp',             logo:'🔷', category:'tech',
-      type:'principal',  baseValue:14, maxValue:20, duration:2,
+      type:'principal',  baseValue:10, maxValue:14, duration:2,
       reputationMin:{ sport:28, media:28, tech:38, finance:32 },
       personality:'developer',
       techBonus:{ tokens:1 },
@@ -286,7 +286,7 @@ const Sponsors = {
     },
     {
       id:'crowdstrike',  name:'CrowdStrike',        logo:'🦅', category:'tech',
-      type:'principal',  baseValue:18, maxValue:26, duration:2,
+      type:'principal',  baseValue:13, maxValue:18, duration:2,
       reputationMin:{ sport:35, media:32, tech:42, finance:35 },
       personality:'loyal',
       techBonus:{},
@@ -299,7 +299,7 @@ const Sponsors = {
     },
     {
       id:'tissot',       name:'Tissot',             logo:'⌛', category:'luxury',
-      type:'principal',  baseValue:12, maxValue:18, duration:2,
+      type:'principal',  baseValue:8, maxValue:13, duration:2,
       reputationMin:{ sport:38, media:35, tech:18, finance:38 },
       personality:'loyal',
       techBonus:{},
@@ -312,7 +312,7 @@ const Sponsors = {
     },
     {
       id:'sabic',        name:'SABIC',              logo:'🟦', category:'chemical',
-      type:'principal',  baseValue:15, maxValue:22, duration:3,
+      type:'principal',  baseValue:10, maxValue:15, duration:3,
       reputationMin:{ sport:35, media:28, tech:38, finance:38 },
       personality:'loyal',
       techBonus:{ reliability:1 },
@@ -325,7 +325,7 @@ const Sponsors = {
     },
     {
       id:'salesforce',   name:'Salesforce',         logo:'☁️', category:'tech',
-      type:'principal',  baseValue:22, maxValue:32, duration:2,
+      type:'principal',  baseValue:15, maxValue:22, duration:2,
       reputationMin:{ sport:42, media:38, tech:45, finance:42 },
       personality:'developer',
       techBonus:{ tokens:1 },
@@ -340,7 +340,7 @@ const Sponsors = {
     // Partners
     {
       id:'sparco',       name:'Sparco',             logo:'🔥', category:'apparel',
-      type:'partner',    baseValue:5,  maxValue:8,  duration:2,
+      type:'partner',    baseValue:4,  maxValue:6,  duration:2,
       reputationMin:{ sport:18, media:18, tech:12, finance:15 },
       personality:'loyal',
       techBonus:{},
@@ -352,7 +352,7 @@ const Sponsors = {
     },
     {
       id:'omp',          name:'OMP Racing',         logo:'🏎️', category:'apparel',
-      type:'partner',    baseValue:4,  maxValue:7,  duration:2,
+      type:'partner',    baseValue:3,  maxValue:5,  duration:2,
       reputationMin:{ sport:15, media:12, tech:10, finance:12 },
       personality:'loyal',
       techBonus:{},
@@ -364,33 +364,33 @@ const Sponsors = {
     },
     {
       id:'sofina',       name:'Sofina Foods',       logo:'🍜', category:'food',
-      type:'partner',    baseValue:7,  maxValue:11, duration:2,
+      type:'partner',    baseValue:5,  maxValue:8, duration:2,
       reputationMin:{ sport:22, media:25, tech:12, finance:20 },
       personality:'loyal',
       techBonus:{},
       desc:'Agroalimentaire. Sponsor accessible, fidèle et peu exigeant.',
       clauses:[
         { type:'races',      target:18, bonus:1,   penalty:0   },
-        { type:'media',      target:15, bonus:1,   penalty:0   },
+        { type:'points_finishes', target:3,  bonus:1,  penalty:0   },
       ],
       exclusivity:'food', breakClause:false,
     },
     {
       id:'dstelecom',    name:'DS Telecom',         logo:'📱', category:'telecom',
-      type:'partner',    baseValue:9,  maxValue:14, duration:2,
+      type:'partner',    baseValue:6,  maxValue:10, duration:2,
       reputationMin:{ sport:28, media:28, tech:28, finance:25 },
       personality:'developer',
       techBonus:{},
       desc:'Opérateur télécom. Visibilité digitale et croissance.',
       clauses:[
-        { type:'media',      target:25, bonus:2,   penalty:-1  },
+        { type:'points_finishes', target:5,  bonus:2,  penalty:-1  },
         { type:'top10',      target:5,  bonus:1,   penalty:0   },
       ],
       exclusivity:'telecom', breakClause:false,
     },
     {
       id:'hertz',        name:'Hertz',              logo:'🚗', category:'auto',
-      type:'partner',    baseValue:10, maxValue:15, duration:2,
+      type:'partner',    baseValue:7, maxValue:10, duration:2,
       reputationMin:{ sport:25, media:22, tech:15, finance:25 },
       personality:'loyal',
       techBonus:{},
@@ -407,7 +407,7 @@ const Sponsors = {
     // Title supplémentaires
     {
       id:'mbs_capital',  name:'MBS Capital',        logo:'💰', category:'finance2',
-      type:'title',      baseValue:40, maxValue:55, duration:2,
+      type:'title',      baseValue:28, maxValue:38, duration:2,
       reputationMin:{ sport:52, media:45, tech:40, finance:55 },
       personality:'loyal',
       techBonus:{},
@@ -420,20 +420,20 @@ const Sponsors = {
     },
     {
       id:'socios',       name:'Socios.com',          logo:'🪙', category:'crypto2',
-      type:'title',      baseValue:35, maxValue:48, duration:2,
+      type:'title',      baseValue:24, maxValue:34, duration:2,
       reputationMin:{ sport:45, media:50, tech:35, finance:38 },
       personality:'opportunist',
       techBonus:{},
       desc:'Fan tokens et engagement communautaire. Très médiatique.',
       clauses:[
-        { type:'media',      target:50, bonus:8,   penalty:-5  },
+        { type:'points_finishes', target:10, bonus:8,  penalty:-5  },
         { type:'podiums',    target:3,  bonus:5,   penalty:-3  },
       ],
       exclusivity:'crypto2', breakClause:true,
     },
     {
       id:'mrf_tyres',    name:'MRF Tyres',           logo:'🛞', category:'tyre2',
-      type:'title',      baseValue:30, maxValue:42, duration:3,
+      type:'title',      baseValue:21, maxValue:29, duration:3,
       reputationMin:{ sport:40, media:35, tech:42, finance:38 },
       personality:'loyal',
       techBonus:{ tyreDeg:-0.05 },
@@ -448,7 +448,7 @@ const Sponsors = {
     // Principal supplémentaires
     {
       id:'tag_heuer',    name:'TAG Heuer',           logo:'🕰️', category:'watch',
-      type:'principal',  baseValue:18, maxValue:26, duration:2,
+      type:'principal',  baseValue:13, maxValue:18, duration:2,
       reputationMin:{ sport:45, media:40, tech:20, finance:45 },
       personality:'loyal',
       techBonus:{},
@@ -461,20 +461,20 @@ const Sponsors = {
     },
     {
       id:'acer',         name:'Acer Predator',       logo:'💻', category:'pc',
-      type:'principal',  baseValue:14, maxValue:20, duration:2,
+      type:'principal',  baseValue:10, maxValue:14, duration:2,
       reputationMin:{ sport:30, media:32, tech:35, finance:28 },
       personality:'developer',
       techBonus:{},
       desc:'Gaming & PC. Popularité auprès des jeunes fans.',
       clauses:[
-        { type:'media',      target:30, bonus:3,   penalty:-1  },
+        { type:'points_finishes', target:6,  bonus:3,  penalty:-1  },
         { type:'top10',      target:8,  bonus:2,   penalty:0   },
       ],
       exclusivity:'pc', breakClause:false,
     },
     {
       id:'cognizant2',   name:'Infosys',             logo:'🔵', category:'it',
-      type:'principal',  baseValue:16, maxValue:22, duration:2,
+      type:'principal',  baseValue:11, maxValue:15, duration:2,
       reputationMin:{ sport:32, media:28, tech:40, finance:32 },
       personality:'developer',
       techBonus:{ tokens:1 },
@@ -487,7 +487,7 @@ const Sponsors = {
     },
     {
       id:'banco_do_brasil', name:'Banco do Brasil',  logo:'🇧🇷', category:'bank2',
-      type:'principal',  baseValue:15, maxValue:22, duration:2,
+      type:'principal',  baseValue:10, maxValue:15, duration:2,
       reputationMin:{ sport:35, media:30, tech:20, finance:40 },
       personality:'loyal',
       techBonus:{},
@@ -500,7 +500,7 @@ const Sponsors = {
     },
     {
       id:'gulf',         name:'Gulf Oil',            logo:'🔵', category:'oil',
-      type:'principal',  baseValue:17, maxValue:24, duration:2,
+      type:'principal',  baseValue:12, maxValue:17, duration:2,
       reputationMin:{ sport:35, media:30, tech:38, finance:35 },
       personality:'loyal',
       techBonus:{ engine:1 },
@@ -513,7 +513,7 @@ const Sponsors = {
     },
     {
       id:'etihad',       name:'Etihad Airways',      logo:'✈️', category:'airline',
-      type:'principal',  baseValue:20, maxValue:28, duration:2,
+      type:'principal',  baseValue:14, maxValue:20, duration:2,
       reputationMin:{ sport:42, media:38, tech:28, finance:42 },
       personality:'loyal',
       techBonus:{},
@@ -526,7 +526,7 @@ const Sponsors = {
     },
     {
       id:'emirates',     name:'Emirates',            logo:'✈️', category:'airline2',
-      type:'principal',  baseValue:22, maxValue:30, duration:3,
+      type:'principal',  baseValue:15, maxValue:21, duration:3,
       reputationMin:{ sport:45, media:42, tech:28, finance:45 },
       personality:'loyal',
       techBonus:{},
@@ -539,20 +539,20 @@ const Sponsors = {
     },
     {
       id:'adobe',        name:'Adobe',               logo:'🎨', category:'software',
-      type:'principal',  baseValue:15, maxValue:22, duration:2,
+      type:'principal',  baseValue:10, maxValue:15, duration:2,
       reputationMin:{ sport:28, media:35, tech:38, finance:30 },
       personality:'developer',
       techBonus:{},
       desc:'Logiciels créatifs. Boost la réputation médiatique.',
       clauses:[
-        { type:'media',      target:35, bonus:3,   penalty:-1  },
+        { type:'points_finishes', target:7,  bonus:3,  penalty:-1  },
         { type:'races',      target:15, bonus:1,   penalty:0   },
       ],
       exclusivity:'software', breakClause:false,
     },
     {
       id:'sabelt',       name:'Sabelt',              logo:'🪖', category:'safety',
-      type:'principal',  baseValue:8,  maxValue:13, duration:2,
+      type:'principal',  baseValue:6,  maxValue:9, duration:2,
       reputationMin:{ sport:20, media:18, tech:22, finance:18 },
       personality:'loyal',
       techBonus:{ reliability:1 },
@@ -567,20 +567,20 @@ const Sponsors = {
     // Partners supplémentaires
     {
       id:'puma',         name:'Puma',                logo:'🐆', category:'sport_apparel',
-      type:'partner',    baseValue:7,  maxValue:11, duration:2,
+      type:'partner',    baseValue:5,  maxValue:8, duration:2,
       reputationMin:{ sport:22, media:25, tech:12, finance:18 },
       personality:'loyal',
       techBonus:{},
       desc:'Équipementier sportif mondial. Partenaire accessible.',
       clauses:[
         { type:'races',      target:15, bonus:1,   penalty:0   },
-        { type:'media',      target:18, bonus:1,   penalty:0   },
+        { type:'points_finishes', target:4,  bonus:1,  penalty:0   },
       ],
       exclusivity:'sport_apparel', breakClause:false,
     },
     {
       id:'alpinestars',  name:'Alpinestars',         logo:'⭐', category:'racing_gear',
-      type:'partner',    baseValue:6,  maxValue:10, duration:2,
+      type:'partner',    baseValue:4,  maxValue:7, duration:2,
       reputationMin:{ sport:18, media:15, tech:15, finance:15 },
       personality:'loyal',
       techBonus:{},
@@ -592,7 +592,7 @@ const Sponsors = {
     },
     {
       id:'ntt',          name:'NTT Data',            logo:'📡', category:'telecom2',
-      type:'partner',    baseValue:10, maxValue:15, duration:2,
+      type:'partner',    baseValue:7, maxValue:10, duration:2,
       reputationMin:{ sport:25, media:22, tech:32, finance:25 },
       personality:'developer',
       techBonus:{ tokens:1 },
@@ -605,7 +605,7 @@ const Sponsors = {
     },
     {
       id:'norton',       name:'Norton LifeLock',     logo:'🛡️', category:'security',
-      type:'partner',    baseValue:9,  maxValue:14, duration:2,
+      type:'partner',    baseValue:6,  maxValue:10, duration:2,
       reputationMin:{ sport:22, media:20, tech:28, finance:22 },
       personality:'loyal',
       techBonus:{},
@@ -617,7 +617,7 @@ const Sponsors = {
     },
     {
       id:'smartsheet',   name:'Smartsheet',          logo:'📊', category:'saas',
-      type:'partner',    baseValue:8,  maxValue:12, duration:2,
+      type:'partner',    baseValue:6,  maxValue:8, duration:2,
       reputationMin:{ sport:20, media:18, tech:25, finance:20 },
       personality:'developer',
       techBonus:{},
@@ -630,20 +630,20 @@ const Sponsors = {
     },
     {
       id:'singha',       name:'Singha Beer',         logo:'🍻', category:'beverage2',
-      type:'partner',    baseValue:8,  maxValue:12, duration:2,
+      type:'partner',    baseValue:6,  maxValue:8, duration:2,
       reputationMin:{ sport:20, media:22, tech:10, finance:18 },
       personality:'loyal',
       techBonus:{},
       desc:'Bière thaïlandaise. Présence forte en Asie.',
       clauses:[
         { type:'races',      target:15, bonus:1,   penalty:0   },
-        { type:'media',      target:15, bonus:1,   penalty:0   },
+        { type:'points_finishes', target:3,  bonus:1,  penalty:0   },
       ],
       exclusivity:'beverage2', breakClause:false,
     },
     {
       id:'chandon',      name:'Chandon',             logo:'🍾', category:'champagne',
-      type:'partner',    baseValue:6,  maxValue:10, duration:2,
+      type:'partner',    baseValue:4,  maxValue:7, duration:2,
       reputationMin:{ sport:25, media:28, tech:10, finance:22 },
       personality:'loyal',
       techBonus:{},
@@ -656,7 +656,7 @@ const Sponsors = {
     },
     {
       id:'lenovo',       name:'Lenovo',              logo:'💡', category:'hardware',
-      type:'partner',    baseValue:11, maxValue:16, duration:2,
+      type:'partner',    baseValue:8, maxValue:11, duration:2,
       reputationMin:{ sport:25, media:22, tech:30, finance:25 },
       personality:'developer',
       techBonus:{},
@@ -669,13 +669,13 @@ const Sponsors = {
     },
     {
       id:'zoom',         name:'Zoom',                logo:'📹', category:'comms',
-      type:'partner',    baseValue:7,  maxValue:11, duration:2,
+      type:'partner',    baseValue:5,  maxValue:8, duration:2,
       reputationMin:{ sport:18, media:25, tech:28, finance:18 },
       personality:'loyal',
       techBonus:{},
       desc:'Communications vidéo. Visibilité dans le paddock digital.',
       clauses:[
-        { type:'media',      target:20, bonus:1,   penalty:0   },
+        { type:'points_finishes', target:4,  bonus:1,  penalty:0   },
         { type:'races',      target:14, bonus:1,   penalty:0   },
       ],
       exclusivity:'comms', breakClause:false,
@@ -830,9 +830,20 @@ const Sponsors = {
     const sp = this.DB.find(s => s.id === sponsorId);
     if (!sp) return { ok:false, reason:'Sponsor introuvable' };
 
-    // Vérifier type unique pour title
-    if (sp.type === 'title' && (save.sponsors||[]).some(s => s.type === 'title')) {
-      return { ok:false, reason:'Tu as déjà un title sponsor !' };
+    // Limites par type
+    const activeTypes = (save.sponsors||[]).map(s => s.type);
+    const titleCount     = activeTypes.filter(t => t === 'title').length;
+    const principalCount = activeTypes.filter(t => t === 'principal').length;
+    const partnerCount   = activeTypes.filter(t => t === 'partner').length;
+
+    if (sp.type === 'title' && titleCount >= 1) {
+      return { ok:false, reason:'Déjà un title sponsor actif !' };
+    }
+    if (sp.type === 'principal' && principalCount >= 2) {
+      return { ok:false, reason:'Maximum 2 principal sponsors atteint !' };
+    }
+    if (sp.type === 'partner' && partnerCount >= 4) {
+      return { ok:false, reason:'Maximum 4 technical partners atteint !' };
     }
 
     // Vérifier exclusivité
@@ -918,6 +929,7 @@ const Sponsors = {
           case 'quali_top5': if (save.lastQualiPos <= 5) cl.progress++; break;
           case 'points':     cl.progress += teamPoints;                  break;
           case 'races':      cl.progress++;                              break;
+          case 'points_finishes': if (teamPoints > 0) cl.progress++; break;
           case 'media':      cl.progress += mediaScore;                  break;
           case 'dnf_max':    cl.progress += dnfs;                        break; // ici progress = nbr DNF
         }
