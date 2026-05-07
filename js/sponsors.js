@@ -211,7 +211,280 @@ const Sponsors = {
       ],
       exclusivity:'finance', breakClause:false,
     },
+
+    // ── NOUVEAUX SPONSORS ─────────────────────────────────────
+
+    // Title
+    {
+      id:'lng_energy',   name:'LNG Energy',        logo:'⚡', category:'energy',
+      type:'title',      baseValue:38, maxValue:52, duration:2,
+      reputationMin:{ sport:50, media:45, tech:45, finance:50 },
+      personality:'developer',
+      techBonus:{ engine:1 },
+      desc:'Groupe énergétique en expansion. Cherche une équipe en progression.',
+      clauses:[
+        { type:'position_up', target:2,  bonus:12,  penalty:0   },
+        { type:'points',      target:50, bonus:6,   penalty:-4  },
+        { type:'dnf_max',     target:5,  bonus:0,   penalty:-5  },
+      ],
+      exclusivity:'energy', breakClause:false,
+    },
+    {
+      id:'stakes',       name:'Stakes.com',         logo:'🎰', category:'betting',
+      type:'title',      baseValue:42, maxValue:58, duration:2,
+      reputationMin:{ sport:48, media:55, tech:35, finance:42 },
+      personality:'opportunist',
+      techBonus:{},
+      desc:'Plateforme de paris en ligne. Très généreux mais exigeant.',
+      clauses:[
+        { type:'podiums',    target:5,  bonus:10,  penalty:-8  },
+        { type:'media',      target:55, bonus:5,   penalty:-4  },
+        { type:'dnf_max',    target:4,  bonus:0,   penalty:-6  },
+      ],
+      exclusivity:'betting', breakClause:true,
+    },
+
+    // Principal
+    {
+      id:'crypto_com',   name:'Crypto.com',         logo:'💎', category:'crypto',
+      type:'principal',  baseValue:20, maxValue:30, duration:2,
+      reputationMin:{ sport:38, media:42, tech:38, finance:35 },
+      personality:'opportunist',
+      techBonus:{},
+      desc:'Exchange crypto. Gros budget mais attend des résultats visibles.',
+      clauses:[
+        { type:'media',      target:40, bonus:5,   penalty:-4  },
+        { type:'top10',      target:10, bonus:3,   penalty:-3  },
+      ],
+      exclusivity:'crypto', breakClause:true,
+    },
+    {
+      id:'msport',       name:'MSport',             logo:'🏁', category:'motorsport',
+      type:'principal',  baseValue:16, maxValue:24, duration:3,
+      reputationMin:{ sport:32, media:28, tech:28, finance:28 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Équipementier motorsport. Partenaire de longue date.',
+      clauses:[
+        { type:'races',      target:20, bonus:3,   penalty:-1  },
+        { type:'top10',      target:8,  bonus:2,   penalty:0   },
+      ],
+      exclusivity:'motorsport', breakClause:false,
+    },
+    {
+      id:'netapp',       name:'NetApp',             logo:'🔷', category:'tech',
+      type:'principal',  baseValue:14, maxValue:20, duration:2,
+      reputationMin:{ sport:28, media:28, tech:38, finance:32 },
+      personality:'developer',
+      techBonus:{ tokens:1 },
+      desc:'Solutions de stockage data. Bonus tokens via data analytics.',
+      clauses:[
+        { type:'races',      target:18, bonus:2,   penalty:-1  },
+        { type:'top10',      target:5,  bonus:2,   penalty:0   },
+      ],
+      exclusivity:'data', breakClause:false,
+    },
+    {
+      id:'crowdstrike',  name:'CrowdStrike',        logo:'🦅', category:'tech',
+      type:'principal',  baseValue:18, maxValue:26, duration:2,
+      reputationMin:{ sport:35, media:32, tech:42, finance:35 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Cybersécurité. Partenaire tech discret mais solide.',
+      clauses:[
+        { type:'races',      target:20, bonus:3,   penalty:-1  },
+        { type:'dnf_max',    target:4,  bonus:0,   penalty:-3  },
+      ],
+      exclusivity:'cybersec', breakClause:false,
+    },
+    {
+      id:'tissot',       name:'Tissot',             logo:'⌛', category:'luxury',
+      type:'principal',  baseValue:12, maxValue:18, duration:2,
+      reputationMin:{ sport:38, media:35, tech:18, finance:38 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Horloger officiel F1. Accessible, fidèle et régulier.',
+      clauses:[
+        { type:'podiums',    target:2,  bonus:3,   penalty:-2  },
+        { type:'races',      target:18, bonus:1,   penalty:0   },
+      ],
+      exclusivity:'watch', breakClause:false,
+    },
+    {
+      id:'sabic',        name:'SABIC',              logo:'🟦', category:'chemical',
+      type:'principal',  baseValue:15, maxValue:22, duration:3,
+      reputationMin:{ sport:35, media:28, tech:38, finance:38 },
+      personality:'loyal',
+      techBonus:{ reliability:1 },
+      desc:'Matériaux composites. Améliore la fiabilité des pièces.',
+      clauses:[
+        { type:'races',      target:20, bonus:2,   penalty:-1  },
+        { type:'dnf_max',    target:4,  bonus:3,   penalty:-4  },
+      ],
+      exclusivity:'chemical', breakClause:false,
+    },
+    {
+      id:'salesforce',   name:'Salesforce',         logo:'☁️', category:'tech',
+      type:'principal',  baseValue:22, maxValue:32, duration:2,
+      reputationMin:{ sport:42, media:38, tech:45, finance:42 },
+      personality:'developer',
+      techBonus:{ tokens:1 },
+      desc:'CRM cloud. Investit dans les équipes qui progressent.',
+      clauses:[
+        { type:'position_up', target:2,  bonus:8,   penalty:0   },
+        { type:'top10',       target:8,  bonus:3,   penalty:-2  },
+      ],
+      exclusivity:'crm', breakClause:false,
+    },
+
+    // Partners
+    {
+      id:'sparco',       name:'Sparco',             logo:'🔥', category:'apparel',
+      type:'partner',    baseValue:5,  maxValue:8,  duration:2,
+      reputationMin:{ sport:18, media:18, tech:12, finance:15 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Équipements pilotes. Accessible à toutes les équipes.',
+      clauses:[
+        { type:'races',      target:15, bonus:1,   penalty:0   },
+      ],
+      exclusivity:null, breakClause:false,
+    },
+    {
+      id:'omp',          name:'OMP Racing',         logo:'🏎️', category:'apparel',
+      type:'partner',    baseValue:4,  maxValue:7,  duration:2,
+      reputationMin:{ sport:15, media:12, tech:10, finance:12 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Combinaisons et équipements motorsport. Partenaire entrée de gamme.',
+      clauses:[
+        { type:'races',      target:12, bonus:1,   penalty:0   },
+      ],
+      exclusivity:null, breakClause:false,
+    },
+    {
+      id:'sofina',       name:'Sofina Foods',       logo:'🍜', category:'food',
+      type:'partner',    baseValue:7,  maxValue:11, duration:2,
+      reputationMin:{ sport:22, media:25, tech:12, finance:20 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Agroalimentaire. Sponsor accessible, fidèle et peu exigeant.',
+      clauses:[
+        { type:'races',      target:18, bonus:1,   penalty:0   },
+        { type:'media',      target:15, bonus:1,   penalty:0   },
+      ],
+      exclusivity:'food', breakClause:false,
+    },
+    {
+      id:'dstelecom',    name:'DS Telecom',         logo:'📱', category:'telecom',
+      type:'partner',    baseValue:9,  maxValue:14, duration:2,
+      reputationMin:{ sport:28, media:28, tech:28, finance:25 },
+      personality:'developer',
+      techBonus:{},
+      desc:'Opérateur télécom. Visibilité digitale et croissance.',
+      clauses:[
+        { type:'media',      target:25, bonus:2,   penalty:-1  },
+        { type:'top10',      target:5,  bonus:1,   penalty:0   },
+      ],
+      exclusivity:'telecom', breakClause:false,
+    },
+    {
+      id:'hertz',        name:'Hertz',              logo:'🚗', category:'auto',
+      type:'partner',    baseValue:10, maxValue:15, duration:2,
+      reputationMin:{ sport:25, media:22, tech:15, finance:25 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Location de véhicules. Partenariat logistique stable.',
+      clauses:[
+        { type:'races',      target:16, bonus:2,   penalty:-1  },
+        { type:'points',     target:15, bonus:1,   penalty:0   },
+      ],
+      exclusivity:'auto', breakClause:false,
+    },
   ],
+
+  // ── COMPÉTITION IA POUR LES SPONSORS ──────────────────────
+  // Les équipes IA "occupent" certains sponsors selon leur niveau
+  initAISponsors(save) {
+    if (save.aiSponsors) return; // déjà initialisé
+    save.aiSponsors = {};
+
+    // Assignation réaliste : top équipes ont les gros sponsors
+    const aiAssignments = [
+      { teamId:'mclaren',     sponsorIds:['oracle','monster','dhl'] },
+      { teamId:'ferrari',     sponsorIds:['shell','santander','rolex'] },
+      { teamId:'redbull',     sponsorIds:['oracle','heineken'] }, // oracle partagé en lore
+      { teamId:'mercedes',    sponsorIds:['petronas','crowdstrike'] },
+      { teamId:'aston',       sponsorIds:['aramco','cognizant'] },
+      { teamId:'alpine',      sponsorIds:['bwt','dstelecom'] },
+      { teamId:'williams',    sponsorIds:['sofina','omp'] },
+      { teamId:'haas',        sponsorIds:['msport','sparco'] },
+      { teamId:'sauber',      sponsorIds:['netapp','hertz'] },
+      { teamId:'racingbulls', sponsorIds:['crypto_com','salesforce'] },
+      { teamId:'cadillac',    sponsorIds:['stakes','tissot'] },
+    ];
+
+    aiAssignments.forEach(a => {
+      a.sponsorIds.forEach(sid => {
+        save.aiSponsors[sid] = { teamId: a.teamId, until: (save.season||2025) + 2 };
+      });
+    });
+  },
+
+  // Vérifier si un sponsor est pris par une IA
+  isTakenByAI(save, sponsorId) {
+    const ai = save.aiSponsors?.[sponsorId];
+    if (!ai) return false;
+    if (ai.until < (save.season||2025)) {
+      delete save.aiSponsors[sponsorId];
+      return false;
+    }
+    return ai;
+  },
+
+  // Débaucher un sponsor d'une équipe IA (coûte de la réputation)
+  poachFromAI(save, sponsorId) {
+    const ai = save.aiSponsors?.[sponsorId];
+    if (!ai) return true; // libre
+    // Débaucher coûte -5 réputation sportive (friction)
+    if (save.reputation) {
+      save.reputation.sport   = Math.max(10, (save.reputation.sport||40) - 3);
+      save.reputation.finance = Math.max(10, (save.reputation.finance||40) - 2);
+    }
+    delete save.aiSponsors[sponsorId];
+    if (save.news) save.news.push({
+      icon:'⚔️', category:'sponsor',
+      title:`Débauche de sponsor`,
+      text:`Tu as convaincu un sponsor de quitter ${ai.teamId}. Légère tension dans le paddock.`,
+    });
+    return true;
+  },
+
+  // Fin de saison IA : les équipes IA renouvellent ou perdent des sponsors
+  updateAISponsorships(save, playerPos) {
+    if (!save.aiSponsors) return;
+    // Renouvellement aléatoire
+    Object.entries(save.aiSponsors).forEach(([sid, ai]) => {
+      if (Math.random() < 0.3) {
+        // 30% de chance de libérer le sponsor
+        delete save.aiSponsors[sid];
+      } else {
+        ai.until = (save.season||2025) + 1 + Math.floor(Math.random() * 2);
+      }
+    });
+    // Top équipes IA signent de nouveaux sponsors
+    const topAI = ['mclaren','ferrari','redbull','mercedes'];
+    const bigSponsors = this.DB.filter(s => s.type === 'title' || s.baseValue >= 30);
+    topAI.forEach(teamId => {
+      if (Math.random() < 0.4) {
+        const free = bigSponsors.filter(s => !save.aiSponsors?.[s.id] && !(save.sponsors||[]).find(sp=>sp.id===s.id));
+        if (free.length) {
+          const pick = free[Math.floor(Math.random()*free.length)];
+          save.aiSponsors[pick.id] = { teamId, until: (save.season||2025) + 2 };
+        }
+      }
+    });
+  },
 
   // ── INITIALISER LES SPONSORS D'UNE NOUVELLE CARRIÈRE ──────
   initCareer(save) {
@@ -234,6 +507,7 @@ const Sponsors = {
 
     // Générer les offres initiales selon la réputation
     this.generateMarketOffers(save);
+    this.initAISponsors(save);
     Save.save(save);
   },
 
@@ -458,7 +732,7 @@ const Sponsors = {
 
     // Générer de nouvelles offres pour la saison suivante
     this.generateMarketOffers(save);
-
+    this.updateAISponsorships(save, playerPos);
     this.applyTechBonuses(save);
     Save.save(save);
 
