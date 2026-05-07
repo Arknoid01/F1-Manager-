@@ -291,10 +291,7 @@ const Save = {
         team.budget = Math.round(Math.min(600, (team.budget||200) + budgetGrowth) * 10) / 10;
       }
 
-      // ── Budget R&D rechargé selon le classement ─────────────
-      const newRdBudget  = Math.round((team?.budget||200) * (F1Data.rdBudgetRatio||0.4));
-      save.rdBudget      = newRdBudget;
-      save.rdBudgetTotal = newRdBudget;
+
 
       // ── Changement de règlement ─────────────────────────────
       const nextSeason = (save.season||2025) + 1;
