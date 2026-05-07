@@ -223,9 +223,23 @@ function init() {
     Save.save(save);
   }
 
-  // Init sponsors si première visite
+  // Init réputation si première visite
   if (!save.reputation) {
     Sponsors.initCareer(save);
+    save = Save.load();
+  }
+
+  // Init sponsors IA séparément (peut manquer sur les saves existantes)
+  if (!save.aiSponsors) {
+    Sponsors.initAISponsors(save);
+    Save.save(save);
+    save = Save.load();
+  }
+
+  // Générer les offres si vides
+  if (!save.sponsorOffers?.length) {
+    Sponsors.generateMarketOffers(save);
+    Save.save(save);
     save = Save.load();
   }
 
