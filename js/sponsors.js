@@ -792,17 +792,13 @@ const Sponsors = {
 
   // ── GÉNÉRER LES OFFRES DU MARCHÉ ──────────────────────────
   generateMarketOffers(save) {
-    const rep     = save.reputation || { sport:40, media:40, tech:40, finance:40 };
-    const active  = (save.sponsors||[]).map(s => s.id);
-    // Exclusivités : uniquement les contrats du JOUEUR bloquent d'autres sponsors
-    const excls   = (save.sponsors||[]).map(s => s.exclusivity).filter(Boolean);
+    const rep   = save.reputation || { sport:40, media:40, tech:40, finance:40 };
+    const active = (save.sponsors||[]).map(s => s.id);
+    const excls  = (save.sponsors||[]).map(s => s.exclusivity).filter(Boolean);
 
-    // Filtrer : exclure les contrats actifs du joueur et ses exclusivités
-    // Les sponsors IA ne bloquent PAS le joueur (ils peuvent coexister)
     const available = this.DB.filter(sp => {
-      if (active.includes(sp.id)) return false; // déjà signé par le joueur
-      if (sp.exclusivity && excls.includes(sp.exclusivity)) return false; // exclusivité joueur
-      // Vérifier la réputation
+      if (active.includes(sp.id)) return false;
+      if (sp.exclusivity && excls.includes(sp.exclusivity)) return false;
       const r = sp.reputationMin;
       if (rep.sport   < (r.sport   || 0)) return false;
       if (rep.media   < (r.media   || 0)) return false;
@@ -811,17 +807,19 @@ const Sponsors = {
       return true;
     });
 
-    // Sponsors inaccessibles (réputation insuffisante) — affichés avec cadenas
     const inaccessible = this.DB.filter(sp => {
       if (active.includes(sp.id)) return false;
       if (sp.exclusivity && excls.includes(sp.exclusivity)) return false;
       return !available.includes(sp);
     }).slice(0, 12);
 
+    // Stocker SEULEMENT l'id et la valeur négociée — pas l'objet complet
+    // Les détails sont toujours lus depuis le DB frais dans renderMarket
     save.sponsorOffers = [...available, ...inaccessible].map(sp => ({
-      ...sp,
+      id:         sp.id,
       offerValue: Math.round(sp.baseValue * (0.9 + Math.random() * 0.2)),
       expiresAt:  (save.race || 0) + 4,
+      accessible: available.includes(sp),
     }));
   },
 
