@@ -22,7 +22,7 @@ const Engine = {
 
   // ── CALCUL TEMPS AU TOUR ──────────────────────────────────
   calcLapTime(driver, team, circuit, tyreState, _fuelLoad, weather='dry', lap=1, orderMode='normal') {
-    // _fuelLoad ignoré — en F1 moderne géré avant la course
+    // _fuelLoad ignoré — géré avant la course en F1 moderne
     const tyre  = F1Data.tyres[tyreState.compound];
     const trait = this.getTrait(driver);
 
