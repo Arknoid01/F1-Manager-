@@ -422,14 +422,17 @@ const CR = {
     Race.state.grid.forEach((car, idx) => {
       const g = document.createElementNS('http://www.w3.org/2000/svg','g');
 
-      // Couleur via F1Data pour être sûr
-      const teamColor = F1Data.teams.find(t => t.id === car.driver.teamId)?.color || '#ffffff';
+      // Couleur via F1Data - match insensible à la casse
+      const teamColor = F1Data.teams.find(t =>
+        t.id?.toLowerCase() === car.driver.teamId?.toLowerCase()
+      )?.color || '#ffffff';
 
+      const isPlayerCar = car.driver.teamId?.toLowerCase() === (Save.load()?.playerTeamId||'').toLowerCase();
       const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
-      c.setAttribute('r','5');
+      c.setAttribute('r', isPlayerCar ? '7' : '5');
       c.setAttribute('fill', teamColor);
-      c.setAttribute('stroke','rgba(255,255,255,0.5)');
-      c.setAttribute('stroke-width','1');
+      c.setAttribute('stroke', isPlayerCar ? '#f5c842' : 'rgba(255,255,255,0.5)');
+      c.setAttribute('stroke-width', isPlayerCar ? '2' : '1');
 
       const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
       tx.setAttribute('text-anchor','middle');
@@ -1103,13 +1106,15 @@ function renderStandings() {
   const body = document.getElementById('standBody');
   body.innerHTML = '';
 
+  const sv = Save.load();
+  const pid = sv?.playerTeamId;
   Race.getStandings().forEach(car => {
-    const tyre   = F1Data.tyres[car.tyre.compound];
-    const isDnf  = car.status === 'dnf';
-    const isLead = car.position === 1;
-    const cond   = Math.round(car.tyre.condition * 100);
-    const cc     = cond > 60 ? '#00e676' : cond > 30 ? '#ffea00' : '#ff4444';
-    // Estimer la pénalité pneu en secondes
+    const tyre      = F1Data.tyres[car.tyre.compound];
+    const isDnf     = car.status === 'dnf';
+    const isLead    = car.position === 1;
+    const isPlayer  = car.driver.teamId?.toLowerCase() === pid?.toLowerCase();
+    const cond      = Math.round(car.tyre.condition * 100);
+    const cc        = cond > 60 ? '#00e676' : cond > 30 ? '#ffea00' : '#ff4444';
     const degradation = 1 - car.tyre.condition;
     const tyrePenalty = degradation * 2.8 * (car.team?.tyreDegradation || 1.0);
     const penaltyStr  = tyrePenalty > 0.5 ? ` +${tyrePenalty.toFixed(1)}s` : '';
@@ -1123,14 +1128,14 @@ function renderStandings() {
       : isDnf ? '<span class="dnf-b">DNF</span>' : '';
 
     const row = document.createElement('div');
-    row.className = `s-row${isLead?' lead':''}${isDnf?' dnf':''}`;
+    row.className = `s-row${isLead?' lead':''}${isDnf?' dnf':''}${isPlayer?' player-row':''}`;
     const pc = car.position<=3 ? `pos p${car.position}` : 'pos';
     row.innerHTML = `
       <div class="${pc}">${car.position}</div>
       <div class="dnum">${car.driver.number}</div>
       <div class="tbar" style="background:${car.team.color}"></div>
-      <div>
-        <div class="dname">${car.driver.name} ${badge}</div>
+      <div style="flex:1;min-width:0">
+        <div class="dname">${isPlayer?'<span style="color:var(--gold)">★</span> ':''}${car.driver.name} ${badge}</div>
         <div class="dteam-s">${car.team.shortName}</div>
       </div>
       <div class="tyre-cell">
