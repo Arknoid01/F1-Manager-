@@ -260,10 +260,44 @@ const F1Data = {
     },
   },
 
-  // Token freeze : après cette course les upgrades voiture actuelle sont gelés
-  TOKEN_FREEZE_RACE: 15,
+  // Token freeze supprimé — remplacé par rendement décroissant après course 15
+  LATE_SEASON_RACE: 15,        // après cette course, gain réduit de 30%
+  LATE_SEASON_PENALTY: 0.70,   // multiplicateur de gain en fin de saison
 
-  // Budget R&D de base par équipe (% du budget total alloué à la R&D)
-  rdBudgetRatio: 0.40, // 40% du budget total
+  // Revenus Concorde par position constructeurs (M€/saison)
+  concordeRevenues: [120, 100, 85, 72, 62, 54, 46, 38, 30, 22, 15],
+
+  // Budget R&D = 40% du budget total
+  rdBudgetRatio: 0.40,
+
+  // Cycles réglementaires — reset partiel des performances
+  // Chaque nouveau règlement remet les bases à zéro selon l'investissement next year
+  regulationCycles: [
+    { season: 2028, name: 'Règlement 2028', desc: 'Nouveau règlement technique majeur — voitures actives, effet de sol renforcé', resetFactor: 0.82 },
+    { season: 2031, name: 'Règlement 2031', desc: 'Réforme aérodynamique et motorisation hybride avancée', resetFactor: 0.80 },
+    { season: 2034, name: 'Règlement 2034', desc: 'Transition vers motorisation durable', resetFactor: 0.78 },
+  ],
+
+  // Multiplicateurs d'investissement next year selon le règlement
+  // Plus tu investis tôt, plus le bonus au reset est important
+  nextYearBonusMultiplier: 1.8, // gain × 1.8 si nouveau règlement
+
+  // Concepts risqués par domaine — pari R&D
+  // Succès : +bigGain, Échec : -smallLoss, Probabilité selon niveau tech équipe
+  riskyConceptCost: { budget: 20, tokens: 3 },
+  riskyConceptOutcomes: {
+    success: { gain: 10, probability: 0.45 },
+    partial: { gain:  4, probability: 0.35 },
+    failure: { gain: -3, probability: 0.20 },
+  },
+
+  // Spécialisations — bonus sur certains circuits si domaine élevé
+  specializations: {
+    aero:        { threshold: 90, circuitTypes: ['technical','street'], bonus: 0.8 },
+    chassis:     { threshold: 90, circuitTypes: ['high_speed','mixed'], bonus: 0.7 },
+    engine:      { threshold: 90, circuitTypes: ['power'],              bonus: 0.9 },
+    reliability: { threshold: 88, circuitTypes: ['all'],                bonus: 0.5 },
+    pitstop:     { threshold: 85, circuitTypes: ['all'],                bonus: 0.3 },
+  },
 
 };

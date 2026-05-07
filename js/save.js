@@ -201,77 +201,161 @@ const Save = {
     const playerResults = results.filter(r => r.team && r.team.id === playerTeamId);
     const bestPosition  = playerResults.length ? Math.min(...playerResults.map(r => r.position)) : 20;
     const teamPoints    = playerResults.reduce((sum, r) => sum + (r.points || 0), 0);
-    const reward        = 5 + teamPoints + (bestPosition <= 3 ? 12 : bestPosition <= 10 ? 5 : 0);
-    const tokens        = 1 + (teamPoints > 0 ? 1 : 0) + (bestPosition <= 3 ? 1 : 0);
 
-    // Progression sponsors : on valide les objectifs progressivement après chaque GP.
+    // Récompense course de base
+    const reward = 5 + teamPoints + (bestPosition <= 3 ? 12 : bestPosition <= 10 ? 5 : 0);
+    const tokens = 1 + (teamPoints > 0 ? 1 : 0) + (bestPosition <= 3 ? 1 : 0)
+                 + (bestPosition === 1 ? 1 : 0); // bonus pole/victoire
+
+    // Progression sponsors
     let sponsorBonus = 0;
     (save.sponsors || []).forEach(sp => {
       if (sp.paid) return;
-      if (sp.type === 'races') sp.progress = Math.min(sp.target, (sp.progress || 0) + 1);
-      if (sp.type === 'top10' && bestPosition <= 10) sp.progress = Math.min(sp.target, (sp.progress || 0) + 1);
-      if (sp.type === 'podium' && bestPosition <= 3) sp.progress = Math.min(sp.target, (sp.progress || 0) + 1);
-      if (sp.type === 'points' && teamPoints > 0) sp.progress = Math.min(sp.target, (sp.progress || 0) + teamPoints);
-      if (sp.progress >= sp.target) { sp.paid = true; sponsorBonus += Number(sp.value) || 0; }
+      if (sp.type === 'races')  sp.progress = Math.min(sp.target, (sp.progress||0)+1);
+      if (sp.type === 'top10'  && bestPosition <= 10) sp.progress = Math.min(sp.target,(sp.progress||0)+1);
+      if (sp.type === 'podium' && bestPosition <= 3)  sp.progress = Math.min(sp.target,(sp.progress||0)+1);
+      if (sp.type === 'points' && teamPoints > 0)     sp.progress = Math.min(sp.target,(sp.progress||0)+teamPoints);
+      if (sp.progress >= sp.target) { sp.paid = true; sponsorBonus += Number(sp.value)||0; }
     });
 
     const currentRaceIndex = Number(save.race) || 0;
-    
-    // Économie plus profonde : frais fixes par GP + salaires annualisés + budget cap simplifié.
-    const annualExpenses = Number(save.finances?.expenses) || 0;
-    const gpOperatingCost = Math.round((2.5 + annualExpenses / Math.max(1, F1Data.circuits.length)) * 10) / 10;
-    save.budget = Math.round(((Number(save.budget) || 0) + reward + sponsorBonus - gpOperatingCost) * 10) / 10;
-    if (save.budget < 0) { save.reputation = Math.max(0, (save.reputation || 50) - 3); save.budget = 0; }
-    save.tokens = (Number(save.tokens) || 0) + tokens;
-    save.race   = currentRaceIndex + 1;
+    const annualExpenses   = Number(save.finances?.expenses) || 0;
+    const gpOperatingCost  = Math.round((2.5 + annualExpenses / Math.max(1, F1Data.circuits.length)) * 10) / 10;
+    save.budget  = Math.round(((Number(save.budget)||0) + reward + sponsorBonus - gpOperatingCost) * 10) / 10;
+    if (save.budget < 0) { save.reputation = Math.max(0,(save.reputation||50)-3); save.budget = 0; }
+    save.tokens  = (Number(save.tokens)||0) + tokens;
+    save.race    = currentRaceIndex + 1;
 
     save.raceResults.push({
-      season: save.season || 2025,
-      raceIndex: save.raceResults.length,
-      circuitId: circuit ? circuit.id : null,
-      circuitName: circuit ? circuit.name : 'Circuit inconnu',
+      season: save.season||2025, raceIndex: save.raceResults.length,
+      circuitId: circuit?.id||null, circuitName: circuit?.name||'Circuit inconnu',
       date: new Date().toISOString(),
-      reward: reward + sponsorBonus,
-      operatingCost: gpOperatingCost,
-      baseReward: reward,
-      sponsorBonus,
-      tokens,
+      reward: reward+sponsorBonus, operatingCost: gpOperatingCost,
+      baseReward: reward, sponsorBonus, tokens,
       results: results.map(r => ({
-        position: r.position,
-        driverId: r.driver ? r.driver.id : null,
-        teamId: r.team ? r.team.id : null,
-        points: r.points || 0,
-        totalTime: Number.isFinite(r.totalTime) ? r.totalTime : null,
-        gap: Number.isFinite(r.gap) ? r.gap : null,
-        status: r.status,
-        dnfLap: r.dnfLap || null,
-        bestLap: Number.isFinite(r.bestLap) ? r.bestLap : null,
-        pitStops: r.pitStops || [],
+        position: r.position, driverId: r.driver?.id||null, teamId: r.team?.id||null,
+        points: r.points||0, totalTime: Number.isFinite(r.totalTime)?r.totalTime:null,
+        gap: Number.isFinite(r.gap)?r.gap:null, status: r.status,
+        dnfLap: r.dnfLap||null, bestLap: Number.isFinite(r.bestLap)?r.bestLap:null,
+        pitStops: r.pitStops||[],
       })),
     });
 
-    // Fin de saison : archive le palmarès, verse les primes, puis relance une année.
+    // ── FIN DE SAISON ─────────────────────────────────────────
     if (save.race >= F1Data.circuits.length) {
-      const teamRank = [...F1Data.teams].sort((a,b)=>(save.teamStandings[b.id]||0)-(save.teamStandings[a.id]||0));
-      const playerPos = teamRank.findIndex(t => t.id === playerTeamId) + 1;
-      const champion = [...F1Data.drivers].sort((a,b)=>(save.driverStandings[b.id]||0)-(save.driverStandings[a.id]||0))[0];
-      const constructorChampion = teamRank[0];
-      const prize = Math.max(20, 120 - (playerPos - 1) * 10);
-      save.completedSeasons = save.completedSeasons || [];
-      save.completedSeasons.push({ season: save.season || 2025, playerConstructorPos: playerPos, driverChampionId: champion?.id, constructorChampionId: constructorChampion?.id, prize });
-      save.season = (save.season || 2025) + 1;
-      save.race = 0;
-      save.budget = Math.round((save.budget + prize) * 10) / 10;
-      save.tokens = (save.tokens || 0) + 6;
+      const teamRank   = [...F1Data.teams].sort((a,b)=>(save.teamStandings[b.id]||0)-(save.teamStandings[a.id]||0));
+      const playerPos  = teamRank.findIndex(t=>t.id===playerTeamId)+1;
+      const champion   = [...F1Data.drivers].sort((a,b)=>(save.driverStandings[b.id]||0)-(save.driverStandings[a.id]||0))[0];
+      const constrChamp= teamRank[0];
+
+      // ── Revenus Concorde (proportionnels au classement) ─────
+      const concordeRevs = F1Data.concordeRevenues || [120,100,85,72,62,54,46,38,30,22,15];
+      const concordePrize= concordeRevs[Math.min(playerPos-1, concordeRevs.length-1)] || 15;
+
+      save.completedSeasons = save.completedSeasons||[];
+      save.completedSeasons.push({
+        season: save.season||2025, playerConstructorPos: playerPos,
+        driverChampionId: champion?.id, constructorChampionId: constrChamp?.id,
+        prize: concordePrize,
+      });
+
+      // ── Recharge budget dynamique selon classement ──────────
+      // Meilleur classement = plus de budget → boule de neige positive
+      const budgetGrowth = Math.max(10, concordePrize * 0.15); // 15% des revenus Concorde
+      const team = F1Data.teams.find(t=>t.id===playerTeamId);
+      if (team) {
+        team.budget = Math.round(Math.min(600, (team.budget||200) + budgetGrowth) * 10) / 10;
+      }
+
+      // ── Budget R&D rechargé selon le classement ─────────────
+      const newRdBudget  = Math.round((team?.budget||200) * (F1Data.rdBudgetRatio||0.4));
+      save.rdBudget      = newRdBudget;
+      save.rdBudgetTotal = newRdBudget;
+
+      // ── Changement de règlement ─────────────────────────────
+      const nextSeason = (save.season||2025) + 1;
+      const regulation = (F1Data.regulationCycles||[]).find(r=>r.season===nextSeason);
+      if (regulation) {
+        this.applyRegulationReset(save, regulation);
+      }
+
+      save.budget = Math.round((save.budget + concordePrize) * 10) / 10;
+      save.tokens = (save.tokens||0) + 6 + (playerPos <= 3 ? 3 : playerPos <= 6 ? 1 : 0);
+      save.season = nextSeason;
+      save.race   = 0;
       save.driverStandings = {};
-      save.teamStandings = {};
-      save.raceResults = [];  // ← RESET les résultats pour la nouvelle saison
-      (save.sponsors || []).forEach(sp => { sp.progress = 0; sp.paid = false; });
+      save.teamStandings   = {};
+      save.raceResults     = [];
+      (save.sponsors||[]).forEach(sp=>{ sp.progress=0; sp.paid=false; });
+
+      // Log info saison
+      save._newSeasonBanner = `P${playerPos} constructeurs · ${concordePrize}M€ revenus Concorde${regulation?` · ⚠️ ${regulation.name} — nouveau règlement !`:''}`;
     }
 
     const ok = this.save(save);
     return ok ? { reward: reward + sponsorBonus,
       operatingCost: gpOperatingCost, baseReward: reward, sponsorBonus, tokens, save } : null;
+  },
+
+  // ── RESET RÉGLEMENTAIRE ───────────────────────────────────
+  applyRegulationReset(save, regulation) {
+    const resetFactor = regulation.resetFactor || 0.82;
+
+    F1Data.teams.forEach(team => {
+      // Calculer le bonus next year investi par le joueur
+      const isPlayer = team.id === save.playerTeamId;
+      let nextYearBonus = 0;
+
+      if (isPlayer && save.nextYearDev) {
+        Object.values(save.nextYearDev).forEach(inv => {
+          nextYearBonus += (inv.gain || 0) * (F1Data.nextYearBonusMultiplier || 1.8);
+        });
+      }
+
+      // IA : investissement simulé selon la richesse de l'équipe
+      if (!isPlayer) {
+        const richness = (team.budget||200) / 500; // 0 à 1
+        nextYearBonus  = Math.round(richness * 15 + Math.random() * 10);
+      }
+
+      // Reset : base × resetFactor + bonus investissement
+      const stats = ['aero','chassis','engine','reliability'];
+      stats.forEach(stat => {
+        const current = isPlayer ? (save.carDev?.[stat]?.level || team[stat]) : team[stat];
+        const reset   = Math.round(current * resetFactor + nextYearBonus * 0.25);
+        const newVal  = Math.max(45, Math.min(95, reset));
+
+        if (isPlayer && save.carDev?.[stat]) {
+          save.carDev[stat].level    = newVal;
+          save.carDev[stat].done     = []; // reset upgrades
+          save.carDev[stat].pending  = [];
+        }
+        team[stat] = newVal;
+      });
+
+      team.performance = Math.round((team.aero + team.chassis + team.engine) / 3);
+
+      // Log news pour l'IA
+      if (!isPlayer && nextYearBonus > 12) {
+        if (typeof save.news === 'undefined') save.news = [];
+        save.news.push({
+          icon: '⚙️', category: 'technical',
+          title: `${team.name} bien préparée pour ${regulation.season}`,
+          text: `${team.name} a massivement investi dans le nouveau règlement. Performance de base : ${team.performance}.`,
+        });
+      }
+    });
+
+    // Reset next year dev après application
+    save.nextYearDev = {};
+
+    // Bannière règlement
+    if (typeof save.news === 'undefined') save.news = [];
+    save.news.push({
+      icon: '📋', category: 'regulation',
+      title: regulation.name,
+      text: regulation.desc + ` Reset des performances (×${regulation.resetFactor}). Les équipes qui ont investi dans le nouveau concept partent avec un avantage.`,
+    });
   },
 
   // ── AUTOSAVE ─────────────────────────────────────────────
