@@ -122,8 +122,18 @@ const Weekend = {
       // Appliquer le programme quali personnalisé
       if (driver.teamId === playerTeamId && save.qualiStrategy?.[driver.id]) {
         const qs = save.qualiStrategy[driver.id];
-        if (qs.mode === 'push')   baseTime -= 0.12;
-        if (qs.mode === 'normal') baseTime += 0;
+        if (qs.mode === 'push') {
+          // Push : plus rapide mais risqué
+          baseTime -= 0.25;  // gain significatif
+          // Risque de trafic/erreur selon consistance du pilote
+          const errorChance = Math.max(0.05, 0.20 - (driver.consistency||80) * 0.002);
+          if (Math.random() < errorChance) {
+            baseTime += 0.35 + Math.random() * 0.4; // erreur annule le gain
+          }
+        }
+        if (qs.mode === 'normal') {
+          baseTime += 0.08; // légèrement plus lent mais fiable
+        }
       }
 
       grid.push({
