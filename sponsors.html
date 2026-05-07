@@ -403,14 +403,18 @@ function buildClauseRow(cl) {
 // ── MARCHÉ ────────────────────────────────────────────────
 function renderMarket() {
   const list   = document.getElementById('marketList');
-  // Régénérer si vide ou après signature
   if (!save.sponsorOffers?.length) {
     Sponsors.generateMarketOffers(save);
     Save.save(save);
     save = Save.load();
   }
-  const offers = save.sponsorOffers || [];
-  const rep    = save.reputation || { sport:40, media:40, tech:40, finance:40 };
+  // Reconstruire les offres depuis le DB frais — jamais depuis la save corrompue
+  const offers = (save.sponsorOffers||[]).map(o => {
+    const db = Sponsors.DB.find(s => s.id === o.id);
+    if (!db) return null;
+    return { ...db, offerValue: o.offerValue, expiresAt: o.expiresAt };
+  }).filter(Boolean);
+  const rep = save.reputation || { sport:40, media:40, tech:40, finance:40 };
 
   if (!offers.length) {
     list.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted);font-family:var(--fh)">
