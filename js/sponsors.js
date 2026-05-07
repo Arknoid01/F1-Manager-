@@ -1,0 +1,502 @@
+// ============================================================
+//  F1 Manager — sponsors.js
+//  Système de sponsors complet
+// ============================================================
+
+const Sponsors = {
+
+  // ── BASE DE DONNÉES SPONSORS ──────────────────────────────
+  DB: [
+    // ── TITLE SPONSORS (1 seul possible) ─────────────────────
+    {
+      id:'oracle',       name:'Oracle',         logo:'🔵', category:'tech',
+      type:'title',      baseValue:45, maxValue:60, duration:3,
+      reputationMin:{ sport:70, media:60, tech:75, finance:65 },
+      personality:'opportunist',
+      techBonus:{ tokens:1 },
+      desc:'Leader mondial du cloud. Exige des résultats en piste et une visibilité maximale.',
+      clauses:[
+        { type:'podiums',    target:6,  bonus:8,   penalty:-6  },
+        { type:'quali_top5', target:10, bonus:3,   penalty:0   },
+        { type:'dnf_max',    target:4,  bonus:0,   penalty:-8  },
+      ],
+      exclusivity:'tech', breakClause:true,
+    },
+    {
+      id:'aramco',       name:'Aramco',          logo:'🟢', category:'energy',
+      type:'title',      baseValue:55, maxValue:75, duration:3,
+      reputationMin:{ sport:75, media:65, tech:60, finance:70 },
+      personality:'loyal',
+      techBonus:{ engine:2 },
+      desc:'Géant pétrolier. Partenariat technique avec carburant optimisé.',
+      clauses:[
+        { type:'points',     target:80, bonus:10,  penalty:-5  },
+        { type:'podiums',    target:4,  bonus:5,   penalty:0   },
+        { type:'media',      target:60, bonus:4,   penalty:-3  },
+      ],
+      exclusivity:'energy', breakClause:false,
+    },
+    {
+      id:'petronas',     name:'Petronas',         logo:'🔷', category:'energy',
+      type:'title',      baseValue:50, maxValue:65, duration:2,
+      reputationMin:{ sport:65, media:55, tech:65, finance:60 },
+      personality:'developer',
+      techBonus:{ engine:1, reliability:1 },
+      desc:'Partenaire technique moteur. Offre augmente avec tes performances.',
+      clauses:[
+        { type:'points',     target:60, bonus:8,   penalty:-4  },
+        { type:'dnf_max',    target:5,  bonus:0,   penalty:-6  },
+        { type:'position_up',target:2,  bonus:12,  penalty:0   }, // gagner 2 places au constructeur
+      ],
+      exclusivity:'energy', breakClause:false,
+    },
+    {
+      id:'cognizant',    name:'Cognizant',         logo:'🟠', category:'tech',
+      type:'title',      baseValue:35, maxValue:50, duration:2,
+      reputationMin:{ sport:55, media:50, tech:60, finance:55 },
+      personality:'developer',
+      techBonus:{ tokens:1 },
+      desc:'Société IT en croissance. Idéal pour les équipes en progression.',
+      clauses:[
+        { type:'points',     target:40, bonus:5,   penalty:-3  },
+        { type:'position_up',target:1,  bonus:8,   penalty:0   },
+      ],
+      exclusivity:'tech', breakClause:false,
+    },
+
+    // ── PRINCIPAL SPONSORS (2-3 max) ──────────────────────────
+    {
+      id:'heineken',     name:'Heineken 0.0',      logo:'🍺', category:'beverage',
+      type:'principal',  baseValue:22, maxValue:30, duration:2,
+      reputationMin:{ sport:50, media:65, tech:30, finance:45 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Sponsor historique F1. Priorité à la visibilité TV et aux podiums.',
+      clauses:[
+        { type:'media',      target:50, bonus:4,   penalty:-2  },
+        { type:'podiums',    target:2,  bonus:3,   penalty:0   },
+        { type:'top10',      target:12, bonus:2,   penalty:-2  },
+      ],
+      exclusivity:'beverage', breakClause:false,
+    },
+    {
+      id:'monster',      name:'Monster Energy',    logo:'🟢', category:'beverage',
+      type:'principal',  baseValue:25, maxValue:35, duration:2,
+      reputationMin:{ sport:55, media:60, tech:30, finance:40 },
+      personality:'opportunist',
+      techBonus:{},
+      desc:'Marque lifestyle agressive. Paye bien mais part si les résultats ne suivent pas.',
+      clauses:[
+        { type:'podiums',    target:4,  bonus:6,   penalty:-5  },
+        { type:'top5',       target:6,  bonus:3,   penalty:-3  },
+        { type:'media',      target:40, bonus:2,   penalty:0   },
+      ],
+      exclusivity:'beverage', breakClause:true,
+    },
+    {
+      id:'aws',          name:'AWS',               logo:'🟡', category:'tech',
+      type:'principal',  baseValue:18, maxValue:28, duration:2,
+      reputationMin:{ sport:40, media:40, tech:55, finance:50 },
+      personality:'developer',
+      techBonus:{ tokens:1 },
+      desc:'Amazon Web Services. Bonus tokens R&D pour l\'analyse de données.',
+      clauses:[
+        { type:'races',      target:20, bonus:3,   penalty:-1  },
+        { type:'top10',      target:8,  bonus:2,   penalty:0   },
+      ],
+      exclusivity:'tech', breakClause:false,
+    },
+    {
+      id:'dhl',          name:'DHL',               logo:'🟠', category:'logistics',
+      type:'principal',  baseValue:15, maxValue:22, duration:3,
+      reputationMin:{ sport:35, media:35, tech:30, finance:40 },
+      personality:'loyal',
+      techBonus:{ logistics:0.1 }, // -10% coût opérationnel GP
+      desc:'Logistique officielle F1. Réduit tes coûts opérationnels.',
+      clauses:[
+        { type:'races',      target:23, bonus:2,   penalty:-1  },
+        { type:'top10',      target:5,  bonus:1,   penalty:0   },
+      ],
+      exclusivity:'logistics', breakClause:false,
+    },
+    {
+      id:'rolex',        name:'Rolex',             logo:'⌚', category:'luxury',
+      type:'principal',  baseValue:30, maxValue:40, duration:3,
+      reputationMin:{ sport:75, media:70, tech:40, finance:75 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Prestige et tradition. Ne signe qu\'avec les meilleures équipes.',
+      clauses:[
+        { type:'podiums',    target:5,  bonus:6,   penalty:-8  },
+        { type:'position',   target:5,  bonus:4,   penalty:-10 }, // rester top 5 constructeurs
+        { type:'dnf_max',    target:3,  bonus:0,   penalty:-5  },
+      ],
+      exclusivity:'luxury', breakClause:true,
+    },
+    {
+      id:'shell',        name:'Shell',             logo:'🔴', category:'energy',
+      type:'principal',  baseValue:20, maxValue:28, duration:2,
+      reputationMin:{ sport:45, media:40, tech:55, finance:50 },
+      personality:'developer',
+      techBonus:{ engine:1 },
+      desc:'Carburant et lubrifiants. Améliore les performances moteur.',
+      clauses:[
+        { type:'points',     target:30, bonus:4,   penalty:-2  },
+        { type:'races',      target:18, bonus:2,   penalty:0   },
+      ],
+      exclusivity:'energy', breakClause:false,
+    },
+    {
+      id:'bwt',          name:'BWT',               logo:'🩷', category:'tech',
+      type:'principal',  baseValue:12, maxValue:18, duration:2,
+      reputationMin:{ sport:30, media:30, tech:35, finance:30 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Traitement de l\'eau. Sponsor accessible, idéal pour démarrer.',
+      clauses:[
+        { type:'races',      target:15, bonus:2,   penalty:-1  },
+      ],
+      exclusivity:'water', breakClause:false,
+    },
+
+    // ── TECHNICAL PARTNERS (illimité) ─────────────────────────
+    {
+      id:'pirelli_p',    name:'Pirelli Data',      logo:'🛞', category:'tyre',
+      type:'partner',    baseValue:5,  maxValue:8,  duration:1,
+      reputationMin:{ sport:30, media:20, tech:40, finance:25 },
+      personality:'loyal',
+      techBonus:{ tyreDeg:-0.05 }, // -5% dégradation
+      desc:'Données pneumatiques partagées. Améliore ta gestion des pneus.',
+      clauses:[
+        { type:'races',      target:20, bonus:1,   penalty:0   },
+      ],
+      exclusivity:null, breakClause:false,
+    },
+    {
+      id:'google',       name:'Google Chrome',     logo:'🌐', category:'tech',
+      type:'partner',    baseValue:8,  maxValue:14, duration:2,
+      reputationMin:{ sport:40, media:55, tech:50, finance:45 },
+      personality:'opportunist',
+      techBonus:{ tokens:1 },
+      desc:'Visibilité digitale mondiale. Bonus tokens via analyse data.',
+      clauses:[
+        { type:'media',      target:30, bonus:2,   penalty:-2  },
+        { type:'top10',      target:6,  bonus:1,   penalty:0   },
+      ],
+      exclusivity:'tech', breakClause:true,
+    },
+    {
+      id:'castore',      name:'Castore',           logo:'👕', category:'apparel',
+      type:'partner',    baseValue:6,  maxValue:10, duration:2,
+      reputationMin:{ sport:30, media:35, tech:20, finance:30 },
+      personality:'developer',
+      techBonus:{},
+      desc:'Équipementier sportif. Évolue avec ta popularité.',
+      clauses:[
+        { type:'races',      target:15, bonus:1,   penalty:0   },
+        { type:'media',      target:20, bonus:2,   penalty:0   },
+      ],
+      exclusivity:'apparel', breakClause:false,
+    },
+    {
+      id:'santander',    name:'Santander',         logo:'🏦', category:'finance',
+      type:'partner',    baseValue:14, maxValue:20, duration:2,
+      reputationMin:{ sport:55, media:50, tech:35, finance:65 },
+      personality:'loyal',
+      techBonus:{},
+      desc:'Banque internationale. Stabilité financière et loyauté.',
+      clauses:[
+        { type:'points',     target:25, bonus:3,   penalty:-2  },
+        { type:'position',   target:8,  bonus:2,   penalty:-3  },
+      ],
+      exclusivity:'finance', breakClause:false,
+    },
+  ],
+
+  // ── INITIALISER LES SPONSORS D'UNE NOUVELLE CARRIÈRE ──────
+  initCareer(save) {
+    if (!save) return;
+
+    // Réputation initiale selon l'équipe
+    const team = F1Data.teams.find(t => t.id === save.playerTeamId);
+    const baseRep = Math.round((team?.performance || 70) * 0.7);
+
+    save.reputation = save.reputation || {
+      sport:    baseRep,
+      media:    Math.max(20, baseRep - 10),
+      tech:     Math.max(20, baseRep - 5),
+      finance:  Math.max(20, baseRep - 8),
+    };
+
+    save.sponsors     = save.sponsors     || [];
+    save.sponsorOffers= save.sponsorOffers|| [];
+    save.sponsorHistory = save.sponsorHistory || [];
+
+    // Générer les offres initiales selon la réputation
+    this.generateMarketOffers(save);
+    Save.save(save);
+  },
+
+  // ── GÉNÉRER LES OFFRES DU MARCHÉ ──────────────────────────
+  generateMarketOffers(save) {
+    const rep     = save.reputation || { sport:40, media:40, tech:40, finance:40 };
+    const active  = (save.sponsors||[]).map(s => s.id);
+    const excls   = (save.sponsors||[]).map(s => s.exclusivity).filter(Boolean);
+
+    // Filtrer les sponsors accessibles
+    const available = this.DB.filter(sp => {
+      if (active.includes(sp.id)) return false;
+      if (sp.exclusivity && excls.includes(sp.exclusivity)) return false;
+      // Vérifier chaque dimension de réputation
+      const r = sp.reputationMin;
+      if (rep.sport   < (r.sport   || 0)) return false;
+      if (rep.media   < (r.media   || 0)) return false;
+      if (rep.tech    < (r.tech    || 0)) return false;
+      if (rep.finance < (r.finance || 0)) return false;
+      return true;
+    });
+
+    // Garder max 6 offres actives, avec variation aléatoire
+    const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 6);
+
+    save.sponsorOffers = shuffled.map(sp => ({
+      ...sp,
+      offerValue:   Math.round(sp.baseValue * (0.9 + Math.random() * 0.2)),
+      expiresAt:    (save.race || 0) + 4, // expire dans 4 courses
+    }));
+  },
+
+  // ── SIGNER UN CONTRAT ─────────────────────────────────────
+  sign(save, sponsorId, negotiatedValue, negotiatedObjectives) {
+    const sp = this.DB.find(s => s.id === sponsorId);
+    if (!sp) return { ok:false, reason:'Sponsor introuvable' };
+
+    // Vérifier type unique pour title
+    if (sp.type === 'title' && (save.sponsors||[]).some(s => s.type === 'title')) {
+      return { ok:false, reason:'Tu as déjà un title sponsor !' };
+    }
+
+    // Vérifier exclusivité
+    const excls = (save.sponsors||[]).map(s => s.exclusivity).filter(Boolean);
+    if (sp.exclusivity && excls.includes(sp.exclusivity)) {
+      return { ok:false, reason:`Exclusivité ${sp.exclusivity} déjà prise` };
+    }
+
+    const contract = {
+      id:          sp.id,
+      name:        sp.name,
+      logo:        sp.logo,
+      category:    sp.category,
+      type:        sp.type,
+      exclusivity: sp.exclusivity,
+      personality: sp.personality,
+      techBonus:   sp.techBonus,
+      value:       negotiatedValue || sp.baseValue,
+      duration:    sp.duration,
+      remainingSeasons: sp.duration,
+      clauses:     negotiatedObjectives || sp.clauses.map(c => ({ ...c, progress:0 })),
+      signedAt:    save.season || 2025,
+      breakClause: sp.breakClause,
+      satisfied:   true,
+    };
+
+    save.sponsors = save.sponsors || [];
+    save.sponsors.push(contract);
+
+    // Supprimer de la liste des offres
+    save.sponsorOffers = (save.sponsorOffers||[]).filter(o => o.id !== sponsorId);
+
+    // Appliquer les bonus techniques
+    this.applyTechBonuses(save);
+
+    // Log news
+    if (save.news) save.news.push({
+      icon:'🤝', category:'sponsor',
+      title:`Nouveau sponsor : ${sp.name}`,
+      text:`Contrat ${sp.duration} an(s) signé pour ${contract.value}M€/an. ${sp.desc}`,
+    });
+
+    return { ok:true, contract };
+  },
+
+  // ── BONUS TECHNIQUES ──────────────────────────────────────
+  applyTechBonuses(save) {
+    save.sponsorBonuses = { tokens:0, engine:0, tyreDeg:0, logistics:0 };
+    (save.sponsors||[]).forEach(sp => {
+      if (!sp.techBonus) return;
+      Object.entries(sp.techBonus).forEach(([key, val]) => {
+        save.sponsorBonuses[key] = (save.sponsorBonuses[key]||0) + val;
+      });
+    });
+  },
+
+  // ── PROGRESSION OBJECTIFS APRÈS COURSE ────────────────────
+  updateAfterRace(save, raceResult) {
+    if (!save?.sponsors?.length || !raceResult) return;
+
+    const playerResults = raceResult.results?.filter(r => r.teamId === save.playerTeamId) || [];
+    const bestPos       = playerResults.length ? Math.min(...playerResults.map(r => r.position||20)) : 20;
+    const teamPoints    = playerResults.reduce((s,r) => s+(r.points||0), 0);
+    const dnfs          = playerResults.filter(r => r.status === 'dnf').length;
+
+    // Calculer la réputation médiatique (podiums et incidents visibles)
+    const mediaScore = (bestPos <= 3 ? 3 : bestPos <= 10 ? 1 : 0);
+
+    // Mettre à jour chaque contrat
+    (save.sponsors||[]).forEach(sp => {
+      (sp.clauses||[]).forEach(cl => {
+        cl.progress = cl.progress || 0;
+        switch(cl.type) {
+          case 'podiums':    if (bestPos <= 3)  cl.progress++;          break;
+          case 'top5':       if (bestPos <= 5)  cl.progress++;          break;
+          case 'top10':      if (bestPos <= 10) cl.progress++;          break;
+          case 'quali_top5': if (save.lastQualiPos <= 5) cl.progress++; break;
+          case 'points':     cl.progress += teamPoints;                  break;
+          case 'races':      cl.progress++;                              break;
+          case 'media':      cl.progress += mediaScore;                  break;
+          case 'dnf_max':    cl.progress += dnfs;                        break; // ici progress = nbr DNF
+        }
+      });
+    });
+
+    // Mettre à jour la réputation
+    save.reputation = save.reputation || { sport:40, media:40, tech:40, finance:40 };
+    if (bestPos <= 3)  { save.reputation.sport  = Math.min(100, save.reputation.sport  + 2); save.reputation.media = Math.min(100, save.reputation.media + 2); }
+    if (bestPos <= 10) { save.reputation.sport  = Math.min(100, save.reputation.sport  + 1); }
+    if (dnfs > 0)      { save.reputation.sport  = Math.max(0,   save.reputation.sport  - 1); save.reputation.tech  = Math.max(0, save.reputation.tech - 1); }
+
+    Save.save(save);
+  },
+
+  // ── FIN DE SAISON ─────────────────────────────────────────
+  endOfSeason(save, playerPos) {
+    if (!save) return { gained:0, lost:0, renewed:0, bonuses:0 };
+
+    let gained=0, lost=0, renewed=0, bonuses=0;
+
+    (save.sponsors||[]).forEach(sp => {
+      // Calculer si objectifs atteints
+      let allMet=true, totalBonus=0, totalPenalty=0;
+
+      (sp.clauses||[]).forEach(cl => {
+        const isMet = cl.type === 'dnf_max'
+          ? cl.progress <= cl.target  // inversé : pénalité si trop de DNF
+          : cl.progress >= cl.target;
+
+        if (isMet) {
+          totalBonus += (cl.bonus || 0);
+        } else {
+          allMet = false;
+          totalPenalty += Math.abs(cl.penalty || 0);
+        }
+      });
+
+      // Vérifier break clause (chute classement)
+      const breakTriggered = sp.breakClause && playerPos > 6 && sp.personality === 'opportunist';
+
+      if (breakTriggered || (!allMet && sp.personality === 'opportunist' && totalPenalty > 10)) {
+        // Sponsor opportuniste déçu → part
+        save.sponsorHistory = save.sponsorHistory || [];
+        save.sponsorHistory.push({ ...sp, endReason: breakTriggered ? 'break_clause' : 'objectives_missed', endSeason: save.season });
+        save.sponsors = save.sponsors.filter(s => s.id !== sp.id);
+        save.budget = Math.round(((save.budget||0) - totalPenalty) * 10) / 10;
+        lost++;
+
+        if (save.news) save.news.push({
+          icon:'💔', category:'sponsor',
+          title:`${sp.name} quitte l'équipe`,
+          text:`Objectifs non atteints. Pénalité : ${totalPenalty}M€.`,
+        });
+      } else {
+        // Appliquer bonus/pénalités
+        const net = totalBonus - (allMet ? 0 : totalPenalty * 0.5); // pénalité réduite si loyal
+        save.budget = Math.round(((save.budget||0) + net) * 10) / 10;
+        bonuses += net;
+
+        // Réduire la durée restante
+        sp.remainingSeasons = (sp.remainingSeasons||sp.duration) - 1;
+
+        if (sp.remainingSeasons <= 0) {
+          // Contrat terminé — proposition de renouvellement ?
+          if (allMet || sp.personality === 'loyal') {
+            // Proposer un renouvellement amélioré
+            const newValue = Math.round(sp.value * (allMet ? 1.15 : 1.0));
+            sp.value    = Math.min(sp.maxValue || sp.value * 1.5, newValue);
+            sp.remainingSeasons = sp.duration;
+            sp.clauses.forEach(cl => { cl.progress = 0; });
+            renewed++;
+            if (save.news) save.news.push({
+              icon:'🔄', category:'sponsor',
+              title:`${sp.name} renouvelle !`,
+              text:`Nouveau contrat ${sp.duration} ans à ${sp.value}M€/an.`,
+            });
+          } else {
+            save.sponsors = save.sponsors.filter(s => s.id !== sp.id);
+            lost++;
+          }
+        } else {
+          // Reset progress pour la nouvelle saison
+          sp.clauses.forEach(cl => { cl.progress = 0; });
+        }
+
+        // Sponsor développeur — augmente si progression classement
+        if (sp.personality === 'developer' && playerPos <= 6) {
+          sp.value = Math.min(sp.maxValue || sp.value*1.5, Math.round(sp.value * 1.08));
+        }
+      }
+    });
+
+    // Réputation globale évolue selon classement
+    const rep = save.reputation || {};
+    const repBonus = playerPos <= 3 ? 5 : playerPos <= 6 ? 2 : playerPos <= 10 ? 0 : -2;
+    save.reputation = {
+      sport:   Math.max(10, Math.min(100, (rep.sport||40)   + repBonus)),
+      media:   Math.max(10, Math.min(100, (rep.media||40)   + repBonus - 1)),
+      tech:    Math.max(10, Math.min(100, (rep.tech||40)    + Math.round(repBonus * 0.7))),
+      finance: Math.max(10, Math.min(100, (rep.finance||40) + Math.round(repBonus * 0.5))),
+    };
+
+    // Générer de nouvelles offres pour la saison suivante
+    this.generateMarketOffers(save);
+
+    this.applyTechBonuses(save);
+    Save.save(save);
+
+    return { gained, lost, renewed, bonuses };
+  },
+
+  // ── CALCULER LE REVENU ANNUEL TOTAL ───────────────────────
+  totalAnnualValue(save) {
+    return (save.sponsors||[]).reduce((s, sp) => s + (sp.value||0), 0);
+  },
+
+  // ── NIVEAU DE RÉPUTATION EN TEXTE ─────────────────────────
+  repLabel(val) {
+    if (val >= 85) return { label:'Légendaire', color:'#f5c842' };
+    if (val >= 70) return { label:'Excellente',  color:'#00d97e' };
+    if (val >= 55) return { label:'Bonne',        color:'#3d7eff' };
+    if (val >= 40) return { label:'Moyenne',      color:'#ff8c42' };
+    return               { label:'Faible',        color:'#e8003d' };
+  },
+
+  // ── PROBABILITÉ D'ACCEPTATION CONTRE-OFFRE ────────────────
+  acceptanceProbability(save, sp, offeredValue) {
+    const rep = save.reputation || { sport:40, media:40, tech:40, finance:40 };
+    const r   = sp.reputationMin || {};
+
+    // Score de réputation (0-1)
+    const repScore = (
+      Math.min(1, rep.sport   / (r.sport   || 50)) +
+      Math.min(1, rep.media   / (r.media   || 50)) +
+      Math.min(1, rep.tech    / (r.tech    || 50)) +
+      Math.min(1, rep.finance / (r.finance || 50))
+    ) / 4;
+
+    // Ratio valeur offerte vs valeur max
+    const valueRatio = offeredValue / (sp.maxValue || sp.baseValue * 1.4);
+
+    // Probabilité finale
+    const prob = Math.min(0.95, repScore * 0.6 + valueRatio * 0.4);
+    return Math.round(prob * 100);
+  },
+};

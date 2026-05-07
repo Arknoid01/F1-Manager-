@@ -205,24 +205,25 @@ const Save = {
     // Récompense course de base
     const reward = 5 + teamPoints + (bestPosition <= 3 ? 12 : bestPosition <= 10 ? 5 : 0);
 
-    // Tokens performance-based — plus de token garanti
-    // Petite équipe (~0 podiums) : ~15-20/saison → doit choisir 2-3 domaines
-    // Top équipe (~8 podiums)    : ~40-50/saison → peut tout développer en 2 ans
-    const tokens = (teamPoints > 0 ? 1 : 0)      // top 10 = 1 token
+    // Tokens performance-based + 1 garanti (évite le blocage total)
+    // Petite équipe (~0 podiums) : ~20-25/saison → doit choisir 2-3 domaines
+    // Top équipe (~8 podiums)    : ~45-55/saison → peut tout développer en 2 ans
+    const tokens = 1                               // minimum garanti
+                 + (teamPoints > 0 ? 1 : 0)       // top 10 = +1
                  + (bestPosition <= 5  ? 1 : 0)   // top 5  = +1
                  + (bestPosition <= 3  ? 1 : 0)   // podium = +1
-                 + (bestPosition === 1 ? 1 : 0);  // victoire = +1 (max 4/course)
+                 + (bestPosition === 1 ? 1 : 0);  // victoire = +1 (max 5/course)
 
-    // Progression sponsors
+    // Progression sponsors via le nouveau système
     let sponsorBonus = 0;
-    (save.sponsors || []).forEach(sp => {
-      if (sp.paid) return;
-      if (sp.type === 'races')  sp.progress = Math.min(sp.target, (sp.progress||0)+1);
-      if (sp.type === 'top10'  && bestPosition <= 10) sp.progress = Math.min(sp.target,(sp.progress||0)+1);
-      if (sp.type === 'podium' && bestPosition <= 3)  sp.progress = Math.min(sp.target,(sp.progress||0)+1);
-      if (sp.type === 'points' && teamPoints > 0)     sp.progress = Math.min(sp.target,(sp.progress||0)+teamPoints);
-      if (sp.progress >= sp.target) { sp.paid = true; sponsorBonus += Number(sp.value)||0; }
-    });
+    if (typeof Sponsors !== 'undefined') {
+      Sponsors.updateAfterRace(save, { results: results.map(r => ({
+        teamId: r.team?.id, position: r.position||20, points: r.points||0, status: r.status
+      }))});
+    }
+    // Revenu annuel sponsors versé par course (base/23)
+    const annualSponsorIncome = (save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0);
+    sponsorBonus = Math.round(annualSponsorIncome / Math.max(1, F1Data.circuits.length) * 10) / 10;
 
     const currentRaceIndex = Number(save.race) || 0;
     const annualExpenses   = Number(save.finances?.expenses) || 0;
@@ -286,13 +287,19 @@ const Save = {
       }
 
       save.budget = Math.round((save.budget + concordePrize) * 10) / 10;
-      save.tokens = (save.tokens||0) + (playerPos <= 3 ? 8 : playerPos <= 6 ? 5 : playerPos <= 10 ? 3 : 1);
+      // Tokens fin de saison : minimum 2 garanti + bonus classement
+      save.tokens = (save.tokens||0) + Math.max(2, playerPos <= 3 ? 8 : playerPos <= 6 ? 5 : playerPos <= 10 ? 3 : 1);
       save.season = nextSeason;
       save.race   = 0;
       save.driverStandings = {};
       save.teamStandings   = {};
       save.raceResults     = [];
-      (save.sponsors||[]).forEach(sp=>{ sp.progress=0; sp.paid=false; });
+      // Fin de saison sponsors
+      if (typeof Sponsors !== 'undefined') {
+        Sponsors.endOfSeason(save, playerPos);
+      } else {
+        (save.sponsors||[]).forEach(sp=>{ sp.progress=0; sp.paid=false; });
+      }
 
       // Log info saison
       save._newSeasonBanner = `P${playerPos} constructeurs · ${concordePrize}M€ revenus Concorde${regulation?` · ⚠️ ${regulation.name} — nouveau règlement !`:''}`;
