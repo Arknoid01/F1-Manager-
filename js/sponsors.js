@@ -870,6 +870,9 @@ const Sponsors = {
     // Appliquer les bonus techniques
     this.applyTechBonuses(save);
 
+    // Régénérer le marché avec les nouvelles exclusivités
+    this.generateMarketOffers(save);
+
     // Sauvegarder
     Save.save(save);
 
