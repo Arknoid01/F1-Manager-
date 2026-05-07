@@ -616,17 +616,18 @@ function canHireStaffSafe(st) {
   const specialty = st.specialty || 'general';
 
   // Max 4 membres total
-  if (total >= 4) return { ok:false, reason:'Maximum 4 membres de staff atteint' };
-
-  // Max 1 elite/exclusif (Directeur Technique)
+  // Max 4 total : 1 élite + 3 spécialistes
+  const eliteCount = hired.filter(s => s.elite || s.exclusive).length;
+  const specCount   = hired.filter(s => !s.elite && !s.exclusive).length;
   if (st.elite || st.exclusive) {
-    const hasElite = hired.some(s => s.elite || s.exclusive);
-    if (hasElite) return { ok:false, reason:'Tu as déjà un Directeur Technique' };
+    if (eliteCount >= 1) return { ok:false, reason:'Tu as déjà un Directeur Technique' };
+    if (total >= 4) return { ok:false, reason:'Maximum 4 membres atteint' };
+  } else {
+    if (specCount >= 3) return { ok:false, reason:'Maximum 3 spécialistes atteint (1 élite + 3 spéc.)' };
+    if (total >= 4) return { ok:false, reason:'Maximum 4 membres atteint' };
   }
 
-  // Max 1 par spécialité
-  const sameSpec = hired.filter(s => s.specialty === specialty && !s.elite && !s.exclusive);
-  if (sameSpec.length >= 1) return { ok:false, reason:'1 expert max par spécialité (' + specialty + ')' };
+  // Pas de limite par spécialité — choix libre parmi les 3 slots
 
   return { ok:true };
 }
