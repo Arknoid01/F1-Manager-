@@ -1328,6 +1328,14 @@ function showResults() {
   let results = [];
   try { results = Race.assignPoints(); } catch(e) { console.error('[Race] Erreur assignPoints', e); }
   try { persistRaceResults(results); } catch(e) { console.error('[Race] Erreur sauvegarde résultats', e); }
+  // Déclencher événement post-course
+  try {
+    const sv2 = Save.load();
+    if (sv2 && typeof CareerEvents !== 'undefined') {
+      CareerEvents.triggerPostRace(sv2, { results });
+      Save.save(sv2);
+    }
+  } catch(e) { console.warn('[Race] triggerPostRace:', e); }
   const careerReward = Race.state?._careerReward;
   document.getElementById('resSub').textContent = `Grand Prix de ${Race.state.circuit.name}` + (careerReward ? ` · Gains équipe : +${careerReward.reward}M € · Frais GP : -${careerReward.operatingCost || 0}M € · +${careerReward.tokens} token${careerReward.tokens > 1 ? 's' : ''}` : '');
   const body = document.getElementById('resBody');
