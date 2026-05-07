@@ -794,13 +794,15 @@ const Sponsors = {
   generateMarketOffers(save) {
     const rep     = save.reputation || { sport:40, media:40, tech:40, finance:40 };
     const active  = (save.sponsors||[]).map(s => s.id);
+    // Exclusivités : uniquement les contrats du JOUEUR bloquent d'autres sponsors
     const excls   = (save.sponsors||[]).map(s => s.exclusivity).filter(Boolean);
 
-    // Filtrer les sponsors accessibles
+    // Filtrer : exclure les contrats actifs du joueur et ses exclusivités
+    // Les sponsors IA ne bloquent PAS le joueur (ils peuvent coexister)
     const available = this.DB.filter(sp => {
-      if (active.includes(sp.id)) return false;
-      if (sp.exclusivity && excls.includes(sp.exclusivity)) return false;
-      // Vérifier chaque dimension de réputation
+      if (active.includes(sp.id)) return false; // déjà signé par le joueur
+      if (sp.exclusivity && excls.includes(sp.exclusivity)) return false; // exclusivité joueur
+      // Vérifier la réputation
       const r = sp.reputationMin;
       if (rep.sport   < (r.sport   || 0)) return false;
       if (rep.media   < (r.media   || 0)) return false;
@@ -809,18 +811,14 @@ const Sponsors = {
       return true;
     });
 
-    // Afficher TOUS les sponsors accessibles + les inaccessibles (avec cadenas)
-    // Pas de limite — le joueur voit tout le marché
-    const shuffled = available.sort(() => Math.random() - 0.5);
-
-    // Ajouter aussi les sponsors inaccessibles (pour voir ce qui est possible plus tard)
+    // Sponsors inaccessibles (réputation insuffisante) — affichés avec cadenas
     const inaccessible = this.DB.filter(sp => {
       if (active.includes(sp.id)) return false;
       if (sp.exclusivity && excls.includes(sp.exclusivity)) return false;
       return !available.includes(sp);
-    }).slice(0, 10); // max 10 inaccessibles pour ne pas surcharger
+    }).slice(0, 12);
 
-    save.sponsorOffers = [...shuffled, ...inaccessible].map(sp => ({
+    save.sponsorOffers = [...available, ...inaccessible].map(sp => ({
       ...sp,
       offerValue: Math.round(sp.baseValue * (0.9 + Math.random() * 0.2)),
       expiresAt:  (save.race || 0) + 4,
