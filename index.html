@@ -317,10 +317,12 @@ function renderCarTiles(team) {
     {key:'reliability',label:'Fiabilité',icon:'🛡️',color:'var(--green)'},
   ];
   document.getElementById('carTiles').innerHTML=stats.map(s=>{
-    const base=team?.[s.key]||70;
-    const val=Math.min(100,(carDev[s.key]?.level||base)+Math.round((sb[s.key]||0)/5));
-    const bonus=sb[s.key]||0;
-    return `<div class="tile"><div class="tile-icon">${s.icon}</div><div class="tile-lbl">${s.label}</div><div class="tile-val" style="color:${s.color}">${val}${bonus>0?`<span style="font-size:13px;color:var(--green)"> +${bonus}</span>`:''}</div><div class="sbar"><div class="sbar-fill" style="width:${val}%;background:${s.color}"></div></div></div>`;
+    const base   = team?.[s.key]||70;
+    const devLvl = carDev[s.key]?.level || base;
+    const staffB = sb[s.key]||0;
+    // Même calcul que rd.html : dev.level + bonus staff direct
+    const val    = Math.min(100, devLvl + staffB);
+    return `<div class="tile"><div class="tile-icon">${s.icon}</div><div class="tile-lbl">${s.label}</div><div class="tile-val" style="color:${s.color}">${devLvl}${staffB>0?`<span style="font-size:13px;color:var(--green)"> +${staffB}</span>`:''}</div><div class="sbar"><div class="sbar-fill" style="width:${val}%;background:${s.color}"></div></div></div>`;
   }).join('');
 }
 
@@ -334,9 +336,9 @@ function renderNavTiles(team,drivers) {
   const tiles=[
     {href:'standings.html',icon:'🏆',lbl:'Championnat',val:pos>=0?`P${pos+1}`:'—',sub:`${myPts} pts constructeurs`,c:'var(--gold)'},
     {href:'drivers.html',icon:'👤',lbl:'Pilotes',val:`${drivers.length}`,sub:drivers.map(d=>d.name).join(' · '),c:'var(--blue)'},
-    {href:'staff.html',icon:'🧑‍🔧',lbl:'Staff',val:`${staffCount}/11`,sub:staffCount>0?`${staffCount} expert${staffCount>1?'s':''} en poste`:'Aucun staff recruté',c:'var(--purple)'},
+    {href:'staff.html',icon:'🧑‍🔧',lbl:'Staff',val:`${staffCount}/4`,sub:staffCount>0?`${staffCount} expert${staffCount>1?'s':''} en poste`:'Aucun staff recruté',c:'var(--purple)'},
     {href:'board.html',icon:'🏢',lbl:'Direction',val:`${save.boardPressure||0}%`,sub:'Pression du board',c:'var(--orange)'},
-    {href:'sponsors.html',icon:'🤝',lbl:'Sponsors',val:`${(save.sponsors||[]).length} contrats`,sub:`${(save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0)}M€/an`,c:'var(--green)'},
+    {href:'sponsors.html',icon:'🤝',lbl:'Sponsors',val:`${(save.sponsors||[]).length}/7`,sub:`${(save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0)}M€/an`,c:'var(--green)'},
     {href:'news.html',icon:'📰',lbl:'Actualités',val:`${(save.news||[]).length}`,sub:'événements récents',c:'var(--orange)'},
     {href:'rd.html',icon:'🔬',lbl:'R&D',val:`${save.tokens||0} tokens`,sub:`Budget R&D : ${save.rdBudget||0}M€`,c:'var(--blue)'},
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
