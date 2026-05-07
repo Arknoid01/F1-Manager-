@@ -183,7 +183,7 @@ const Sponsors = {
         { type:'points_finishes', target:6,  bonus:2,  penalty:-2  },
         { type:'top10',      target:6,  bonus:1,   penalty:0   },
       ],
-      exclusivity:'tech', breakClause:true,
+      exclusivity:null, breakClause:true,
     },
     {
       id:'castore',      name:'Castore',           logo:'👕', category:'apparel',
@@ -196,7 +196,7 @@ const Sponsors = {
         { type:'races',      target:15, bonus:1,   penalty:0   },
         { type:'points_finishes', target:4,  bonus:2,  penalty:0   },
       ],
-      exclusivity:'apparel', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'santander',    name:'Santander',         logo:'🏦', category:'finance',
@@ -209,7 +209,7 @@ const Sponsors = {
         { type:'points',     target:25, bonus:3,   penalty:-2  },
         { type:'position',   target:8,  bonus:2,   penalty:-3  },
       ],
-      exclusivity:'finance', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
 
     // ── NOUVEAUX SPONSORS ─────────────────────────────────────
@@ -373,7 +373,7 @@ const Sponsors = {
         { type:'races',      target:18, bonus:1,   penalty:0   },
         { type:'points_finishes', target:3,  bonus:1,  penalty:0   },
       ],
-      exclusivity:'food', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'dstelecom',    name:'DS Telecom',         logo:'📱', category:'telecom',
@@ -386,7 +386,7 @@ const Sponsors = {
         { type:'points_finishes', target:5,  bonus:2,  penalty:-1  },
         { type:'top10',      target:5,  bonus:1,   penalty:0   },
       ],
-      exclusivity:'telecom', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'hertz',        name:'Hertz',              logo:'🚗', category:'auto',
@@ -399,7 +399,7 @@ const Sponsors = {
         { type:'races',      target:16, bonus:2,   penalty:-1  },
         { type:'points',     target:15, bonus:1,   penalty:0   },
       ],
-      exclusivity:'auto', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
 
     // ── SPONSORS SUPPLÉMENTAIRES (total ~55) ─────────────────
@@ -576,7 +576,7 @@ const Sponsors = {
         { type:'races',      target:15, bonus:1,   penalty:0   },
         { type:'points_finishes', target:4,  bonus:1,  penalty:0   },
       ],
-      exclusivity:'sport_apparel', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'alpinestars',  name:'Alpinestars',         logo:'⭐', category:'racing_gear',
@@ -601,7 +601,7 @@ const Sponsors = {
         { type:'races',      target:16, bonus:1,   penalty:0   },
         { type:'top10',      target:4,  bonus:1,   penalty:0   },
       ],
-      exclusivity:'telecom2', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'norton',       name:'Norton LifeLock',     logo:'🛡️', category:'security',
@@ -613,7 +613,7 @@ const Sponsors = {
       clauses:[
         { type:'races',      target:15, bonus:1,   penalty:0   },
       ],
-      exclusivity:'security', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'smartsheet',   name:'Smartsheet',          logo:'📊', category:'saas',
@@ -626,7 +626,7 @@ const Sponsors = {
         { type:'races',      target:14, bonus:1,   penalty:0   },
         { type:'position_up',target:1,  bonus:2,   penalty:0   },
       ],
-      exclusivity:'saas', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'singha',       name:'Singha Beer',         logo:'🍻', category:'beverage2',
@@ -639,7 +639,7 @@ const Sponsors = {
         { type:'races',      target:15, bonus:1,   penalty:0   },
         { type:'points_finishes', target:3,  bonus:1,  penalty:0   },
       ],
-      exclusivity:'beverage2', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'chandon',      name:'Chandon',             logo:'🍾', category:'champagne',
@@ -652,7 +652,7 @@ const Sponsors = {
         { type:'podiums',    target:2,  bonus:2,   penalty:0   },
         { type:'races',      target:12, bonus:1,   penalty:0   },
       ],
-      exclusivity:'champagne', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'lenovo',       name:'Lenovo',              logo:'💡', category:'hardware',
@@ -665,7 +665,7 @@ const Sponsors = {
         { type:'races',      target:16, bonus:1,   penalty:0   },
         { type:'top10',      target:5,  bonus:1,   penalty:0   },
       ],
-      exclusivity:'hardware', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
     {
       id:'zoom',         name:'Zoom',                logo:'📹', category:'comms',
@@ -678,7 +678,7 @@ const Sponsors = {
         { type:'points_finishes', target:4,  bonus:1,  penalty:0   },
         { type:'races',      target:14, bonus:1,   penalty:0   },
       ],
-      exclusivity:'comms', breakClause:false,
+      exclusivity:null, breakClause:false,
     },
   ],
 
