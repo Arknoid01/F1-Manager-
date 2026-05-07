@@ -612,11 +612,15 @@ function launchRiskyConcept(domainKey) {
   const roll = Math.random();
   let gain, result;
   if (roll < outcomes.success.probability) {
-    gain = outcomes.success.gain; result = '🎉 Succès !';
+    gain = outcomes.success.gain;
+    result = '🎉 Succès !';
+    save.tokens = (save.tokens||0) + 1; // remboursement partiel si succès
   } else if (roll < outcomes.success.probability + outcomes.partial.probability) {
-    gain = outcomes.partial.gain; result = '✅ Succès partiel';
+    gain = outcomes.partial.gain;
+    result = '✅ Succès partiel';
   } else {
-    gain = outcomes.failure.gain; result = '❌ Échec';
+    gain = outcomes.failure.gain;
+    result = '❌ Échec';
   }
 
   dev.level = Math.max(45, Math.min(100, (dev.level||70) + gain));
