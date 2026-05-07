@@ -936,7 +936,13 @@ function startRace() {
   console.log('[2] Strategies');
   const wSave = Save.load();
   const weekendStrats = wSave?.raceStrategies || null;
-  const weather = wSave?.weekendWeather || 'dry';
+  // Initialiser la météo de course AVANT Race.init pour avoir les bons pneus de départ
+  const tempCircuit = F1Data.circuits.find(c => c.id === cid) || F1Data.circuits[0];
+  const tempWeatherData = typeof Weather !== 'undefined' ? Weather.initRaceWeather(tempCircuit, tempCircuit.laps) : null;
+  const startHumidity = tempWeatherData?.initialHumidity || 0;
+  const weather = startHumidity > 70 ? 'heavy_rain'
+                : startHumidity > 30 ? 'light_rain'
+                : 'dry';
   let strategies = weekendStrats;
   if (!strategies) {
     strategies = {};
@@ -957,7 +963,7 @@ function startRace() {
 
   console.log('[4] Weather');
   if (typeof Weather !== 'undefined' && Race.state) {
-    initRaceWeather(Race.state.circuit);
+    raceWeatherData = tempWeatherData || Weather.initRaceWeather(Race.state.circuit, Race.state.circuit.laps);
     currentHumidity = raceWeatherData?.initialHumidity || 0;
   }
   started = true;

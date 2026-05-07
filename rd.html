@@ -259,6 +259,7 @@ function init() {
   // Badges topbar
   document.getElementById('seasonBadge').textContent = `Saison ${save.season || 2025}`;
   document.getElementById('budgetBadge').textContent = `💰 ${Math.round((save.budget||0)*10)/10} M €`;
+  document.getElementById('tokenBadge').textContent  = `🔬 ${save.tokens} tokens`;
   document.getElementById('tokenBadge').textContent  = `🔬 ${save.tokens || 0} tokens`;
 
   renderAll();
@@ -656,6 +657,14 @@ function getSpecialization(save) {
 }
 
 function buyUpgrade(domainKey, upgradeId, isNextYear) {
+  // Toujours recharger la save fraîche avant d'acheter
+  save = Save.load();
+  if (!save.rdBudget) {
+    const team = F1Data.teams.find(t => t.id === save.playerTeamId);
+    save.rdBudget = Math.round((team?.budget || 200) * (F1Data.rdBudgetRatio||0.4));
+    save.rdBudgetTotal = save.rdBudget;
+  }
+
   const domain = F1Data.rdTree[domainKey];
   const upg    = isNextYear
     ? domain.nextYear
