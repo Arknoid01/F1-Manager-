@@ -205,6 +205,24 @@ function init() {
     return;
   }
 
+  // Migrer les anciens contrats (hydrater depuis DB)
+  if (save.sponsors?.length) {
+    save.sponsors = save.sponsors.map(sp => {
+      const db = Sponsors.DB.find(s => s.id === sp.id);
+      if (!db) return sp;
+      return {
+        ...sp,
+        logo:        sp.logo        || db.logo        || '📋',
+        type:        sp.type        || db.type        || 'partner',
+        personality: sp.personality || db.personality || 'loyal',
+        techBonus:   sp.techBonus   || db.techBonus   || {},
+        exclusivity: sp.exclusivity || db.exclusivity || null,
+        clauses:     sp.clauses?.length ? sp.clauses : db.clauses?.map(c=>({...c,progress:0})) || [],
+      };
+    });
+    Save.save(save);
+  }
+
   // Init sponsors si première visite
   if (!save.reputation) {
     Sponsors.initCareer(save);
@@ -285,6 +303,18 @@ function renderContracts() {
 }
 
 function buildContractCard(sp) {
+  // Hydrater depuis la DB si des champs manquent
+  const dbSp   = Sponsors.DB.find(s => s.id === sp.id) || {};
+  const merged = { ...dbSp, ...sp,
+    logo:        sp.logo        || dbSp.logo        || '📋',
+    type:        sp.type        || dbSp.type        || 'partner',
+    personality: sp.personality || dbSp.personality || 'loyal',
+    techBonus:   sp.techBonus   || dbSp.techBonus   || {},
+    clauses:     (sp.clauses?.length ? sp.clauses : null)
+                 || dbSp.clauses?.map(c=>({...c,progress:0}))
+                 || [],
+  };
+  sp = merged;
   const typeLabel = sp.type === 'title' ? 'TITLE' : sp.type === 'principal' ? 'PRINCIPAL' : 'PARTNER';
   const typeCls   = sp.type === 'title' ? 'title-sp' : sp.type === 'principal' ? 'principal-sp' : 'partner-sp';
   const typeBadge = sp.type === 'title' ? 'type-title' : sp.type === 'principal' ? 'type-principal' : 'type-partner';
@@ -587,8 +617,9 @@ function quickSign(sponsorId) {
 
 function refreshOffers() {
   Sponsors.generateMarketOffers(save);
+  Save.save(save);
   save = Save.load();
-  renderMarket();
+  renderAll();
   toast('🔄 Nouvelles offres générées !');
 }
 

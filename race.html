@@ -181,18 +181,6 @@
     .light-dot { width:22px; height:22px; border-radius:50%; background:#1a0000; border:2px solid #3a0000; transition:background .15s,box-shadow .15s; }
     .light-dot.on { background:#ff0000; box-shadow:0 0 12px #ff0000,0 0 24px #ff000066; border-color:#ff4444; }
   .entity-link{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}.entity-link:hover{color:var(--gold,#ffd700)}
-
-/* Topbar unifiée (style mobile staff) */
-.topbar{height:52px!important;background:var(--surface)!important;border-bottom:1px solid var(--border)!important;display:flex!important;align-items:center!important;padding:0 16px!important;gap:12px!important;position:sticky!important;top:0!important;z-index:100!important;box-shadow:none!important}
-.logo{font-family:var(--fh)!important;font-weight:900!important;font-size:22px!important;letter-spacing:3px!important;color:var(--accent)!important;white-space:nowrap!important;text-transform:none!important}
-.logo span{color:var(--text)!important}
-.back-home{font-family:var(--fh)!important;font-size:12px!important;color:var(--muted)!important;text-decoration:none!important;padding:4px 8px!important;border:1px solid var(--border)!important;border-radius:4px!important;background:transparent!important;line-height:1!important;white-space:nowrap!important}
-.back-home:hover{color:var(--text)!important;border-color:var(--accent)!important}
-.top-pills{margin-left:auto!important;display:flex!important;gap:8px!important;align-items:center!important}
-.pill{font-family:var(--fh)!important;font-weight:700!important;font-size:13px!important;padding:4px 12px!important;border-radius:20px!important;background:var(--surface2)!important;border:1px solid var(--border)!important;white-space:nowrap!important;line-height:1.2!important}
-.pill-gold{color:var(--gold)!important;border-color:#3a3400!important;background:#161200!important}
-.pill-muted{color:var(--muted)!important}
-@media(max-width:420px){.topbar{padding:0 12px!important;gap:8px!important}.logo{font-size:20px!important;letter-spacing:2px!important}.pill{font-size:12px!important;padding:4px 9px!important}.back-home{font-size:11px!important;padding:4px 7px!important}}
 </style>
 </head>
 <body>
@@ -200,16 +188,23 @@
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">F1<span>Manager</span></div>
-  <a href="index.html" class="back-home">← Accueil</a>
-  <div class="top-pills">
-    <div class="pill pill-muted" id="seasonBadge">—</div>
-    <div class="pill pill-gold" id="budgetBadge">—</div>
+  <a href="index.html" class="nav-link">🏠 Équipe</a>
+  <a href="race.html"  class="nav-link active">🏁 Course</a>
+  <a href="standings.html" class="nav-link">🏆 Champ.</a>
+  <a href="drivers.html" class="nav-link">👤 Pilotes & Contrats</a>
+  <div class="tb-right">
+    <div class="lap-pill" id="tLap">Tour <b>0</b>/<span id="tTotal">—</span></div>
+    <div id="wBadge" class="w-badge w-dry" onclick="toggleWeatherPopup()" style="cursor:pointer" title="Voir les prévisions météo">☀️ SEC</div>
+    <!-- POPUP MÉTÉO -->
+    <div id="weatherPopup" style="display:none;position:fixed;top:56px;right:10px;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,.6)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-family:var(--fh);font-weight:900;font-size:14px;letter-spacing:2px;text-transform:uppercase">🌦️ Météo & Piste</div>
+        <button onclick="toggleWeatherPopup()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div id="weatherPopupContent"><div style="color:var(--muted);font-family:var(--fh);font-size:12px">Lance une course pour voir les prévisions.</div></div>
+    </div>
+    <div id="scPill" class="sc-pill">🟡 SC</div>
   </div>
-</div>
-<div class="race-topbar-data" aria-hidden="true" style="display:none">
-  <div id="tLap">Tour <b>0</b>/<span id="tTotal">—</span></div>
-  <div id="wBadge" class="w-badge w-dry">☀️ SEC</div>
-  <div id="weatherPopup"><div id="weatherPopupContent"></div></div>
 </div>
 
 <!-- PAGE -->
@@ -340,6 +335,7 @@
 <script src="js/weekend.js"></script>
 <script src="js/race.js"></script>
 <script src="js/save.js"></script>
+<script src="js/sponsors.js"></script>
 <script src="js/career.js"></script>
 <script src="js/profiles.js"></script>
 <script src="js/events.js"></script>
@@ -1461,12 +1457,16 @@ const Telem = {
   },
   updateAll(){
     if(!Race.state)return;
-    const save=Save.load(),pid=save?.playerTeamId,standings=Race.getStandings();
-    // Pneus
-    const tc=pid?standings.filter(c=>c.driver.teamId===pid):standings.slice(0,2);
-    this.drawChart('canvasTyres',tc.map(car=>({color:F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.tyreH[car.driver.id]||[]})),{minY:0,maxY:100,dangerLine:20});
+    const save=Save.load(),pid=save?.playerTeamId;
+    const standings=Race.getStandings();
+    // Pneus - pilotes joueur (match insensible à la casse)
+    const tc = pid
+      ? standings.filter(c => c.driver.teamId?.toLowerCase() === pid?.toLowerCase())
+      : standings.slice(0,2);
+    const tcFinal = tc.length ? tc : standings.slice(0,2);
+    this.drawChart('canvasTyres',tcFinal.map(car=>({color:F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.tyreH[car.driver.id]||[]})),{minY:0,maxY:100,dangerLine:20});
     const tyL=document.getElementById('tyresLegend');
-    if(tyL)tyL.innerHTML=tc.map(car=>{const col=F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const ty=F1Data.tyres[car.tyre.compound];return`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div>${Profiles.linkDriver(car.driver)} — <span style="color:${ty.color}">${ty.name}</span> ${Math.round(car.tyre.condition*100)}%</div>`;}).join('');
+    if(tyL)tyL.innerHTML=tcFinal.map(car=>{const col=F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff';const ty=F1Data.tyres[car.tyre.compound];return`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div>${Profiles.linkDriver(car.driver)} — <span style="color:${ty.color}">${ty.name}</span> ${Math.round(car.tyre.condition*100)}%</div>`;}).join('');
     // Rythme
     const top5=standings.filter(c=>c.status==='racing').slice(0,5),base=Race.state.circuit.baseLapTime;
     this.drawChart('canvasPace',top5.map(car=>({color:F1Data.teams.find(t=>t.id===car.driver.teamId)?.color||'#fff',data:this.paceH[car.driver.id]||[]})),{minY:base-2,maxY:base+10});
@@ -1535,21 +1535,6 @@ function restoreDriverStates() {
 restoreDriverStates();
 
 initSel();
-</script>
-
-<script>
-(function(){
-  function syncUnifiedTopbar(){
-    try{
-      const save = ((window.Save && Save.load) ? Save.load() : null) || JSON.parse(localStorage.getItem('f1manager_v1') || localStorage.getItem('f1manager_save') || localStorage.getItem('f1-manager-save') || '{}') || {};
-      const season = document.getElementById('seasonBadge');
-      const budget = document.getElementById('budgetBadge');
-      if(season && (!season.textContent || season.textContent.trim()==='—')) season.textContent = `Saison ${save.season || 2025}`;
-      if(budget && (!budget.textContent || budget.textContent.trim()==='—')) budget.textContent = `💰 ${Math.round((save.budget || 0)*10)/10}M €`;
-    }catch(e){}
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',syncUnifiedTopbar); else syncUnifiedTopbar();
-})();
 </script>
 </body>
 </html>
