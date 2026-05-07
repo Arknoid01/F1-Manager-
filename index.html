@@ -261,7 +261,12 @@ function confirmTeam() {
   newSave.carDev={aero:{level:team.aero,upgrades:0},chassis:{level:team.chassis,upgrades:0},engine:{level:team.engine,upgrades:0},reliability:{level:team.reliability,upgrades:0},pitstop:{level:50,upgrades:0}};
   // Réputation initiale basée sur la performance de l'équipe
   const baseRep = Math.round(team.performance * 0.55);
-  newSave.reputation = { sport:Math.max(30,baseRep), media:Math.max(25,baseRep-5), tech:Math.max(25,baseRep-3), finance:Math.max(25,baseRep-5) };
+  newSave.reputation = { 
+    sport:   Math.max(40, baseRep), 
+    media:   Math.max(35, baseRep-5), 
+    tech:    Math.max(35, baseRep-3), 
+    finance: Math.max(35, baseRep-5) 
+  };
   Save.save(newSave); save=newSave;
   restoreDriverStates(newSave); migrateSave(newSave);
   showDashboard(); showToast(`✅ ${team.name} sélectionné !`);

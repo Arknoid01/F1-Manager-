@@ -223,6 +223,14 @@ function init() {
     Save.save(save);
   }
 
+  // Forcer réputation minimale de 30 (évite les saves corrompues)
+  if (save.reputation) {
+    save.reputation.sport   = Math.max(30, save.reputation.sport   || 30);
+    save.reputation.media   = Math.max(25, save.reputation.media   || 25);
+    save.reputation.tech    = Math.max(25, save.reputation.tech    || 25);
+    save.reputation.finance = Math.max(25, save.reputation.finance || 25);
+  }
+
   // Init réputation si première visite
   if (!save.reputation) {
     Sponsors.initCareer(save);
