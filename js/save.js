@@ -214,16 +214,33 @@ const Save = {
                  + (bestPosition <= 3  ? 1 : 0)   // podium = +1
                  + (bestPosition === 1 ? 1 : 0);  // victoire = +1 (max 5/course)
 
-    // Progression sponsors via le nouveau système
+    // Revenus sponsors — 3 versements clairs dans la saison
     let sponsorBonus = 0;
     if (typeof Sponsors !== 'undefined') {
       Sponsors.updateAfterRace(save, { results: results.map(r => ({
         teamId: r.team?.id, position: r.position||20, points: r.points||0, status: r.status
       }))});
     }
-    // Revenu annuel sponsors versé par course (base/23)
-    const annualSponsorIncome = (save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0);
-    sponsorBonus = Math.round(annualSponsorIncome / Math.max(1, F1Data.circuits.length) * 10) / 10;
+
+    const totalSponsorAnnual = (save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0);
+    const raceIdx = Number(save.race) || 0;
+    const totalRaces = F1Data.circuits.length;
+    const midPoint = Math.floor(totalRaces / 2);
+
+    // Versement 1 : 40% au démarrage (course 1)
+    if (raceIdx === 0 && totalSponsorAnnual > 0) {
+      sponsorBonus = Math.round(totalSponsorAnnual * 0.40 * 10) / 10;
+      if (save.news) save.news.push({ icon:'💰', category:'finance',
+        title:'Versement sponsors — Début de saison',
+        text:`40% des contrats sponsors versés : +${sponsorBonus}M€` });
+    }
+    // Versement 2 : 30% à mi-saison
+    else if (raceIdx === midPoint && totalSponsorAnnual > 0) {
+      sponsorBonus = Math.round(totalSponsorAnnual * 0.30 * 10) / 10;
+      if (save.news) save.news.push({ icon:'💰', category:'finance',
+        title:'Versement sponsors — Mi-saison',
+        text:`30% des contrats sponsors versés : +${sponsorBonus}M€` });
+    }
 
     const currentRaceIndex = Number(save.race) || 0;
     const annualExpenses   = Number(save.finances?.expenses) || 0;
@@ -294,9 +311,14 @@ const Save = {
       save.driverStandings = {};
       save.teamStandings   = {};
       save.raceResults     = [];
-      // Fin de saison sponsors
+      // Fin de saison sponsors — versement final 30% + bonus/pénalités
       if (typeof Sponsors !== 'undefined') {
-        Sponsors.endOfSeason(save, playerPos);
+        const finalPayment = Math.round(totalSponsorAnnual * 0.30 * 10) / 10;
+        save.budget = Math.round(((save.budget||0) + finalPayment) * 10) / 10;
+        const result = Sponsors.endOfSeason(save, playerPos);
+        if (save.news) save.news.push({ icon:'💰', category:'finance',
+          title:'Versement sponsors — Fin de saison',
+          text:`30% final : +${finalPayment}M€. Bonus objectifs : +${Math.max(0,result.bonuses)}M€. Contrats renouvelés : ${result.renewed}. Perdus : ${result.lost}.` });
       } else {
         (save.sponsors||[]).forEach(sp=>{ sp.progress=0; sp.paid=false; });
       }

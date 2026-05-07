@@ -32,6 +32,17 @@ const Engine = {
     // Écart max top/backmarker : 0.75s/tour
     lapTime += (85 - team.performance) * 0.030;
 
+    // ── 1b. Bonus sponsors techniques (engine, tyreDeg via save) ─
+    try {
+      const _sv = typeof Save !== 'undefined' ? Save.load() : null;
+      if (_sv?.sponsorBonuses) {
+        // Bonus moteur sponsor (Shell/Gulf/Petronas)
+        if (_sv.sponsorBonuses.engine) {
+          lapTime -= _sv.sponsorBonuses.engine * 0.015;
+        }
+      }
+    } catch(e) {}
+
     // ── 2. Skill pilote ───────────────────────────────────
     lapTime += (87 - driver.pace) * 0.012;
 
@@ -146,6 +157,14 @@ const Engine = {
     if (driver.trait === 'consistent' && tyreState.age > 15) rate *= 0.92;
 
     // Variabilité
+    // Bonus sponsor pneus (Pirelli Data)
+    try {
+      const _sv2 = typeof Save !== 'undefined' ? Save.load() : null;
+      if (_sv2?.sponsorBonuses?.tyreDeg) {
+        rate *= (1 + _sv2.sponsorBonuses.tyreDeg); // tyreDeg est négatif (-0.05)
+      }
+    } catch(e) {}
+
     rate *= (0.93 + Math.random() * 0.14);
 
     tyreState.condition = Math.max(0, tyreState.condition - rate);
