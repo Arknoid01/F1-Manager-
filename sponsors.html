@@ -403,6 +403,12 @@ function buildClauseRow(cl) {
 // ── MARCHÉ ────────────────────────────────────────────────
 function renderMarket() {
   const list   = document.getElementById('marketList');
+  // Régénérer si vide ou après signature
+  if (!save.sponsorOffers?.length) {
+    Sponsors.generateMarketOffers(save);
+    Save.save(save);
+    save = Save.load();
+  }
   const offers = save.sponsorOffers || [];
   const rep    = save.reputation || { sport:40, media:40, tech:40, finance:40 };
 
