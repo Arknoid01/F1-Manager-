@@ -47,27 +47,27 @@ const F1Data = {
   // ── ÉQUIPES 2025 (+ Cadillac 2026) ───────────────────────
   teams: [
     // McLaren — Champions constructeurs 2024, dominants 2025
-    { id:'mclaren',     name:'McLaren',         shortName:'MCL', color:'#FF8000', accentColor:'#FFFFFF', budget:480, performance:95, reliability:88, aero:96, chassis:94, engine:90, isPlayer:false },
+    { id:'mclaren',     name:'McLaren',         shortName:'MCL', color:'#FF8000', accentColor:'#FFFFFF', budget:195, performance:95, reliability:88, aero:96, chassis:94, engine:90, isPlayer:false },
     // Ferrari — Leclerc + Hamilton, challenger principal
-    { id:'ferrari',     name:'Ferrari',         shortName:'FER', color:'#CC0000', accentColor:'#FFD700', budget:490, performance:92, reliability:85, aero:91, chassis:90, engine:96, isPlayer:false },
+    { id:'ferrari',     name:'Ferrari',         shortName:'FER', color:'#CC0000', accentColor:'#FFD700', budget:200, performance:92, reliability:85, aero:91, chassis:90, engine:96, isPlayer:false },
     // Red Bull — Verstappen + Tsunoda (après swap Lawson)
-    { id:'redbull',     name:'Red Bull Racing', shortName:'RBR', color:'#1E3A6E', accentColor:'#FFD700', budget:500, performance:90, reliability:86, aero:92, chassis:90, engine:93, isPlayer:false },
+    { id:'redbull',     name:'Red Bull Racing', shortName:'RBR', color:'#1E3A6E', accentColor:'#FFD700', budget:205, performance:90, reliability:86, aero:92, chassis:90, engine:93, isPlayer:false },
     // Mercedes — Russell + Antonelli (rookie)
-    { id:'mercedes',    name:'Mercedes',        shortName:'MER', color:'#00D2BE', accentColor:'#FFFFFF', budget:490, performance:87, reliability:90, aero:86, chassis:88, engine:96, isPlayer:false },
+    { id:'mercedes',    name:'Mercedes',        shortName:'MER', color:'#00D2BE', accentColor:'#FFFFFF', budget:200, performance:87, reliability:90, aero:86, chassis:88, engine:96, isPlayer:false },
     // Aston Martin — Newey recruté, gros projet 2026
-    { id:'aston',       name:'Aston Martin',    shortName:'AMR', color:'#006F62', accentColor:'#FFD700', budget:420, performance:78, reliability:82, aero:77, chassis:79, engine:88, isPlayer:false },
+    { id:'aston',       name:'Aston Martin',    shortName:'AMR', color:'#006F62', accentColor:'#FFD700', budget:170, performance:78, reliability:82, aero:77, chassis:79, engine:88, isPlayer:false },
     // Alpine — Saison chaotique, Gasly + Colapinto (remplace Doohan)
-    { id:'alpine',      name:'Alpine',          shortName:'ALP', color:'#0090FF', accentColor:'#FF0000', budget:320, performance:70, reliability:76, aero:70, chassis:69, engine:82, isPlayer:false },
+    { id:'alpine',      name:'Alpine',          shortName:'ALP', color:'#0090FF', accentColor:'#FF0000', budget:130, performance:70, reliability:76, aero:70, chassis:69, engine:82, isPlayer:false },
     // Williams — Albon + Sainz, remontée sous Vowles
-    { id:'williams',    name:'Williams',        shortName:'WIL', color:'#005AFF', accentColor:'#FFFFFF', budget:220, performance:68, reliability:76, aero:67, chassis:69, engine:85, isPlayer:false },
+    { id:'williams',    name:'Williams',        shortName:'WIL', color:'#005AFF', accentColor:'#FFFFFF', budget:90, performance:68, reliability:76, aero:67, chassis:69, engine:85, isPlayer:false },
     // Haas — Bearman + Ocon, nouvelle ère
-    { id:'haas',        name:'Haas',            shortName:'HAA', color:'#E8002D', accentColor:'#FFFFFF', budget:185, performance:63, reliability:73, aero:62, chassis:64, engine:85, isPlayer:false },
+    { id:'haas',        name:'Haas',            shortName:'HAA', color:'#E8002D', accentColor:'#FFFFFF', budget:75, performance:63, reliability:73, aero:62, chassis:64, engine:85, isPlayer:false },
     // Kick Sauber — Hülkenberg + Bortoleto, transition Audi
-    { id:'sauber',      name:'Kick Sauber',     shortName:'SAU', color:'#00E701', accentColor:'#FFFFFF', budget:210, performance:61, reliability:74, aero:60, chassis:62, engine:84, isPlayer:false },
+    { id:'sauber',      name:'Kick Sauber',     shortName:'SAU', color:'#00E701', accentColor:'#FFFFFF', budget:85, performance:61, reliability:74, aero:60, chassis:62, engine:84, isPlayer:false },
     // Racing Bulls — Lawson + Hadjar (après swap Tsunoda→Red Bull)
-    { id:'racingbulls', name:'Racing Bulls',    shortName:'RCB', color:'#6692FF', accentColor:'#FFD700', budget:215, performance:72, reliability:77, aero:71, chassis:73, engine:85, isPlayer:false },
+    { id:'racingbulls', name:'Racing Bulls',    shortName:'RCB', color:'#6692FF', accentColor:'#FFD700', budget:88, performance:72, reliability:77, aero:71, chassis:73, engine:85, isPlayer:false },
     // Cadillac — 11ème équipe 2026, Pérez + Bottas
-    { id:'cadillac',    name:'Cadillac',        shortName:'CAD', color:'#1A1A1A', accentColor:'#FFFFFF', budget:280, performance:55, reliability:65, aero:54, chassis:56, engine:82, isPlayer:false },
+    { id:'cadillac',    name:'Cadillac',        shortName:'CAD', color:'#1A1A1A', accentColor:'#FFFFFF', budget:115, performance:55, reliability:65, aero:54, chassis:56, engine:82, isPlayer:false },
   ],
 
   // ── PILOTES 2025-2026 ────────────────────────────────────
