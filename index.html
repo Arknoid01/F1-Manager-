@@ -221,6 +221,12 @@ function restoreDriverStates(sv) {
 function migrateSave(sv) {
   sv.staff=sv.staff||[]; sv.carDev=sv.carDev||{}; sv.contracts=sv.contracts||{}; sv.sponsors=sv.sponsors||[]; sv.completedSeasons=sv.completedSeasons||[];
   if(!sv.carDev.reliability) sv.carDev.reliability={level:F1Data.teams.find(t=>t.id===sv.playerTeamId)?.reliability||75,upgrades:0};
+  // Initialiser le budget R&D si absent
+  if(!sv.rdBudget) {
+    const t=F1Data.teams.find(t=>t.id===sv.playerTeamId);
+    sv.rdBudget=Math.round((t?.budget||200)*(F1Data.rdBudgetRatio||0.4));
+    sv.rdBudgetTotal=sv.rdBudget;
+  }
   Save.save(sv);
 }
 
@@ -328,6 +334,7 @@ function renderNavTiles(team,drivers) {
     {href:'staff.html',icon:'🧑‍🔧',lbl:'Staff',val:`${staffCount}/11`,sub:staffCount>0?`${staffCount} expert${staffCount>1?'s':''} en poste`:'Aucun staff recruté',c:'var(--purple)'},
     {href:'board.html',icon:'🏢',lbl:'Direction',val:`${save.boardPressure||0}%`,sub:'Pression du board',c:'var(--orange)'},
     {href:'news.html',icon:'📰',lbl:'Actualités',val:`${(save.news||[]).length}`,sub:'événements récents',c:'var(--green)'},
+    {href:'rd.html',icon:'🔬',lbl:'R&D',val:`${save.tokens||0} tokens`,sub:`Budget R&D : ${save.rdBudget||0}M€`,c:'var(--blue)'},
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
   ];
 
