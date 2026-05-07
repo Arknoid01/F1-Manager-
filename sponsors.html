@@ -599,14 +599,14 @@ function confirmSign() {
   if (Math.random() * 100 <= prob) {
     const result = Sponsors.sign(save, sp.id, negValue, sp.clauses.map(c=>({...c,progress:0})));
     if (result.ok) {
+      save = Save.load();
       toast(`🤝 ${sp.name} a accepté ! ${negValue}M€/an sur ${sp.duration} an${sp.duration>1?'s':''}`);
       renderAll();
     } else {
       toast(`❌ ${result.reason}`, true);
     }
   } else {
-    toast(`❌ ${sp.name} a refusé ton offre. Améliore ta réputation ou propose plus !`, true);
-    // Le sponsor reste disponible mais légèrement moins facile
+    toast(`❌ ${sp.name} a refusé. Améliore ta réputation ou propose plus !`, true);
   }
 }
 
@@ -616,6 +616,7 @@ function quickSign(sponsorId) {
   const val = sp.offerValue || sp.baseValue;
   const result = Sponsors.sign(save, sponsorId, val, sp.clauses.map(c=>({...c,progress:0})));
   if (result.ok) {
+    save = Save.load(); // recharger après save dans sign()
     toast(`✅ ${sp.name} signé pour ${val}M€/an !`);
     renderAll();
   } else {
