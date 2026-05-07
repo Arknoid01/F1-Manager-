@@ -203,7 +203,7 @@ const Save = {
     const teamPoints    = playerResults.reduce((sum, r) => sum + (r.points || 0), 0);
 
     // Récompense course de base
-    const reward = 5 + teamPoints + (bestPosition <= 3 ? 12 : bestPosition <= 10 ? 5 : 0);
+    const reward = 1 + Math.round(teamPoints * 0.3) + (bestPosition <= 3 ? 3 : bestPosition <= 10 ? 1 : 0);
 
     // Tokens performance-based + 1 garanti (évite le blocage total)
     // Petite équipe (~0 podiums) : ~20-25/saison → doit choisir 2-3 domaines
