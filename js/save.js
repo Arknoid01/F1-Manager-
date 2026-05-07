@@ -204,8 +204,14 @@ const Save = {
 
     // Récompense course de base
     const reward = 5 + teamPoints + (bestPosition <= 3 ? 12 : bestPosition <= 10 ? 5 : 0);
-    const tokens = 1 + (teamPoints > 0 ? 1 : 0) + (bestPosition <= 3 ? 1 : 0)
-                 + (bestPosition === 1 ? 1 : 0); // bonus pole/victoire
+
+    // Tokens performance-based — plus de token garanti
+    // Petite équipe (~0 podiums) : ~15-20/saison → doit choisir 2-3 domaines
+    // Top équipe (~8 podiums)    : ~40-50/saison → peut tout développer en 2 ans
+    const tokens = (teamPoints > 0 ? 1 : 0)      // top 10 = 1 token
+                 + (bestPosition <= 5  ? 1 : 0)   // top 5  = +1
+                 + (bestPosition <= 3  ? 1 : 0)   // podium = +1
+                 + (bestPosition === 1 ? 1 : 0);  // victoire = +1 (max 4/course)
 
     // Progression sponsors
     let sponsorBonus = 0;
@@ -280,7 +286,7 @@ const Save = {
       }
 
       save.budget = Math.round((save.budget + concordePrize) * 10) / 10;
-      save.tokens = (save.tokens||0) + 6 + (playerPos <= 3 ? 3 : playerPos <= 6 ? 1 : 0);
+      save.tokens = (save.tokens||0) + (playerPos <= 3 ? 8 : playerPos <= 6 ? 5 : playerPos <= 10 ? 3 : 1);
       save.season = nextSeason;
       save.race   = 0;
       save.driverStandings = {};
