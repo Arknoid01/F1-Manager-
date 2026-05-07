@@ -390,17 +390,28 @@ function buildClauseRow(cl) {
     ? Math.max(0, 100 - Math.round((cl.progress / cl.target) * 100))
     : Math.min(100, Math.round((cl.progress / cl.target) * 100));
 
-  const icons = { podiums:'🏆', top5:'🥈', top10:'📊', points:'⭐', races:'🏁', points_finishes:'📊', dnf_max:'⚠️', quali_top5:'⚡', position:'📍', position_up:'📈' };
+  const icons  = { podiums:'🏆', top5:'🥈', top10:'📊', points:'⭐', races:'🏁', points_finishes:'📊', dnf_max:'⚠️', quali_top5:'⚡', position:'📍', position_up:'📈' };
   const labels = { podiums:'Podiums', top5:'Top 5', top10:'Top 10', points:'Points marqués', races:'Courses disputées', points_finishes:'Courses dans les points', dnf_max:'Max abandons', quali_top5:'Qualif top 5', position:'Position constructeurs', position_up:'Places gagnées' };
 
-  const barColor = isMet ? 'var(--green)' : pct > 60 ? 'var(--gold)' : 'var(--accent)';
-  const bonusHtml = cl.bonus > 0 ? `<span class="clause-bonus" style="color:var(--green)">+${cl.bonus}M€</span>` : '';
-  const penaltyHtml = cl.penalty < 0 ? `<span class="clause-bonus" style="color:var(--accent)">${cl.penalty}M€</span>` : '';
+  const barColor   = isMet ? 'var(--green)' : pct > 60 ? 'var(--gold)' : 'var(--accent)';
+  const bonusHtml  = cl.bonus > 0 ? `<span class="clause-bonus" style="color:${cl.bonusPaid?'var(--muted)':'var(--green)'}">${cl.bonusPaid?'✅':'+'}${cl.bonus}M€</span>` : '';
+  const penaltyHtml= cl.penalty < 0 ? `<span class="clause-bonus" style="color:var(--accent)">${cl.penalty}M€</span>` : '';
+
+  // Objectif bonus (sponsor développeur)
+  const bonusObjHtml = cl.bonusObjective?.unlocked ? `
+    <div style="margin-top:4px;padding:4px 6px;background:#0d0a1a;border:1px solid #2a1a4a;border-radius:4px;font-family:var(--fh);font-size:10px;display:flex;align-items:center;gap:8px">
+      <span style="color:var(--purple)">🎯 Objectif bonus</span>
+      <span style="color:var(--muted)">${cl.progress}/${cl.bonusObjective.target}</span>
+      <span style="color:var(--purple)">${cl.bonusObjective.paid?'✅ Payé':'+'+cl.bonusObjective.bonus+'M€'}</span>
+    </div>` : '';
 
   return `
     <div class="clause-row">
       <div class="clause-icon">${icons[cl.type]||'📋'}</div>
-      <div class="clause-label">${labels[cl.type]||cl.type}</div>
+      <div class="clause-label" style="flex:1">
+        <div>${labels[cl.type]||cl.type}</div>
+        ${bonusObjHtml}
+      </div>
       <div class="clause-progress" style="color:${isMet?'var(--green)':'var(--muted)'}">${cl.progress}/${cl.target}</div>
       <div class="clause-bar-wrap"><div class="clause-bar" style="width:${pct}%;background:${barColor}"></div></div>
       ${bonusHtml}${penaltyHtml}
