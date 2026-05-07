@@ -654,7 +654,11 @@ function init() {
     // Générer le premier lot si jamais fait
     if (!save.generatedStaff || save.generatedStaff.length === 0) {
       Career.generateNewStaff(save);
-      Save.save(save);
+      // Recharger pour ne pas écraser les données sponsors/réputation
+      const fresh = Save.load();
+      fresh.generatedStaff = save.generatedStaff;
+      Save.save(fresh);
+      save = fresh;
     }
   }
 
@@ -936,6 +940,12 @@ function hireStaff(id) {
     });
   }
 
+  // Merger avec save fraîche pour préserver sponsorOffers, réputation etc.
+  const fresh1 = Save.load();
+  fresh1.budget = save.budget; fresh1.staff = save.staff;
+  fresh1.carDev = save.carDev; fresh1.news  = save.news;
+  fresh1.staffBonuses = save.staffBonuses;
+  save = fresh1;
   Save.save(save);
   applyStaffPassives();
   renderOverview();
@@ -974,6 +984,12 @@ function fireStaff(id) {
     });
   }
 
+  // Merger avec save fraîche
+  const fresh2 = Save.load();
+  fresh2.budget = save.budget; fresh2.staff = save.staff;
+  fresh2.carDev = save.carDev; fresh2.news  = save.news;
+  fresh2.staffBonuses = save.staffBonuses;
+  save = fresh2;
   Save.save(save);
   applyStaffPassives();
   renderOverview();
