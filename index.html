@@ -345,7 +345,7 @@ function renderNavTiles(team,drivers) {
     {href:'board.html',icon:'🏢',lbl:'Direction',val:`${save.boardPressure||0}%`,sub:'Pression du board',c:'var(--orange)'},
     {href:'sponsors.html',icon:'🤝',lbl:'Sponsors',val:`${(save.sponsors||[]).length}/7`,sub:`${(save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0)}M€/an`,c:'var(--green)'},
     {href:'news.html',icon:'📰',lbl:'Actualités',val:`${(save.news||[]).length}`,sub:'événements récents',c:'var(--orange)'},
-    {href:'rd.html',icon:'🔬',lbl:'R&D',val:`${save.tokens||0} tokens`,sub:`Budget R&D : ${save.rdBudget||0}M€`,c:'var(--blue)'},
+    {href:'rd.html',icon:'🔬',lbl:'R&D',val:`${save.tokens||0} tokens`,sub:`Budget : ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--blue)'},
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
   ];
 

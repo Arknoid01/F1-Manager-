@@ -228,10 +228,10 @@ function init() {
   }
 
   // Initialiser le budget R&D si pas encore fait
-  if (!save.rdBudget) {
+  if (!save.budget) {
     const team = F1Data.teams.find(t => t.id === save.playerTeamId);
-    save.rdBudget = Math.round((team?.budget || 200) * F1Data.rdBudgetRatio);
-    save.rdBudgetTotal = save.rdBudget;
+    save.budget = Math.round((team?.budget || 200) * F1Data.budgetRatio);
+    save.budgetTotal = save.budget;
     Save.save(save);
   }
 
@@ -317,9 +317,9 @@ function renderAll() {
 
 // ── BUDGET HERO ────────────────────────────────────────────
 function renderBudget() {
-  const rdBudget    = save.rdBudget || 0;
-  const rdTotal     = save.rdBudgetTotal || rdBudget;
-  const rdSpent     = rdTotal - rdBudget;
+  const budget    = save.budget || 0;
+  const budgetTotal     = save.budgetTotal || budget;
+  const rdSpent     = budgetTotal - budget;
   const tokens      = save.tokens || 0;
   const currentRace = save.race || 0;
   const totalRaces  = F1Data.circuits.length;
@@ -327,11 +327,11 @@ function renderBudget() {
 
   document.getElementById('budgetHero').innerHTML = `
     <div class="bh-card">
-      <div class="bh-lbl">Budget R&D disponible</div>
-      <div class="bh-val" style="color:var(--gold)">${rdBudget} M€</div>
-      <div class="bh-sub">${rdSpent} M€ dépensé / ${rdTotal} M€ total</div>
+      <div class="bh-lbl">Budget disponible</div>
+      <div class="bh-val" style="color:var(--gold)">${budget} M€</div>
+      <div class="bh-sub">${rdSpent} M€ dépensé / ${budgetTotal} M€ total</div>
       <div style="height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden">
-        <div style="height:100%;border-radius:2px;background:var(--gold);width:${Math.round((rdBudget/rdTotal)*100)}%"></div>
+        <div style="height:100%;border-radius:2px;background:var(--gold);width:${Math.round((budget/budgetTotal)*100)}%"></div>
       </div>
     </div>
     <div class="bh-card">
@@ -402,8 +402,8 @@ function updateAlloc(val) {
 
 function renderAllocImpact() {
   const pctFuture  = (100 - allocValue) / 100;
-  const rdBudget   = save.rdBudget || 0;
-  const futureInv  = Math.round(rdBudget * pctFuture);
+  const budget   = save.budget || 0;
+  const futureInv  = Math.round(budget * pctFuture);
   const currBonus  = allocValue >= 80 ? '+0.8%' : allocValue >= 60 ? '+0.4%' : '±0%';
   const nextBonus  = pctFuture >= 0.4 ? `+${Math.round(pctFuture * 12)} pts base` : pctFuture >= 0.2 ? `+${Math.round(pctFuture * 12)} pts base` : '+2 pts base';
 
@@ -511,7 +511,7 @@ function buildUpgradeCard(upg, dev, _frozen, isNextYear) {
   const done      = isNextYear ? !!save.nextYearDev?.[upg.id] : dev.done.includes(upg.id);
   const pending   = !isNextYear && dev.pending?.some(p => p.upgradeId === upg.id);
   const locked    = !isNextYear && upg.requires && !dev.done.includes(upg.requires);
-  const canAfford = (save.rdBudget || 0) >= upg.cost;
+  const canAfford = (save.budget || 0) >= upg.cost;
   const hasTokens = (save.tokens  || 0) >= upg.tokens;
 
   let status = 'available';
@@ -562,7 +562,7 @@ function buildRiskyConceptCard(key, domain, dev) {
   const cfg       = F1Data.riskyConceptCost || { budget:20, tokens:3 };
   const outcomes  = F1Data.riskyConceptOutcomes || { success:{gain:10,probability:0.45}, partial:{gain:4,probability:0.35}, failure:{gain:-3,probability:0.20} };
   const alreadyDone = save.riskyConceptDone?.[key];
-  const canAfford   = (save.rdBudget||0) >= cfg.budget;
+  const canAfford   = (save.budget||0) >= cfg.budget;
   const hasTokens   = (save.tokens||0) >= cfg.tokens;
 
   return `
@@ -603,10 +603,10 @@ function launchRiskyConcept(domainKey) {
 
   if (!confirm(`⚡ Tenter un concept radical en ${domain.label} ?\n\n45% de chance : +10 pts\n35% de chance : +4 pts\n20% de chance : -3 pts\n\nCoût : ${cfg.budget}M€ + ${cfg.tokens} tokens`)) return;
 
-  if ((save.rdBudget||0) < cfg.budget) { toast('❌ Budget insuffisant !', true); return; }
+  if ((save.budget||0) < cfg.budget) { toast('❌ Budget insuffisant !', true); return; }
   if ((save.tokens||0) < cfg.tokens)   { toast('❌ Tokens insuffisants !', true); return; }
 
-  save.rdBudget = Math.round(((save.rdBudget||0) - cfg.budget) * 10) / 10;
+  save.budget = Math.round(((save.budget||0) - cfg.budget) * 10) / 10;
   save.tokens   = Math.max(0, (save.tokens||0) - cfg.tokens);
 
   // Tirer le résultat
@@ -659,10 +659,10 @@ function getSpecialization(save) {
 function buyUpgrade(domainKey, upgradeId, isNextYear) {
   // Toujours recharger la save fraîche avant d'acheter
   save = Save.load();
-  if (!save.rdBudget) {
+  if (!save.budget) {
     const team = F1Data.teams.find(t => t.id === save.playerTeamId);
-    save.rdBudget = Math.round((team?.budget || 200) * (F1Data.rdBudgetRatio||0.4));
-    save.rdBudgetTotal = save.rdBudget;
+    save.budget = Math.round((team?.budget || 200) * (F1Data.budgetRatio||0.4));
+    save.budgetTotal = save.budget;
   }
 
   const domain = F1Data.rdTree[domainKey];
@@ -674,13 +674,13 @@ function buyUpgrade(domainKey, upgradeId, isNextYear) {
   const dev = save.carDev[domainKey];
 
   // Vérifications
-  if ((save.rdBudget||0) < upg.cost)   { toast('❌ Budget R&D insuffisant !', true); return; }
+  if ((save.budget||0) < upg.cost)   { toast('❌ Budget R&D insuffisant !', true); return; }
   if ((save.tokens||0) < upg.tokens)   { toast('❌ Pas assez de tokens !', true); return; }
   if (!isNextYear && dev.done.includes(upgradeId)) { toast('Déjà acheté !', true); return; }
   if (!isNextYear && dev.pending?.some(p => p.upgradeId === upgradeId)) { toast('Déjà commandé !', true); return; }
 
   // Déduire coûts
-  save.rdBudget = Math.round(((save.rdBudget||0) - upg.cost) * 10) / 10;
+  save.budget = Math.round(((save.budget||0) - upg.cost) * 10) / 10;
   save.tokens   = Math.max(0, (save.tokens||0) - upg.tokens);
 
   if (isNextYear) {
@@ -723,7 +723,7 @@ function cancelUpgrade(domainKey, upgradeId) {
 
   // Rembourser 50%
   const refund = Math.round(upg.cost * 0.5);
-  save.rdBudget  = Math.round(((save.rdBudget||0) + refund) * 10) / 10;
+  save.budget  = Math.round(((save.budget||0) + refund) * 10) / 10;
   save.tokens    = (save.tokens||0) + upg.tokens;
   dev.pending.splice(idx, 1);
 
