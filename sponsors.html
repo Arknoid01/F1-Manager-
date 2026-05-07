@@ -455,7 +455,6 @@ function isOfferAccessible(sp, rep) {
 
 function buildOfferCard(sp, rep) {
   const accessible = isOfferAccessible(sp, rep);
-  const aiOwner    = Sponsors.isTakenByAI(save, sp.id);
   const r = sp.reputationMin || {};
   const typeLabel = sp.type === 'title' ? 'TITLE' : sp.type === 'principal' ? 'PRINCIPAL' : 'PARTNER';
   const typeBadge = sp.type === 'title' ? 'type-title' : sp.type === 'principal' ? 'type-principal' : 'type-partner';
@@ -473,16 +472,12 @@ function buildOfferCard(sp, rep) {
         ⚡ ${Object.entries(sp.techBonus).map(([k,v])=>`${k} +${v}`).join(' · ')}
        </div>` : '';
 
-  const aiHtml = aiOwner ? `
-    <div style="padding:6px 14px;background:#1a0a00;border-top:1px solid var(--border);font-family:var(--fh);font-size:11px;color:var(--orange)">
-      ⚔️ Actuellement avec <strong>${aiOwner.teamId}</strong> (contrat jusqu'en ${aiOwner.until})
-    </div>` : '';
+  const aiHtml = '';
 
   const actionHtml = accessible ? `
     <div style="padding:8px 14px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border)">
       <button class="btn btn-gold" onclick="openNegotiation('${sp.id}')">🤝 Négocier</button>
       <button class="btn btn-sec" onclick="quickSign('${sp.id}')">✅ Signer direct</button>
-      ${aiOwner ? `<button class="btn" style="background:#1a0800;color:var(--orange);border:1px solid #3a1800" onclick="poachSponsor('${sp.id}')">⚔️ Débaucher (-rep)</button>` : ''}
     </div>
   ` : `<div style="padding:8px 14px;font-family:var(--fh);font-size:11px;color:var(--muted);border-top:1px solid var(--border)">🔒 Réputation insuffisante</div>`;
 
@@ -493,7 +488,6 @@ function buildOfferCard(sp, rep) {
         <div class="oc-info">
           <div class="oc-name">${sp.name}
             <span class="type-badge ${typeBadge}" style="margin-left:6px">${typeLabel}</span>
-            ${aiOwner ? `<span style="font-family:var(--fh);font-size:9px;color:var(--orange);margin-left:4px">⚔️ Pris</span>` : ''}
           </div>
           <div class="oc-desc">${sp.desc}</div>
         </div>
@@ -662,17 +656,6 @@ function quickSign(sponsorId) {
   } else {
     toast(`❌ ${result.reason}`, true);
   }
-}
-
-function poachSponsor(sponsorId) {
-  const sp = Sponsors.DB.find(s => s.id === sponsorId);
-  if (!sp) return;
-  const ai = Sponsors.isTakenByAI(save, sponsorId);
-  if (!ai) { quickSign(sponsorId); return; }
-  if (!confirm(`⚔️ Débaucher ${sp.name} de ${ai.teamId} ?\n\nCela coûtera -3 réputation sportive et -2 financière, mais libèrera le sponsor.\n\nContinuer ?`)) return;
-  Sponsors.poachFromAI(save, sponsorId);
-  Save.save(save);
-  openNegotiation(sponsorId);
 }
 
 function refreshOffers() {
