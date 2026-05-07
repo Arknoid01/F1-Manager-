@@ -156,7 +156,7 @@ const Career = {
   // ── ENTRÉES EN F1 CHAQUE SAISON ───────────────────────────
   // Génère 2-4 jeunes talents qui entrent dans le pool
   generateNewTalents(save) {
-    const count = 2 + Math.floor(Math.random() * 3); // 2-4 par saison
+    const count = 4 + Math.floor(Math.random() * 5); // 4-8 par saison
     const newDrivers = [];
     for (let i = 0; i < count; i++) {
       const d = this.generateDriver(save);
@@ -869,8 +869,8 @@ const Career = {
     // Mais on génère toujours au moins 2 la première fois
     const isFirst  = save.generatedStaff.length === 0;
     const count    = isFirst
-      ? 6
-      : Math.random() < 0.6 ? 2 + Math.floor(Math.random() * 3) : 0;
+      ? 25  // Pool initial large
+      : 4 + Math.floor(Math.random() * 5); // 4-8 nouveaux par saison
 
     const newStaff = [];
     for (let i = 0; i < count; i++) {

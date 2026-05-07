@@ -11,7 +11,7 @@ const Sponsors = {
     {
       id:'oracle',       name:'Oracle',         logo:'🔵', category:'tech',
       type:'title',      baseValue:45, maxValue:60, duration:3,
-      reputationMin:{ sport:70, media:60, tech:75, finance:65 },
+      reputationMin:{ sport:55, media:45, tech:60, finance:50 },
       personality:'opportunist',
       techBonus:{ tokens:1 },
       desc:'Leader mondial du cloud. Exige des résultats en piste et une visibilité maximale.',
@@ -25,7 +25,7 @@ const Sponsors = {
     {
       id:'aramco',       name:'Aramco',          logo:'🟢', category:'energy',
       type:'title',      baseValue:55, maxValue:75, duration:3,
-      reputationMin:{ sport:75, media:65, tech:60, finance:70 },
+      reputationMin:{ sport:60, media:50, tech:45, finance:55 },
       personality:'loyal',
       techBonus:{ engine:2 },
       desc:'Géant pétrolier. Partenariat technique avec carburant optimisé.',
@@ -39,7 +39,7 @@ const Sponsors = {
     {
       id:'petronas',     name:'Petronas',         logo:'🔷', category:'energy',
       type:'title',      baseValue:50, maxValue:65, duration:2,
-      reputationMin:{ sport:65, media:55, tech:65, finance:60 },
+      reputationMin:{ sport:50, media:40, tech:50, finance:45 },
       personality:'developer',
       techBonus:{ engine:1, reliability:1 },
       desc:'Partenaire technique moteur. Offre augmente avec tes performances.',
@@ -53,7 +53,7 @@ const Sponsors = {
     {
       id:'cognizant',    name:'Cognizant',         logo:'🟠', category:'tech',
       type:'title',      baseValue:35, maxValue:50, duration:2,
-      reputationMin:{ sport:55, media:50, tech:60, finance:55 },
+      reputationMin:{ sport:40, media:35, tech:45, finance:40 },
       personality:'developer',
       techBonus:{ tokens:1 },
       desc:'Société IT en croissance. Idéal pour les équipes en progression.',
@@ -68,7 +68,7 @@ const Sponsors = {
     {
       id:'heineken',     name:'Heineken 0.0',      logo:'🍺', category:'beverage',
       type:'principal',  baseValue:22, maxValue:30, duration:2,
-      reputationMin:{ sport:50, media:65, tech:30, finance:45 },
+      reputationMin:{ sport:35, media:45, tech:20, finance:30 },
       personality:'loyal',
       techBonus:{},
       desc:'Sponsor historique F1. Priorité à la visibilité TV et aux podiums.',
@@ -82,7 +82,7 @@ const Sponsors = {
     {
       id:'monster',      name:'Monster Energy',    logo:'🟢', category:'beverage',
       type:'principal',  baseValue:25, maxValue:35, duration:2,
-      reputationMin:{ sport:55, media:60, tech:30, finance:40 },
+      reputationMin:{ sport:40, media:45, tech:20, finance:30 },
       personality:'opportunist',
       techBonus:{},
       desc:'Marque lifestyle agressive. Paye bien mais part si les résultats ne suivent pas.',
@@ -96,7 +96,7 @@ const Sponsors = {
     {
       id:'aws',          name:'AWS',               logo:'🟡', category:'tech',
       type:'principal',  baseValue:18, maxValue:28, duration:2,
-      reputationMin:{ sport:40, media:40, tech:55, finance:50 },
+      reputationMin:{ sport:25, media:25, tech:35, finance:30 },
       personality:'developer',
       techBonus:{ tokens:1 },
       desc:'Amazon Web Services. Bonus tokens R&D pour l\'analyse de données.',
@@ -109,7 +109,7 @@ const Sponsors = {
     {
       id:'dhl',          name:'DHL',               logo:'🟠', category:'logistics',
       type:'principal',  baseValue:15, maxValue:22, duration:3,
-      reputationMin:{ sport:35, media:35, tech:30, finance:40 },
+      reputationMin:{ sport:20, media:20, tech:20, finance:25 },
       personality:'loyal',
       techBonus:{ logistics:0.1 }, // -10% coût opérationnel GP
       desc:'Logistique officielle F1. Réduit tes coûts opérationnels.',
@@ -122,7 +122,7 @@ const Sponsors = {
     {
       id:'rolex',        name:'Rolex',             logo:'⌚', category:'luxury',
       type:'principal',  baseValue:30, maxValue:40, duration:3,
-      reputationMin:{ sport:75, media:70, tech:40, finance:75 },
+      reputationMin:{ sport:60, media:55, tech:30, finance:60 },
       personality:'loyal',
       techBonus:{},
       desc:'Prestige et tradition. Ne signe qu\'avec les meilleures équipes.',
@@ -136,7 +136,7 @@ const Sponsors = {
     {
       id:'shell',        name:'Shell',             logo:'🔴', category:'energy',
       type:'principal',  baseValue:20, maxValue:28, duration:2,
-      reputationMin:{ sport:45, media:40, tech:55, finance:50 },
+      reputationMin:{ sport:30, media:25, tech:35, finance:35 },
       personality:'developer',
       techBonus:{ engine:1 },
       desc:'Carburant et lubrifiants. Améliore les performances moteur.',
@@ -149,7 +149,7 @@ const Sponsors = {
     {
       id:'bwt',          name:'BWT',               logo:'🩷', category:'tech',
       type:'principal',  baseValue:12, maxValue:18, duration:2,
-      reputationMin:{ sport:30, media:30, tech:35, finance:30 },
+      reputationMin:{ sport:15, media:15, tech:20, finance:15 },
       personality:'loyal',
       techBonus:{},
       desc:'Traitement de l\'eau. Sponsor accessible, idéal pour démarrer.',
@@ -163,7 +163,7 @@ const Sponsors = {
     {
       id:'pirelli_p',    name:'Pirelli Data',      logo:'🛞', category:'tyre',
       type:'partner',    baseValue:5,  maxValue:8,  duration:1,
-      reputationMin:{ sport:30, media:20, tech:40, finance:25 },
+      reputationMin:{ sport:15, media:10, tech:25, finance:15 },
       personality:'loyal',
       techBonus:{ tyreDeg:-0.05 }, // -5% dégradation
       desc:'Données pneumatiques partagées. Améliore ta gestion des pneus.',
@@ -175,7 +175,7 @@ const Sponsors = {
     {
       id:'google',       name:'Google Chrome',     logo:'🌐', category:'tech',
       type:'partner',    baseValue:8,  maxValue:14, duration:2,
-      reputationMin:{ sport:40, media:55, tech:50, finance:45 },
+      reputationMin:{ sport:25, media:35, tech:35, finance:30 },
       personality:'opportunist',
       techBonus:{ tokens:1 },
       desc:'Visibilité digitale mondiale. Bonus tokens via analyse data.',
@@ -188,7 +188,7 @@ const Sponsors = {
     {
       id:'castore',      name:'Castore',           logo:'👕', category:'apparel',
       type:'partner',    baseValue:6,  maxValue:10, duration:2,
-      reputationMin:{ sport:30, media:35, tech:20, finance:30 },
+      reputationMin:{ sport:15, media:20, tech:10, finance:15 },
       personality:'developer',
       techBonus:{},
       desc:'Équipementier sportif. Évolue avec ta popularité.',
@@ -201,7 +201,7 @@ const Sponsors = {
     {
       id:'santander',    name:'Santander',         logo:'🏦', category:'finance',
       type:'partner',    baseValue:14, maxValue:20, duration:2,
-      reputationMin:{ sport:55, media:50, tech:35, finance:65 },
+      reputationMin:{ sport:40, media:35, tech:25, finance:50 },
       personality:'loyal',
       techBonus:{},
       desc:'Banque internationale. Stabilité financière et loyauté.',
@@ -222,10 +222,10 @@ const Sponsors = {
     const baseRep = Math.round((team?.performance || 70) * 0.7);
 
     save.reputation = save.reputation || {
-      sport:    baseRep,
-      media:    Math.max(20, baseRep - 10),
-      tech:     Math.max(20, baseRep - 5),
-      finance:  Math.max(20, baseRep - 8),
+      sport:    Math.max(30, baseRep),
+      media:    Math.max(25, baseRep - 5),
+      tech:     Math.max(25, baseRep - 3),
+      finance:  Math.max(25, baseRep - 5),
     };
 
     save.sponsors     = save.sponsors     || [];
@@ -257,7 +257,7 @@ const Sponsors = {
     });
 
     // Garder max 6 offres actives, avec variation aléatoire
-    const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 6);
+    const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 8);
 
     save.sponsorOffers = shuffled.map(sp => ({
       ...sp,
