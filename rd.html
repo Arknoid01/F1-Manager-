@@ -162,9 +162,9 @@ input[type=range].alloc-slider::-webkit-slider-thumb{-webkit-appearance:none;wid
   <!-- BUDGET R&D -->
   <div class="budget-hero" id="budgetHero"></div>
 
-  <!-- TOKEN FREEZE -->
+  <!-- AVERTISSEMENT FIN DE SAISON -->
   <div class="freeze-banner" id="freezeBanner">
-    <span style="font-size:18px">⚠️</span>
+    <span style="font-size:18px" id="freezeIcon">⚠️</span>
     <div id="freezeText"></div>
   </div>
 
@@ -322,6 +322,7 @@ function renderBudget() {
   const tokens      = save.tokens || 0;
   const currentRace = save.race || 0;
   const totalRaces  = F1Data.circuits.length;
+  const specs       = getSpecialization(save);
 
   document.getElementById('budgetHero').innerHTML = `
     <div class="bh-card">
@@ -338,9 +339,11 @@ function renderBudget() {
       <div class="bh-sub">Course ${currentRace}/${totalRaces} · +1-3/GP</div>
     </div>
     <div class="bh-card" style="grid-column:span 2">
-      <div class="bh-lbl">Upgrades en attente de livraison</div>
-      <div class="bh-val" style="color:var(--orange)">${countPending()}</div>
-      <div class="bh-sub">Livraison échelonnée selon le calendrier</div>
+      <div class="bh-lbl">Spécialisations actives</div>
+      ${specs.length
+        ? specs.map(s=>`<span style="font-family:var(--fh);font-size:12px;color:var(--green);margin-right:10px">${s.icon} ${s.domain} ≥${s.level} — bonus piste +${s.bonus}s</span>`).join('')
+        : `<div style="font-family:var(--fh);font-size:12px;color:var(--muted)">Aucune — atteins 88-90 dans un domaine pour débloquer un bonus circuit</div>`
+      }
     </div>
   `;
 }
@@ -351,22 +354,35 @@ function countPending() {
   return n;
 }
 
-// ── TOKEN FREEZE ────────────────────────────────────────────
+// ── AVERTISSEMENT FIN DE SAISON ────────────────────────────
 function renderFreeze() {
   const race       = save.race || 0;
-  const freezeAt   = F1Data.TOKEN_FREEZE_RACE;
+  const lateAt     = F1Data.LATE_SEASON_RACE || 15;
   const totalRaces = F1Data.circuits.length;
   const banner     = document.getElementById('freezeBanner');
   const text       = document.getElementById('freezeText');
-  const frozen     = race >= freezeAt;
+  const isLate     = race >= lateAt;
 
-  banner.className = `freeze-banner${frozen ? ' frozen' : ''}`;
+  // Vérifier si un règlement arrive la saison prochaine
+  const nextSeason = (save.season||2025) + 1;
+  const nextReg    = (F1Data.regulationCycles||[]).find(r=>r.season===nextSeason);
 
-  if (frozen) {
-    banner.querySelector('span').textContent = '✅';
-    text.innerHTML = `<strong style="color:var(--green)">Token freeze actif</strong> — Course ${race}/${totalRaces}. Seuls les upgrades <strong>fiabilité</strong> et <strong>livraisons en cours</strong> sont autorisés. Ressources orientées vers la saison suivante.`;
+  banner.className = `freeze-banner${isLate ? '' : ''}`;
+  banner.style.display = 'block';
+
+  if (nextReg) {
+    document.getElementById('freezeIcon').textContent = '📋';
+    banner.style.borderLeftColor = 'var(--purple)';
+    banner.style.background      = '#0d0a1a';
+    text.innerHTML = `<strong style="color:var(--purple)">⚙️ ${nextReg.name} en ${nextReg.season} !</strong> — Les performances seront réinitialisées (×${nextReg.resetFactor}). Investis dans la voiture suivante 🟣 pour partir avec un avantage !`;
+  } else if (isLate) {
+    document.getElementById('freezeIcon').textContent = '📉';
+    banner.style.borderLeftColor = 'var(--orange)';
+    text.innerHTML = `<strong style="color:var(--orange)">Fin de saison — Rendement réduit</strong> — Course ${race}/${totalRaces}. Les upgrades voiture actuelle ont un gain réduit de <strong>30%</strong>. Investis dans la saison suivante 🟣 pour maximiser l'impact !`;
   } else {
-    text.innerHTML = `<strong style="color:var(--orange)">Token freeze dans ${freezeAt - race} courses</strong> (Course ${race}/${totalRaces}). Après la course ${freezeAt}, les upgrades voiture actuelle seront gelés. Planifie tes achats !`;
+    document.getElementById('freezeIcon').textContent = '✅';
+    banner.style.borderLeftColor = 'var(--green)';
+    text.innerHTML = `<strong style="color:var(--green)">Pleine saison</strong> — Course ${race}/${totalRaces}. Upgrades à plein rendement. À partir de la course ${lateAt}, le gain sera réduit de 30%.`;
   }
 }
 
@@ -478,42 +494,47 @@ function renderDomain(key) {
     <div class="upgrade-list">
       ${buildUpgradeCard(domain.nextYear, dev, false, true)}
     </div>
+
+    <!-- Concept risqué -->
+    ${buildRiskyConceptCard(key, domain, dev)}
   `;
 }
 
-function buildUpgradeCard(upg, dev, frozen, isNextYear) {
+function buildUpgradeCard(upg, dev, _frozen, isNextYear) {
+  const race     = save.race || 0;
+  const isLate   = race >= (F1Data.LATE_SEASON_RACE || 15);
+  const gainMult = isLate && !isNextYear ? (F1Data.LATE_SEASON_PENALTY || 0.70) : 1.0;
+  const realGain = isNextYear ? upg.gain * (F1Data.nextYearBonusMultiplier||1.8)
+                              : Math.round(upg.gain * gainMult);
+
   const done      = isNextYear ? !!save.nextYearDev?.[upg.id] : dev.done.includes(upg.id);
   const pending   = !isNextYear && dev.pending?.some(p => p.upgradeId === upg.id);
   const locked    = !isNextYear && upg.requires && !dev.done.includes(upg.requires);
   const canAfford = (save.rdBudget || 0) >= upg.cost;
-  const hasTokens = (save.tokens || 0) >= upg.tokens;
-  const isFrozen  = frozen && !isNextYear;
+  const hasTokens = (save.tokens  || 0) >= upg.tokens;
 
   let status = 'available';
   if (done)    status = 'done';
   if (pending) status = 'pending';
   if (locked)  status = 'locked';
-  if (isNextYear && done) status = 'done';
 
   const badgeIcon = done ? '✅' : pending ? '⏳' : locked ? '🔒' : isNextYear ? '🟣' : '🔵';
+  const canBuy    = !done && !pending && !locked && canAfford && hasTokens;
 
-  const canBuy = !done && !pending && !locked && !isFrozen && canAfford && hasTokens;
+  const lateNote = isLate && !isNextYear && !done && !pending
+    ? `<span style="color:var(--orange);font-size:10px">📉 Rendement -30% (fin de saison)</span>`
+    : '';
 
-  const btnHtml = done ? `<span style="font-family:var(--fh);font-size:11px;color:var(--green)">✅ Terminé</span>`
-    : pending ? `<span style="font-family:var(--fh);font-size:11px;color:var(--gold)">⏳ En livraison</span>
-                 <button class="uc-btn cancel" onclick="cancelUpgrade('${currentDomain}','${upg.id}')">Annuler</button>`
-    : locked  ? `<span style="font-family:var(--fh);font-size:11px;color:var(--muted)">🔒 Débloque le niv.${upg.level - 1} d'abord</span>`
-    : isFrozen ? `<span style="font-family:var(--fh);font-size:11px;color:var(--orange)">⛔ Token freeze actif</span>`
+  const btnHtml = done    ? `<span style="font-family:var(--fh);font-size:11px;color:var(--green)">✅ Terminé</span>`
+    : pending   ? `<span style="font-family:var(--fh);font-size:11px;color:var(--gold)">⏳ En livraison</span>
+                   <button class="uc-btn cancel" onclick="cancelUpgrade('${currentDomain}','${upg.id}')">Annuler (50%)</button>`
+    : locked    ? `<span style="font-family:var(--fh);font-size:11px;color:var(--muted)">🔒 Débloque d'abord le niveau ${upg.level-1}</span>`
     : `<button class="uc-btn ${isNextYear?'ny':'buy'}" onclick="buyUpgrade('${currentDomain}','${upg.id}',${isNextYear})"
          ${!canBuy?'disabled':''}>
          ${isNextYear ? '🟣 Investir' : '🔵 Commander'}
-       </button>`;
-
-  const reasonHtml = !done && !pending && !locked && !isFrozen ? `
-    <div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-top:4px">
-      ${!canAfford ? `<span style="color:var(--accent)">⚠️ Budget insuffisant (${upg.cost}M€ requis)</span>` : ''}
-      ${!hasTokens ? `<span style="color:var(--accent)">⚠️ Tokens insuffisants (${upg.tokens} requis)</span>` : ''}
-    </div>` : '';
+       </button>
+       ${!canAfford ? `<span style="font-family:var(--fh);font-size:10px;color:var(--accent)">⚠️ Budget insuffisant</span>` : ''}
+       ${!hasTokens ? `<span style="font-family:var(--fh);font-size:10px;color:var(--accent)">⚠️ Tokens insuffisants</span>` : ''}`;
 
   return `
     <div class="upgrade-card ${status}${isNextYear?' next-year':''}">
@@ -525,16 +546,111 @@ function buildUpgradeCard(upg, dev, frozen, isNextYear) {
           <span class="uc-cost budget">💰 ${upg.cost}M€</span>
           <span class="uc-cost tokens">🔬 ${upg.tokens} token${upg.tokens>1?'s':''}</span>
           ${!isNextYear?`<span class="uc-cost delivery">🚚 +${upg.deliveryGps} GP</span>`:''}
-          <span class="uc-cost gain">+${upg.gain} ${isNextYear?'(saison suivante)':''}</span>
+          <span class="uc-cost gain">+${realGain}${isNextYear?' (saison suivante)':''}</span>
         </div>
-        ${btnHtml}
-        ${reasonHtml}
+        ${lateNote}
+        <div style="margin-top:6px">${btnHtml}</div>
       </div>
     </div>
   `;
 }
 
 // ── ACHETER UN UPGRADE ──────────────────────────────────────
+// ── CONCEPT RISQUÉ ──────────────────────────────────────────
+function buildRiskyConceptCard(key, domain, dev) {
+  const cfg       = F1Data.riskyConceptCost || { budget:20, tokens:3 };
+  const outcomes  = F1Data.riskyConceptOutcomes || { success:{gain:10,probability:0.45}, partial:{gain:4,probability:0.35}, failure:{gain:-3,probability:0.20} };
+  const alreadyDone = save.riskyConceptDone?.[key];
+  const canAfford   = (save.rdBudget||0) >= cfg.budget;
+  const hasTokens   = (save.tokens||0) >= cfg.tokens;
+
+  return `
+    <div style="padding:8px 14px;font-family:var(--fh);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+      ⚡ Concept risqué — Pari R&D
+    </div>
+    <div class="upgrade-card" style="border-left:3px solid var(--orange);background:${alreadyDone?'#001a0a':'#0d0800'}">
+      <div class="uc-badge" style="background:#2a1000;color:var(--orange)">${alreadyDone?'✅':'⚡'}</div>
+      <div class="uc-info">
+        <div class="uc-name">Concept radical ${domain.label}</div>
+        <div class="uc-desc">Pari sur une direction de développement non conventionnelle. Résultat incertain mais potentiellement transformateur.</div>
+        <div class="uc-costs">
+          <span class="uc-cost budget">💰 ${cfg.budget}M€</span>
+          <span class="uc-cost tokens">🔬 ${cfg.tokens} tokens</span>
+          <span class="uc-cost" style="background:#1a0800;color:var(--orange);border:1px solid #3a1800">
+            ${Math.round(outcomes.success.probability*100)}% +${outcomes.success.gain} / ${Math.round(outcomes.partial.probability*100)}% +${outcomes.partial.gain} / ${Math.round(outcomes.failure.probability*100)}% ${outcomes.failure.gain}
+          </span>
+        </div>
+        ${alreadyDone
+          ? `<span style="font-family:var(--fh);font-size:11px;color:var(--green)">✅ Déjà tenté cette saison</span>`
+          : `<button class="uc-btn" style="background:#1a0800;color:var(--orange);border:1px solid #3a1800"
+               onclick="launchRiskyConcept('${key}')" ${(!canAfford||!hasTokens)?'disabled':''}>
+               ⚡ Tenter le pari
+             </button>
+             ${!canAfford?'<span style="font-family:var(--fh);font-size:10px;color:var(--accent)">⚠️ Budget insuffisant</span>':''}
+             ${!hasTokens?'<span style="font-family:var(--fh);font-size:10px;color:var(--accent)">⚠️ Tokens insuffisants</span>':''}`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function launchRiskyConcept(domainKey) {
+  const cfg      = F1Data.riskyConceptCost || { budget:20, tokens:3 };
+  const outcomes = F1Data.riskyConceptOutcomes;
+  const domain   = F1Data.rdTree[domainKey];
+  const dev      = save.carDev[domainKey];
+
+  if (!confirm(`⚡ Tenter un concept radical en ${domain.label} ?\n\n45% de chance : +10 pts\n35% de chance : +4 pts\n20% de chance : -3 pts\n\nCoût : ${cfg.budget}M€ + ${cfg.tokens} tokens`)) return;
+
+  if ((save.rdBudget||0) < cfg.budget) { toast('❌ Budget insuffisant !', true); return; }
+  if ((save.tokens||0) < cfg.tokens)   { toast('❌ Tokens insuffisants !', true); return; }
+
+  save.rdBudget = Math.round(((save.rdBudget||0) - cfg.budget) * 10) / 10;
+  save.tokens   = Math.max(0, (save.tokens||0) - cfg.tokens);
+
+  // Tirer le résultat
+  const roll = Math.random();
+  let gain, result;
+  if (roll < outcomes.success.probability) {
+    gain = outcomes.success.gain; result = '🎉 Succès !';
+  } else if (roll < outcomes.success.probability + outcomes.partial.probability) {
+    gain = outcomes.partial.gain; result = '✅ Succès partiel';
+  } else {
+    gain = outcomes.failure.gain; result = '❌ Échec';
+  }
+
+  dev.level = Math.max(45, Math.min(100, (dev.level||70) + gain));
+  save.riskyConceptDone        = save.riskyConceptDone || {};
+  save.riskyConceptDone[domainKey] = true;
+
+  // Log news
+  if (save.news) save.news.push({
+    icon: gain > 0 ? '⚡' : '💥', category:'technical',
+    title: `Concept risqué ${domain.label} : ${result}`,
+    text: `${gain > 0 ? '+' : ''}${gain} pts en ${domain.label}. Nouveau niveau : ${dev.level}.`,
+  });
+
+  document.getElementById('tokenBadge').textContent = `🔬 ${save.tokens} tokens`;
+  Save.save(save);
+  toast(`${result} ${gain > 0 ? '+' : ''}${gain} pts en ${domain.label} !`, gain < 0);
+  renderAll();
+}
+
+// ── SPÉCIALISATION ───────────────────────────────────────────
+function getSpecialization(save) {
+  const specs = [];
+  const sb    = save.staffBonuses || {};
+  Object.entries(F1Data.rdTree).forEach(([key, domain]) => {
+    const dev       = save.carDev?.[key] || { level:70 };
+    const spec      = F1Data.specializations?.[key];
+    const threshold = spec?.threshold || 90;
+    if ((dev.level||70) >= threshold) {
+      specs.push({ domain: domain.label, icon: domain.icon, level: dev.level, bonus: spec?.bonus || 0.5 });
+    }
+  });
+  return specs;
+}
+
 function buyUpgrade(domainKey, upgradeId, isNextYear) {
   const domain = F1Data.rdTree[domainKey];
   const upg    = isNextYear
@@ -555,23 +671,25 @@ function buyUpgrade(domainKey, upgradeId, isNextYear) {
   save.tokens   = Math.max(0, (save.tokens||0) - upg.tokens);
 
   if (isNextYear) {
-    // Investissement saison suivante
     save.nextYearDev = save.nextYearDev || {};
     save.nextYearDev[upgradeId] = {
       domainKey, gain: upg.gain,
       investedAt: save.race || 0,
     };
-    toast(`🟣 Investissement ${domain.label} 2026 confirmé ! +${upg.gain} pts base`);
+    const displayGain = Math.round(upg.gain * (F1Data.nextYearBonusMultiplier||1.8));
+    toast(`🟣 Investissement ${domain.label} ${(save.season||2025)+1} confirmé ! +${displayGain} pts base`);
   } else {
-    // Upgrade livraison différée
+    // Appliquer rendement décroissant si fin de saison
+    const isLate   = (save.race||0) >= (F1Data.LATE_SEASON_RACE||15);
+    const gainMult = isLate ? (F1Data.LATE_SEASON_PENALTY||0.70) : 1.0;
+    const realGain = Math.round(upg.gain * gainMult);
+
     dev.pending = dev.pending || [];
     dev.pending.push({
-      upgradeId,
-      name:          upg.name,
-      gain:          upg.gain,
-      deliverAtRace: (save.race || 0) + upg.deliveryGps,
+      upgradeId, name: upg.name, gain: realGain,
+      deliverAtRace: (save.race||0) + upg.deliveryGps,
     });
-    toast(`✅ ${upg.name} commandé — livraison dans ${upg.deliveryGps} GP`);
+    toast(`✅ ${upg.name} commandé — livraison dans ${upg.deliveryGps} GP (+${realGain} pts)${isLate?' ⚠️ -30% fin de saison':''}`);
   }
 
   document.getElementById('tokenBadge').textContent  = `🔬 ${save.tokens} tokens`;
