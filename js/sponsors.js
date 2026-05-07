@@ -912,40 +912,79 @@ const Sponsors = {
     const bestPos       = playerResults.length ? Math.min(...playerResults.map(r => r.position||20)) : 20;
     const teamPoints    = playerResults.reduce((s,r) => s+(r.points||0), 0);
     const dnfs          = playerResults.filter(r => r.status === 'dnf').length;
+    const mediaScore    = (bestPos <= 3 ? 3 : bestPos <= 10 ? 1 : 0);
 
-    // Calculer la réputation médiatique (podiums et incidents visibles)
-    const mediaScore = (bestPos <= 3 ? 3 : bestPos <= 10 ? 1 : 0);
-
-    // Mettre à jour chaque contrat
     (save.sponsors||[]).forEach(sp => {
       (sp.clauses||[]).forEach(cl => {
         cl.progress = cl.progress || 0;
+        const wasAlreadyMet = cl.type === 'dnf_max'
+          ? cl.progress > cl.target
+          : cl.progress >= cl.target;
+
         switch(cl.type) {
-          case 'podiums':    if (bestPos <= 3)  cl.progress++;          break;
-          case 'top5':       if (bestPos <= 5)  cl.progress++;          break;
-          case 'top10':      if (bestPos <= 10) cl.progress++;          break;
-          case 'quali_top5': if (save.lastQualiPos <= 5) cl.progress++; break;
-          case 'points':     cl.progress += teamPoints;                  break;
-          case 'races':      cl.progress++;                              break;
+          case 'podiums':         if (bestPos <= 3)  cl.progress++; break;
+          case 'top5':            if (bestPos <= 5)  cl.progress++; break;
+          case 'top10':           if (bestPos <= 10) cl.progress++; break;
+          case 'quali_top5':      if (save.lastQualiPos <= 5) cl.progress++; break;
+          case 'points':          cl.progress += teamPoints; break;
+          case 'races':           cl.progress++; break;
           case 'points_finishes': if (teamPoints > 0) cl.progress++; break;
-          case 'media':      cl.progress += mediaScore;                  break;
-          case 'dnf_max':    cl.progress += dnfs;                        break; // ici progress = nbr DNF
+          case 'media':           cl.progress += mediaScore; break;
+          case 'dnf_max':         cl.progress += dnfs; break;
+        }
+
+        // Objectif atteint pour la première fois → bonus immédiat + nouvel objectif
+        const isMet = cl.type === 'dnf_max'
+          ? cl.progress <= cl.target
+          : cl.progress >= cl.target;
+
+        if (isMet && !wasAlreadyMet && !cl.bonusPaid) {
+          // Verser le bonus immédiatement
+          if (cl.bonus > 0) {
+            save.budget = Math.round(((save.budget||0) + cl.bonus) * 10) / 10;
+            cl.bonusPaid = true;
+            save.news = save.news || [];
+            save.news.unshift({
+              icon: '🎯', category: 'sponsor', date: new Date().toISOString(),
+              title: `Objectif atteint — ${sp.name} !`,
+              text: `Bonus versé : +${cl.bonus}M€. ${sp.personality === 'developer' ? 'Un nouvel objectif bonus est disponible !' : ''}`,
+            });
+          }
+
+          // Sponsor développeur → propose un objectif bonus plus difficile
+          if (sp.personality === 'developer' && !cl.bonusObjective) {
+            cl.bonusObjective = {
+              target:     Math.round(cl.target * 1.5),
+              bonus:      Math.round(cl.bonus * 1.3),
+              progress:   cl.progress,
+              unlocked:   true,
+            };
+          }
+        }
+
+        // Objectif bonus atteint
+        if (cl.bonusObjective?.unlocked && !cl.bonusObjective.paid) {
+          const bonusReached = cl.progress >= cl.bonusObjective.target;
+          if (bonusReached) {
+            save.budget = Math.round(((save.budget||0) + cl.bonusObjective.bonus) * 10) / 10;
+            cl.bonusObjective.paid = true;
+            save.news = save.news || [];
+            save.news.unshift({
+              icon: '🏆', category: 'sponsor', date: new Date().toISOString(),
+              title: `Objectif bonus atteint — ${sp.name} !`,
+              text: `Tu as dépassé les attentes ! Bonus exceptionnel : +${cl.bonusObjective.bonus}M€`,
+            });
+          }
         }
       });
     });
 
-    // Mettre à jour la réputation
+    // Réputation
     save.reputation = save.reputation || { sport:40, media:40, tech:40, finance:40 };
-    // Réputation — montée lente, descente très rare
-    // Sportive : +1 par podium uniquement (pas top 10)
     if (bestPos <= 3) {
-      save.reputation.sport  = Math.min(100, save.reputation.sport  + 1);
-      save.reputation.media  = Math.min(100, save.reputation.media  + 1);
+      save.reputation.sport = Math.min(100, save.reputation.sport + 1);
+      save.reputation.media = Math.min(100, save.reputation.media + 1);
     }
-    // Technique : +1 si course terminée proprement (pas de DNF mécanique)
-    // Accumulé en fin de saison via endOfSeason — pas par course
-    // Financière : idem — uniquement fin de saison
-    // DNF : pénalité très légère sur la technique seulement
     if (dnfs > 0) {
       save.reputation.tech = Math.max(10, save.reputation.tech - 1);
     }
