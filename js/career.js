@@ -346,8 +346,19 @@ const Career = {
       });
     }
 
-    // 10. Reset le flag bannière
-    delete save._bannerDismissed;
+    // 12. Appliquer les investissements R&D voiture suivante
+    if (save.nextYearDev) {
+      Object.entries(save.nextYearDev).forEach(([upgradeId, inv]) => {
+        const domKey = inv.domainKey;
+        if (!domKey || !save.carDev?.[domKey]) return;
+        save.carDev[domKey].level = Math.min(100, (save.carDev[domKey].level || 70) + inv.gain);
+      });
+      save.nextYearDev = {}; // reset pour la nouvelle saison
+      // Recharger le budget R&D pour la nouvelle saison
+      const team = F1Data.teams.find(t => t.id === save.playerTeamId);
+      save.rdBudget      = Math.round((team?.budget || 200) * (F1Data.rdBudgetRatio || 0.4));
+      save.rdBudgetTotal = save.rdBudget;
+    }
 
     // 11. Traiter le staff généré (vieillissement + nouveaux + mouvements IA)
     const staffReport          = this.processStaffEndOfSeason(save);
