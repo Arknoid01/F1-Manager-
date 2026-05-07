@@ -936,9 +936,19 @@ const Sponsors = {
 
     // Mettre à jour la réputation
     save.reputation = save.reputation || { sport:40, media:40, tech:40, finance:40 };
-    if (bestPos <= 3)  { save.reputation.sport  = Math.min(100, save.reputation.sport  + 2); save.reputation.media = Math.min(100, save.reputation.media + 2); }
-    if (bestPos <= 10) { save.reputation.sport  = Math.min(100, save.reputation.sport  + 1); }
-    if (dnfs > 0)      { save.reputation.sport  = Math.max(0,   save.reputation.sport  - 1); save.reputation.tech  = Math.max(0, save.reputation.tech - 1); }
+    // Réputation — montée lente, descente très rare
+    // Sportive : +1 par podium uniquement (pas top 10)
+    if (bestPos <= 3) {
+      save.reputation.sport  = Math.min(100, save.reputation.sport  + 1);
+      save.reputation.media  = Math.min(100, save.reputation.media  + 1);
+    }
+    // Technique : +1 si course terminée proprement (pas de DNF mécanique)
+    // Accumulé en fin de saison via endOfSeason — pas par course
+    // Financière : idem — uniquement fin de saison
+    // DNF : pénalité très légère sur la technique seulement
+    if (dnfs > 0) {
+      save.reputation.tech = Math.max(10, save.reputation.tech - 1);
+    }
 
     Save.save(save);
   },
@@ -1021,14 +1031,17 @@ const Sponsors = {
       }
     });
 
-    // Réputation globale évolue selon classement
-    const rep = save.reputation || {};
-    const repBonus = playerPos <= 3 ? 5 : playerPos <= 6 ? 2 : playerPos <= 10 ? 0 : -2;
+    // Réputation fin de saison — changements significatifs mais rares
+    const repBonus = playerPos <= 3 ? 4 : playerPos <= 6 ? 2 : playerPos <= 10 ? 1 : 0;
+    const repPenalty = playerPos >= 10 ? -1 : 0; // pénalité seulement si vraiment en fond
+
+    // Sportive et médiatique : selon classement
     save.reputation = {
-      sport:   Math.max(10, Math.min(100, (rep.sport||40)   + repBonus)),
-      media:   Math.max(10, Math.min(100, (rep.media||40)   + repBonus - 1)),
-      tech:    Math.max(10, Math.min(100, (rep.tech||40)    + Math.round(repBonus * 0.7))),
-      finance: Math.max(10, Math.min(100, (rep.finance||40) + Math.round(repBonus * 0.5))),
+      sport:   Math.max(10, Math.min(100, (rep.sport||40)   + repBonus + repPenalty)),
+      media:   Math.max(15, Math.min(100, (rep.media||40)   + repBonus)), // jamais pénalisée
+      tech:    Math.max(15, Math.min(100, (rep.tech||40)    + (repBonus > 0 ? 1 : 0)   // monte si bons résultats
+                                        + (save._seasonDnfs||0) === 0 ? 1 : 0)),        // +1 si saison sans DNF
+      finance: Math.max(15, Math.min(100, (rep.finance||40) + (playerPos <= 6 ? 2 : playerPos <= 10 ? 1 : 0))), // jamais pénalisée
     };
 
     // Générer de nouvelles offres pour la saison suivante
