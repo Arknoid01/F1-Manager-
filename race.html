@@ -79,6 +79,7 @@
     .s-row:hover { background:#14141e; }
     .s-row.lead { background:#191910; }
     .s-row.dnf  { opacity:.4; }
+  .s-row.s-player { background:rgba(245,200,66,0.07); border-left:2px solid var(--gold); }
     .pos { font-family:var(--fh); font-weight:900; font-size:15px; color:var(--muted); text-align:center; }
     .pos.p1{color:var(--gold)} .pos.p2{color:#c0c0c0} .pos.p3{color:#cd7f32}
     .dnum { font-family:var(--fh); font-size:10px; color:var(--muted); text-align:center; }
@@ -419,15 +420,17 @@ const CR = {
 
     // Créer 1 élément SVG par voiture (triés par grille de départ)
     if (!Race.state) return;
+    const _sv = Save.load();
+    const _pid = _sv?.playerTeamId?.toLowerCase() || '';
     Race.state.grid.forEach((car, idx) => {
       const g = document.createElementNS('http://www.w3.org/2000/svg','g');
 
       // Couleur via F1Data - match insensible à la casse
       const teamColor = F1Data.teams.find(t =>
         t.id?.toLowerCase() === car.driver.teamId?.toLowerCase()
-      )?.color || '#ffffff';
+      )?.color || '#888888';
 
-      const isPlayerCar = car.driver.teamId?.toLowerCase() === (Save.load()?.playerTeamId||'').toLowerCase();
+      const isPlayerCar = car.driver.teamId?.toLowerCase() === _pid;
       const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
       c.setAttribute('r', isPlayerCar ? '7' : '5');
       c.setAttribute('fill', teamColor);
@@ -1128,14 +1131,14 @@ function renderStandings() {
       : isDnf ? '<span class="dnf-b">DNF</span>' : '';
 
     const row = document.createElement('div');
-    row.className = `s-row${isLead?' lead':''}${isDnf?' dnf':''}${isPlayer?' player-row':''}`;
+    row.className = `s-row${isLead?' lead':''}${isDnf?' dnf':''}${isPlayer?' s-player':''}`;
     const pc = car.position<=3 ? `pos p${car.position}` : 'pos';
     row.innerHTML = `
       <div class="${pc}">${car.position}</div>
       <div class="dnum">${car.driver.number}</div>
       <div class="tbar" style="background:${car.team.color}"></div>
       <div style="flex:1;min-width:0">
-        <div class="dname">${isPlayer?'<span style="color:var(--gold)">★</span> ':''}${car.driver.name} ${badge}</div>
+        <div class="dname">${isPlayer?'<span style="color:var(--gold);font-size:10px;vertical-align:middle;margin-right:2px">★</span>':''}${car.driver.name} ${badge}</div>
         <div class="dteam-s">${car.team.shortName}</div>
       </div>
       <div class="tyre-cell">
