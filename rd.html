@@ -309,6 +309,13 @@ function renderBudget() {
   const currentRace = save.race || 0;
   const totalRaces  = F1Data.circuits.length;
   const specs       = getSpecialization(save);
+  const opMult      = save._opCostMultiplier || 1.0;
+  const seasonsPlayed = save.completedSeasons?.length || 0;
+  // Héritage total de la saison précédente
+  const DOMAINS = ['aero','chassis','engine','reliability'];
+  const totalHeritage = DOMAINS.reduce((s,d)=>s+(save.carDev?.[d]?._heritage||0),0);
+  // Stagnation en cours ?
+  const stag = save._lastStagnationDomain;
 
   document.getElementById('budgetHero').innerHTML = `
     <div class="bh-card">
@@ -316,21 +323,36 @@ function renderBudget() {
       <div class="bh-val" style="color:var(--gold)">${budget} M€</div>
       <div class="bh-sub">${rdSpent} M€ dépensé / ${budgetTotal} M€ total</div>
       <div style="height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden">
-        <div style="height:100%;border-radius:2px;background:var(--gold);width:${Math.round((budget/budgetTotal)*100)}%"></div>
+        <div style="height:100%;border-radius:2px;background:var(--gold);width:${Math.round((budget/Math.max(1,budgetTotal))*100)}%"></div>
       </div>
     </div>
     <div class="bh-card">
       <div class="bh-lbl">Tokens R&D</div>
       <div class="bh-val" style="color:var(--blue)">${tokens} 🔬</div>
-      <div class="bh-sub">Course ${currentRace}/${totalRaces} · +1-3/GP</div>
+      <div class="bh-sub">Course ${currentRace}/${totalRaces} · max 3/GP</div>
     </div>
+    <div class="bh-card">
+      <div class="bh-lbl">Héritage technique</div>
+      <div class="bh-val" style="color:var(--green)">${totalHeritage > 0 ? '+'+totalHeritage.toFixed(1)+' pts' : '—'}</div>
+      <div class="bh-sub">Conservé de la saison précédente (${Math.round((Math.max(0.15,0.35-(seasonsPlayed-1)*0.03))*100)}%)</div>
+    </div>
+    <div class="bh-card">
+      <div class="bh-lbl">Coûts opérationnels</div>
+      <div class="bh-val" style="color:${opMult>1.15?'var(--accent)':'var(--text)'}">×${opMult.toFixed(2)}</div>
+      <div class="bh-sub">${seasonsPlayed} saison${seasonsPlayed>1?'s':''} jouée${seasonsPlayed>1?'s':''} · +4%/an</div>
+    </div>
+    ${stag ? `
+    <div class="bh-card" style="grid-column:span 2;border-color:#3a0000;background:#1a0000">
+      <div class="bh-lbl" style="color:var(--accent)">⚠️ Stagnation en cours</div>
+      <div style="font-family:var(--fh);font-size:13px;color:var(--muted);margin-top:4px">${stag.toUpperCase()} gelé cette saison</div>
+    </div>` : `
     <div class="bh-card" style="grid-column:span 2">
       <div class="bh-lbl">Spécialisations actives</div>
       ${specs.length
         ? specs.map(s=>`<span style="font-family:var(--fh);font-size:12px;color:var(--green);margin-right:10px">${s.icon} ${s.domain} ≥${s.level} — bonus piste +${s.bonus}s</span>`).join('')
         : `<div style="font-family:var(--fh);font-size:12px;color:var(--muted)">Aucune — atteins 88-90 dans un domaine pour débloquer un bonus circuit</div>`
       }
-    </div>
+    </div>`}
   `;
 }
 
@@ -437,7 +459,7 @@ function renderDomain(key) {
       <div class="domain-icon">${domain.icon}</div>
       <div class="domain-info">
         <div class="domain-name">${domain.label}</div>
-        <div class="domain-stat">${domain.upgrades.filter(u => dev.done.includes(u.id)).length}/${domain.upgrades.length} upgrades · ${dev.pending?.length || 0} en livraison</div>
+        <div class="domain-stat">${domain.upgrades.filter(u => dev.done.includes(u.id)).length}/${domain.upgrades.length} upgrades · ${dev.pending?.length || 0} en livraison${dev._heritage>0?' · <span style=\"color:var(--green)\">+'+dev._heritage.toFixed(1)+' héritage</span>':''}</div>
         <div class="stat-bar-wrap">
           <div class="stat-bar-fill" style="width:${dev.level || 70}%;background:${domain.color}"></div>
         </div>
@@ -481,9 +503,66 @@ function renderDomain(key) {
       ${buildUpgradeCard(domain.nextYear, dev, false, true)}
     </div>
 
+    <!-- Upgrade low-cost (filet de sécurité) -->
+    ${save._safetyUpgradeAvailable || (save.budget||0) < 20 ? buildLowCostSection(key, dev) : ''}
+
     <!-- Concept risqué -->
     ${buildRiskyConceptCard(key, domain, dev)}
   `;
+}
+
+
+function buildLowCostSection(domainKey, dev) {
+  const upgrades = typeof Career !== 'undefined' ? Career.getLowCostUpgrades() : [];
+  const upg = upgrades.find(u => u.domain === domainKey);
+  if (!upg) return '';
+  const alreadyDone = (dev.done||[]).includes(upg.id);
+  const canAfford = (save.budget||0) >= upg.cost;
+  return `
+    <div style="padding:8px 14px;font-family:var(--fh);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+      🟢 Optimisation de base — toujours disponible
+    </div>
+    <div class="upgrade-list">
+      <div class="upgrade-card ${alreadyDone?'done':'available'}">
+        <div class="uc-badge ${alreadyDone?'done':'available'}">${alreadyDone?'✅':'🟢'}</div>
+        <div class="uc-info">
+          <div class="uc-name">${upg.name}</div>
+          <div class="uc-desc">${upg.desc}</div>
+          <div class="uc-costs">
+            <span class="uc-cost budget">💰 ${upg.cost}M€</span>
+            <span class="uc-cost" style="background:#002a00;color:var(--green);border:1px solid #005a00">🎁 0 token</span>
+            <span class="uc-cost delivery">🚚 +${upg.deliveryGps} GP</span>
+            <span class="uc-cost gain">+${upg.gain} pt</span>
+          </div>
+          <div style="margin-top:6px">
+            ${alreadyDone
+              ? '<span style="font-family:var(--fh);font-size:11px;color:var(--green)">✅ Fait cette saison</span>'
+              : `<button class="uc-btn buy" onclick="buyLowCost('${domainKey}')" ${!canAfford?'disabled':''}>
+                   🟢 Optimiser
+                 </button>
+                 ${!canAfford?'<span style=\"font-family:var(--fh);font-size:10px;color:var(--accent)\">⚠️ Budget insuffisant</span>':''}`
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buyLowCost(domainKey) {
+  save = Save.load();
+  const upg = typeof Career !== 'undefined' ? Career.getLowCostUpgrades().find(u=>u.domain===domainKey) : null;
+  if (!upg) return;
+  if ((save.budget||0) < upg.cost) { toast('❌ Budget insuffisant !', true); return; }
+  const dev = save.carDev[domainKey];
+  if ((dev.done||[]).includes(upg.id)) { toast('Déjà fait cette saison !', true); return; }
+  save.budget = Math.round(((save.budget||0) - upg.cost) * 10) / 10;
+  dev.pending = dev.pending || [];
+  dev.pending.push({ upgradeId: upg.id, name: upg.name, gain: upg.gain, deliverAtRace: (save.race||0) + upg.deliveryGps });
+  document.getElementById('budgetBadge').textContent = `💰 ${Math.round((save.budget||0)*10)/10} M €`;
+  toast(`🟢 Optimisation ${domainKey} commandée — livraison dans ${upg.deliveryGps} GP (+${upg.gain} pt)`);
+  Save.save(save);
+  renderAll();
 }
 
 function buildUpgradeCard(upg, dev, _frozen, isNextYear) {
@@ -496,8 +575,13 @@ function buildUpgradeCard(upg, dev, _frozen, isNextYear) {
   const done      = isNextYear ? !!save.nextYearDev?.[upg.id] : dev.done.includes(upg.id);
   const pending   = !isNextYear && dev.pending?.some(p => p.upgradeId === upg.id);
   const locked    = !isNextYear && upg.requires && !dev.done.includes(upg.requires);
-  const canAfford = (save.budget || 0) >= upg.cost;
-  const hasTokens = (save.tokens  || 0) >= upg.tokens;
+  // Plafond 85 : coût doublé au-delà (budget ET tokens)
+  const currentLevel = save.carDev?.[currentDomain]?.level || 70;
+  const aboveCap = currentLevel >= 85;
+  const effectiveCost   = aboveCap && !isNextYear ? upg.cost   * 2 : upg.cost;
+  const effectiveTokens = aboveCap && !isNextYear ? upg.tokens * 2 : upg.tokens;
+  const canAfford = (save.budget || 0) >= effectiveCost;
+  const hasTokens = (save.tokens  || 0) >= effectiveTokens;
 
   let status = 'available';
   if (done)    status = 'done';
@@ -529,8 +613,8 @@ function buildUpgradeCard(upg, dev, _frozen, isNextYear) {
         <div class="uc-name">${upg.name}${isNextYear?` <span style="font-size:10px;color:var(--purple)">(${(save.season||2025)+1})</span>`:''}</div>
         <div class="uc-desc">${upg.desc}</div>
         <div class="uc-costs">
-          <span class="uc-cost budget">💰 ${upg.cost}M€</span>
-          <span class="uc-cost tokens">🔬 ${upg.tokens} token${upg.tokens>1?'s':''}</span>
+          <span class="uc-cost budget">💰 ${effectiveCost}M€${aboveCap&&!isNextYear?' <span style=\"color:var(--orange);font-size:9px\">×2 (≥85)</span>':''}</span>
+          <span class="uc-cost tokens">🔬 ${effectiveTokens} token${effectiveTokens>1?'s':''}${aboveCap&&!isNextYear?' <span style=\"color:var(--orange);font-size:9px\">×2</span>':''}</span>
           ${!isNextYear?`<span class="uc-cost delivery">🚚 +${upg.deliveryGps} GP</span>`:''}
           <span class="uc-cost gain">+${realGain}${isNextYear?' (saison suivante)':''}</span>
         </div>
@@ -659,14 +743,19 @@ function buyUpgrade(domainKey, upgradeId, isNextYear) {
   const dev = save.carDev[domainKey];
 
   // Vérifications
-  if ((save.budget||0) < upg.cost)   { toast('❌ Budget R&D insuffisant !', true); return; }
-  if ((save.tokens||0) < upg.tokens)   { toast('❌ Pas assez de tokens !', true); return; }
+  // Plafond 85 : coût doublé
+  const buyLevel = save.carDev?.[domainKey]?.level || 70;
+  const buyAboveCap = buyLevel >= 85 && !isNextYear;
+  const buyCost   = buyAboveCap ? upg.cost   * 2 : upg.cost;
+  const buyTokens = buyAboveCap ? upg.tokens * 2 : upg.tokens;
+  if ((save.budget||0) < buyCost)   { toast('❌ Budget R&D insuffisant !' + (buyAboveCap?' (coût ×2 car ≥85 pts)':''), true); return; }
+  if ((save.tokens||0) < buyTokens) { toast('❌ Pas assez de tokens !'  + (buyAboveCap?' (coût ×2 car ≥85 pts)':''), true); return; }
   if (!isNextYear && dev.done.includes(upgradeId)) { toast('Déjà acheté !', true); return; }
   if (!isNextYear && dev.pending?.some(p => p.upgradeId === upgradeId)) { toast('Déjà commandé !', true); return; }
 
   // Déduire coûts
-  save.budget = Math.round(((save.budget||0) - upg.cost) * 10) / 10;
-  save.tokens   = Math.max(0, (save.tokens||0) - upg.tokens);
+  save.budget = Math.round(((save.budget||0) - buyCost) * 10) / 10;
+  save.tokens   = Math.max(0, (save.tokens||0) - buyTokens);
 
   if (isNextYear) {
     save.nextYearDev = save.nextYearDev || {};
