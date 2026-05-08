@@ -17,15 +17,6 @@ const CareerEvents = {
     save.boardObjectives = save.boardObjectives || this.generateObjectives(save);
     save.boardPressure = Number.isFinite(save.boardPressure) ? save.boardPressure : 0;
     save.fanBase       = Number.isFinite(save.fanBase) ? save.fanBase : 50;
-
-    // Couche narrative persistante, volontairement douce sur l'équilibrage.
-    save.notifications = Array.isArray(save.notifications) ? save.notifications : [];
-    save.storyWorld = save.storyWorld || {};
-    save.storyWorld.memory = Array.isArray(save.storyWorld.memory) ? save.storyWorld.memory : [];
-    save.storyWorld.rivalries = Array.isArray(save.storyWorld.rivalries) ? save.storyWorld.rivalries : [];
-    save.storyWorld.relationships = save.storyWorld.relationships || {};
-    save.storyWorld.teamIdentity = save.storyWorld.teamIdentity || { strategy:0, development:0, reliability:0, media:0, academy:0 };
-    save.storyWorld.cooldowns = save.storyWorld.cooldowns || {};
     return save;
   },
 
@@ -322,18 +313,8 @@ const CareerEvents = {
     this.decayEffects(save);
     this.updateBoardPressure(save);
 
-    // Compatibilité : recordRaceResults appelle parfois avec seulement {results}.
-    if ((!summary.playerPosition || !summary.playerPoints) && Array.isArray(summary.results)) {
-      const playerResults = summary.results.filter(r => r.team?.id === save.playerTeamId || r.teamId === save.playerTeamId);
-      if (playerResults.length) {
-        summary.playerPosition = Math.min(...playerResults.map(r=>r.position||99));
-        summary.playerPoints = playerResults.reduce((sum,r)=>sum+(r.points||0),0);
-      }
-    }
-
     const pos = summary.playerPosition || 0;
     if (pos > 0) this.updateFanBase(save, pos);
-    this.generateStoryPulse(save, summary);
 
     // Toujours loguer le résultat de course
     if (pos > 0) {
@@ -460,169 +441,6 @@ const CareerEvents = {
       d.eventLabel = e.label;
       return d;
     } catch(err) { return driver; }
-  },
-
-
-  // ── STORY WORLD / NOTIFICATIONS IMPACTANTES ──────────────
-  clamp(v,min=0,max=100){ return Math.max(min, Math.min(max, Number(v)||0)); },
-
-  money(save, delta){
-    const d = Math.max(-6, Math.min(8, Number(delta)||0));
-    save.budget = Math.round(((Number(save.budget)||0) + d) * 10) / 10;
-    if (save.budget < 0) save.budget = 0;
-  },
-
-  tokens(save, delta){
-    const d = Math.max(-1, Math.min(1, Number(delta)||0));
-    save.tokens = Math.max(0, (Number(save.tokens)||0) + d);
-  },
-
-  addMemory(save, item){
-    this.ensure(save);
-    save.storyWorld.memory.unshift({
-      date:new Date().toISOString(), season:save.season, race:save.race,
-      ...item
-    });
-    save.storyWorld.memory = save.storyWorld.memory.slice(0,80);
-  },
-
-  notificationKey(type){ return `_lastStory_${type}`; },
-
-  canTriggerStory(save, type, gap=2){
-    this.ensure(save);
-    const key=this.notificationKey(type);
-    const now=(save.season||2025)*100 + (save.race||0);
-    const last=save.storyWorld.cooldowns[key] || -9999;
-    if (now-last < gap) return false;
-    save.storyWorld.cooldowns[key]=now;
-    return true;
-  },
-
-  createDecision(save, ev){
-    this.ensure(save);
-    const sameOpen = save.notifications.some(n => !n.resolved && n.title === ev.title && n.text === ev.text);
-    if (sameOpen) return null; // évite les doublons visibles
-    const unresolved = save.notifications.filter(n=>!n.resolved).length;
-    if (unresolved >= 3) return null; // évite le spam et la pression permanente
-    const id = `story_${Date.now()}_${Math.floor(Math.random()*9999)}`;
-    const notif = {
-      id, resolved:false, date:new Date().toISOString(), season:save.season, race:save.race,
-      importance: ev.importance || 'normal', category: ev.category || 'story',
-      icon: ev.icon || '📌', title: ev.title, text: ev.text, choices: ev.choices || []
-    };
-    save.notifications.unshift(notif);
-    save.notifications = save.notifications.slice(0,30);
-    this.log(save, { phase:'story', icon:notif.icon, category:notif.category, title:`Décision — ${notif.title}`, text:notif.text, notificationId:id });
-    return notif;
-  },
-
-  resolveNotification(save, id, choiceId){
-    this.ensure(save);
-    const n = save.notifications.find(x=>x.id===id);
-    if (!n || n.resolved) return { ok:false, msg:'Notification introuvable ou déjà résolue.' };
-    const c = (n.choices||[]).find(x=>x.id===choiceId) || (n.choices||[])[0];
-    if (!c) return { ok:false, msg:'Choix introuvable.' };
-    if (typeof c.apply === 'function') c.apply(save, n);
-    n.resolved = true; n.choiceId = c.id; n.resolvedAt = new Date().toISOString(); n.outcome = c.outcome || c.label;
-    this.log(save, { phase:'story', icon:'✅', category:n.category, title:`Choix validé — ${n.title}`, text:c.outcome || c.label });
-    this.addMemory(save, { icon:n.icon, category:n.category, title:n.title, text:c.outcome || c.label });
-    if (typeof Save !== 'undefined') Save.save(save);
-    return { ok:true, msg:c.outcome || 'Décision appliquée.' };
-  },
-
-
-  updateRivalries(save, results, best){
-    if(!best || !Array.isArray(results) || !results.length) return;
-    const me = best.driverId || best.driver?.id || best.driverName;
-    const nearby = results.find(r => r !== best && Math.abs((r.position||99) - (best.position||99)) === 1);
-    if(!me || !nearby) return;
-    const rival = nearby.driverId || nearby.driver?.id || nearby.driverName;
-    if(!rival) return;
-    const key = [me,rival].sort().join('_vs_');
-    let row = save.storyWorld.rivalries.find(r=>r.key===key);
-    if(!row){
-      row = { key, a:me, b:rival, aName:best.driverName || [best.driver?.firstName,best.driver?.name].filter(Boolean).join(' '), bName:nearby.driverName || [nearby.driver?.firstName,nearby.driver?.name].filter(Boolean).join(' '), heat:0, races:0 };
-      save.storyWorld.rivalries.push(row);
-    }
-    row.heat = this.clamp((row.heat||0)+6,0,100);
-    row.races = (row.races||0)+1;
-    row.lastSeason = save.season; row.lastRace = save.race;
-    if(row.heat>=18 && row.races%3===0){
-      this.log(save,{ phase:'story', icon:'🔥', category:'rivalry', title:'Rivalité qui s’installe', text:`${row.aName} et ${row.bName} se croisent encore en piste. Le paddock commence à suivre ce duel.` });
-      this.addMemory(save,{ icon:'🔥', category:'rivalry', title:'Rivalité suivie', text:`${row.aName} vs ${row.bName} gagne en intensité.` });
-    }
-  },
-
-  generateStoryPulse(save, summary={}){
-    this.ensure(save);
-    const results = summary.results || [];
-    const player = results.filter(r=>r.team?.id === save.playerTeamId || r.teamId === save.playerTeamId);
-    const best = player.length ? player.slice().sort((a,b)=>(a.position||99)-(b.position||99))[0] : null;
-    const pts = player.reduce((s,r)=>s+(r.points||0),0);
-    const drivers = this.teamDrivers(save);
-    const d = drivers.length ? this.rand(drivers) : null;
-    const pos = best?.position || summary.playerPosition || 99;
-    const teamIdentity = save.storyWorld.teamIdentity;
-
-    // Mémoire douce après chaque GP : toujours utile pour l'historique, sans impact direct.
-    if (best) {
-      this.addMemory(save, {
-        icon: pts>0?'✅':'📊', category:'race_memory',
-        title:`GP ${save.race+1 || ''} — ${pts>0?'points marqués':'week-end sans point'}`,
-        text:`Meilleur résultat P${pos}. ${pts} point${pts>1?'s':''} pour l'équipe.`
-      });
-      this.updateRivalries(save, results, best);
-    }
-
-    // Décisions rares et équilibrées : 0 ou 1 par GP en moyenne.
-    if (Math.random() > 0.48) return;
-
-    const options = [];
-    if (d && this.canTriggerStory(save,'driver_mood',2)) options.push(() => this.createDecision(save, {
-      icon:'🎧', category:'driver', title:`Message de ${d.firstName} ${d.name}`,
-      text: pos<=10 ? `${d.firstName} sent que l'équipe progresse et demande plus de priorité stratégique au prochain GP.` : `${d.firstName} trouve que la stratégie ne lui a pas permis de maximiser le résultat.`,
-      choices:[
-        { id:'support', label:'Le soutenir publiquement', preview:'+moral pilote, +médias, légère pression interne', outcome:`${d.firstName} se sent soutenu. Le paddock remarque votre gestion humaine.`, apply:(s)=>{ this.applyDriverEffect(s,d.id,{consistency:+2,races:1,label:'Soutenu par l’équipe'}); s.fanBase=this.clamp((s.fanBase||50)+2); teamIdentity.media+=1; } },
-        { id:'data', label:'Réunion données privée', preview:'+constance, petit gain technique possible', outcome:'L’équipe choisit une réponse calme et technique. Les ingénieurs repartent avec des axes précis.', apply:(s)=>{ this.applyDriverEffect(s,d.id,{consistency:+1,races:2,label:'Plan clair'}); if(Math.random()<0.45) this.tokens(s,+1); teamIdentity.strategy+=1; } },
-        { id:'firm', label:'Rappeler la priorité équipe', preview:'+board, moral pilote en léger risque', outcome:'Le message est clair : personne ne passe au-dessus du collectif.', apply:(s)=>{ s.boardPressure=Math.max(0,(s.boardPressure||0)-2); this.applyDriverEffect(s,d.id,{consistency:-1,races:1,label:'Recadré'}); } },
-      ]
-    }));
-
-    if (this.canTriggerStory(save,'sponsor_activation',3)) options.push(() => this.createDecision(save, {
-      icon:'💼', category:'financial', title:'Activation sponsor proposée',
-      text:'Un partenaire veut une opération média plus visible avant le prochain GP. C’est rentable, mais cela mobilise l’équipe.',
-      choices:[
-        { id:'accept', label:'Accepter l’opération', preview:'+3M€, +sponsors, fatigue légère', outcome:'L’opération plaît aux sponsors. Le garage râle un peu, mais les finances respirent.', apply:(s)=>{ this.money(s,+3); s.fanBase=this.clamp((s.fanBase||50)+1); if(s.immersion?.sponsorMood) s.immersion.sponsorMood.value=this.clamp(s.immersion.sponsorMood.value+3); teamIdentity.media+=1; } },
-        { id:'negotiate', label:'Négocier un format court', preview:'+1M€, impact neutre', outcome:'Vous trouvez un compromis propre : visibilité correcte, préparation préservée.', apply:(s)=>{ this.money(s,+1); if(s.immersion?.sponsorMood) s.immersion.sponsorMood.value=this.clamp(s.immersion.sponsorMood.value+1); } },
-        { id:'refuse', label:'Refuser pour protéger la performance', preview:'+focus sportif, sponsor -2', outcome:'Vous protégez la préparation. Le partenaire accepte, mais attend un résultat.', apply:(s)=>{ if(s.immersion?.sponsorMood) s.immersion.sponsorMood.value=this.clamp(s.immersion.sponsorMood.value-2); teamIdentity.strategy+=1; } },
-      ]
-    }));
-
-    if (this.canTriggerStory(save,'rd_focus',4)) options.push(() => this.createDecision(save, {
-      icon:'🔬', category:'technical', title:'Réunion R&D exceptionnelle',
-      text:'Les données du week-end révèlent une piste de travail. Les ingénieurs demandent quelle priorité suivre.',
-      choices:[
-        { id:'aero', label:'Priorité aéro', preview:'petit gain aéro ou +1 token', outcome:'Le département aéro reçoit un brief clair. Les gains restent progressifs.', apply:(s)=>{ if(s.carDev?.aero && Math.random()<0.35) s.carDev.aero.level=Math.min(100,s.carDev.aero.level+1); else this.tokens(s,+1); teamIdentity.development+=1; } },
-        { id:'reliability', label:'Priorité fiabilité', preview:'petit gain fiabilité', outcome:'L’équipe choisit la robustesse. Moins spectaculaire, mais précieux sur la saison.', apply:(s)=>{ if(s.carDev?.reliability) s.carDev.reliability.level=Math.min(100,s.carDev.reliability.level+1); teamIdentity.reliability+=1; } },
-        { id:'pitwall', label:'Priorité stratégie', preview:'+board / identité stratégie', outcome:'Le muret travaille sur les scénarios de course. L’équipe devient plus méthodique.', apply:(s)=>{ s.boardPressure=Math.max(0,(s.boardPressure||0)-1); teamIdentity.strategy+=2; } },
-      ]
-    }));
-
-    if (save.immersion?.juniorAcademy?.some(j=>j.promotable) && this.canTriggerStory(save,'academy_buzz',5)) {
-      const j = save.immersion.juniorAcademy.find(j=>j.promotable);
-      options.push(() => this.createDecision(save, {
-        icon:'🌱', category:'academy', title:`Le paddock observe ${j.firstName} ${j.name}`,
-        text:'Votre jeune pilote attire l’attention. Son entourage veut savoir si l’équipe croit vraiment en lui.',
-        choices:[
-          { id:'protect', label:'Le protéger médiatiquement', preview:'+loyauté, progression stable', outcome:`${j.firstName} reste concentré loin du bruit médiatique.`, apply:(s)=>{ j.loyalty=this.clamp((j.loyalty||55)+5); j.progress=Math.min(100,(j.progress||0)+3); teamIdentity.academy+=1; } },
-          { id:'spotlight', label:'Le mettre en avant', preview:'+fans, risque pression', outcome:`${j.firstName} devient un nom cité dans le paddock. La pression monte.`, apply:(s)=>{ s.fanBase=this.clamp((s.fanBase||50)+3); j.pressure=this.clamp((j.pressure||40)+5); teamIdentity.media+=1; } },
-          { id:'tests', label:'Financer des tests privés', preview:'-2M€, progression junior +', outcome:'Les tests coûtent un peu, mais le retour technique est excellent.', apply:(s)=>{ this.money(s,-2); j.progress=Math.min(100,(j.progress||0)+8); teamIdentity.academy+=2; } },
-        ]
-      }));
-    }
-
-    if (!options.length) return;
-    this.rand(options)();
   },
 
   // ── CONTRATS ──────────────────────────────────────────────

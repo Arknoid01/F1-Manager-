@@ -48,10 +48,15 @@ const Career = {
         driver[stat] = Math.max(50, Math.min(cap, Math.round((driver[stat] || 70) + delta)));
       });
 
-      // Retraite possible à partir de 38 ans (probabilité croissante)
+      // Retraite possible à partir de 38 ans (probabilité croissante).
+      // Les agents libres vieillissent/retraitent plus vite pour éviter un marché saturé
+      // de pilotes générés qui restent disponibles pendant 20 saisons.
       if (driver.age >= 38) {
-        const retireChance = (driver.age - 37) * 0.18;
-        if (Math.random() < retireChance) {
+        const isFreeAgent = !driver.teamId;
+        const retireChance = isFreeAgent
+          ? Math.min(0.95, (driver.age - 37) * 0.28)
+          : Math.min(0.85, (driver.age - 37) * 0.18);
+        if (driver.age >= 42 || Math.random() < retireChance) {
           driver.retired = true;
           driver.teamId  = null;
           retired.push(driver);
@@ -156,7 +161,7 @@ const Career = {
   // ── ENTRÉES EN F1 CHAQUE SAISON ───────────────────────────
   // Génère 2-4 jeunes talents qui entrent dans le pool
   generateNewTalents(save) {
-    const count = 4 + Math.floor(Math.random() * 5); // 4-8 par saison
+    const count = 2 + Math.floor(Math.random() * 3); // 2-4 par saison : marché vivant sans saturation
     const newDrivers = [];
     for (let i = 0; i < count; i++) {
       const d = this.generateDriver(save);
@@ -225,6 +230,22 @@ const Career = {
     });
   },
 
+  cleanupDriverPool(save) {
+    if (!save || typeof F1Data === 'undefined') return;
+    // On garde les pilotes officiels et les actifs. On retire seulement les vieux générés,
+    // agents libres et retraités du pool sauvegardé pour éviter une liste infinie.
+    const removable = new Set(
+      F1Data.drivers
+        .filter(d => d.generated && !d.teamId && d.retired && (d.age || 0) >= 42)
+        .map(d => d.id)
+    );
+    if (!removable.size) return;
+    F1Data.drivers = F1Data.drivers.filter(d => !removable.has(d.id));
+    save.generatedDrivers = (save.generatedDrivers || []).filter(d => !removable.has(d.id));
+    Object.keys(save.driverStates || {}).forEach(id => { if (removable.has(id)) delete save.driverStates[id]; });
+    Object.keys(save.contracts || {}).forEach(id => { if (removable.has(id)) delete save.contracts[id]; });
+  },
+
   // ── FIN DE SAISON COMPLÈTE ────────────────────────────────
   // Appelé manuellement depuis drivers.html
   endOfSeason(save) {
@@ -232,6 +253,7 @@ const Career = {
       retired:    [],
       newTalents: [],
       released:   [],
+      academy:    null,
     };
 
     if (!save) return report;
@@ -280,9 +302,16 @@ const Career = {
     report.newTalents = newDrivers;
     newDrivers.forEach(d => save.generatedDrivers.push(d));
 
+    // 3b. Académie joueur : un junior au hasard est libéré comme agent libre,
+    // puis un nouveau talent arrive. Les autres restent à l'académie et ne saturent pas le marché.
+    if (typeof Immersion !== 'undefined' && Immersion.academyEndOfSeason) {
+      report.academy = Immersion.academyEndOfSeason(save);
+    }
+
     // 4. Remplir les sièges vides (IA) AVANT de persister les états pilotes.
     // Avant, les changements de teamId pouvaient être perdus au rechargement.
     this.fillEmptySeats(save);
+    this.cleanupDriverPool(save);
 
     // 5. Persister l'état de tous les pilotes
     save.driverStates = {};
