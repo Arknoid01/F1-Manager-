@@ -40,7 +40,7 @@
 </head>
 <body>
 <div class="topbar"><div class="logo">F1<span>Manager</span></div><a class="nav-back" href="index.html">← Accueil</a><div class="top-pills"><div class="pill pill-muted" id="seasonBadge">Saison —</div><div class="pill pill-gold" id="repBadge">⭐ —</div></div></div>
-<div class="page"><section class="hero"><div class="hero-kicker">Centre narratif</div><div class="hero-title">Paddock & Saison</div><div class="hero-sub" id="heroSub">Réputation, moral, sponsors, interviews, historique et records de carrière.</div></section><div class="tab-bar"><button class="tab-btn active" onclick="showPane('overview',this)">🎙️ Vue paddock</button><button class="tab-btn" onclick="showPane('history',this)">📚 Historique</button><button class="tab-btn" onclick="showPane('records',this)">🏛️ Records</button><button class="tab-btn" onclick="showPane('academy',this)">🌱 Académie</button></div><main id="content"></main></div>
+<div class="page"><section class="hero"><div class="hero-kicker">Centre narratif</div><div class="hero-title">Paddock & Saison</div><div class="hero-sub" id="heroSub">Réputation, moral, sponsors, interviews, historique et records de carrière.</div></section><div class="tab-bar"><button class="tab-btn active" onclick="showPane('overview',this)">🎙️ Vue paddock</button><button class="tab-btn" onclick="showPane('history',this)">📚 Historique</button><button class="tab-btn" onclick="showPane('records',this)">🏛️ Records</button><button class="tab-btn" onclick="showPane('academy',this)">🌱 Académie</button><button class="tab-btn" onclick="showPane('stories',this)">🔥 Histoires</button></div><main id="content"></main></div>
 <script src="js/data.js"></script><script src="js/save.js"></script><script src="js/immersion.js"></script>
 <script>
 let save=null;
@@ -54,6 +54,8 @@ function renderInterviews(items){ if(!items?.length) return '<div class="empty">
 function moraleList(m){ const vals=Object.values(m||{}); if(!vals.length) return '<div class="empty">Moral pilote disponible après le prochain GP.</div>'; return vals.slice(0,4).map(d=>`<div class="row"><div class="row-main"><div class="row-name">${esc(d.name)}</div><div class="row-sub">${esc(d.note)}</div></div><div class="row-val">${clamp(d.value)}</div></div>`).join('');}
 function topRows(arr,suffix=''){ if(!arr.length) return '<div class="empty">Pas encore assez de données.</div>'; return arr.map((r,i)=>`<div class="row"><div class="row-main"><div class="row-name">${i+1}. ${esc(r.name)}</div></div><div class="row-val">${r.value}${suffix}</div></div>`).join('');}
 function histRows(items){ if(!items?.length) return '<div class="empty">Termine une course pour remplir l’historique.</div>'; return items.slice().reverse().map(g=>`<div class="row"><div class="row-main"><div class="row-name">S${g.season} — ${esc(g.circuitName)}</div><div class="row-sub">Victoire ${esc(g.winner)} · ${esc(g.weather)} · SC ${g.safetyCarLaps||0}t · DNF ${g.dnf||0}</div></div><div class="row-val">${g.teamPoints||0} pts</div></div>`).join('');}
+function memoryRows(items){ if(!items?.length) return '<div class="empty">La mémoire du monde se remplira avec les prochains GP.</div>'; return items.slice(0,12).map(m=>`<div class="news-row"><div class="news-ico">${m.icon||'📌'}</div><div><div class="news-title">${esc(m.title)}</div><div class="news-text">${esc(m.text)}</div></div></div>`).join('');}
+function rivalryRows(items){ if(!items?.length) return '<div class="empty">Aucune rivalité forte pour le moment.</div>'; return items.slice().sort((a,b)=>(b.heat||0)-(a.heat||0)).slice(0,8).map(r=>`<div class="row"><div class="row-main"><div class="row-name">${esc(r.aName)} vs ${esc(r.bName)}</div><div class="row-sub">${r.races||0} duel${(r.races||0)>1?'s':''} marqué${(r.races||0)>1?'s':''}</div>${bar(r.heat||0,'orange')}</div><div class="row-val">${clamp(r.heat)}</div></div>`).join('');}
 function init(){
   save=Save.load(); if(!save){document.getElementById('content').innerHTML=panel('Erreur','<div class="empty">Aucune carrière chargée.</div>');return;}
   Immersion.ensure(save); Save.save(save);
@@ -88,6 +90,10 @@ function init(){
   </section>
   <section class="tab-pane" id="academy">
     <div id="academyContent"></div>
+  </section>
+  <section class="tab-pane" id="stories">
+    ${panel('🔥 Rivalités suivies',rivalryRows(save.storyWorld?.rivalries||[]))}
+    ${panel('🧠 Mémoire du monde',memoryRows(save.storyWorld?.memory||[]))}
   </section>`;
   document.getElementById('academyContent').innerHTML = renderAcademy(im);
   const hash=(location.hash||'#overview').slice(1); const b=[...document.querySelectorAll('.tab-btn')].find(x=>x.getAttribute('onclick')?.includes(hash)); if(hash!=='overview') showPane(hash,b);
