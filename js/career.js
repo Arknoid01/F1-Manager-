@@ -337,27 +337,145 @@ const Career = {
       save.budget = Math.round(((save.budget || 0) + incomeBonus) * 10) / 10;
     }
 
-    // 9. Reset carDev aux stats de base de l'équipe
+    // ══════════════════════════════════════════════════════════
+    // 9. PROGRESSION VOITURE — système équilibré v2
+    //    Héritage partiel + IA qui progresse + stagnation possible
+    //    + filet de sécurité anti-death-spiral
+    // ══════════════════════════════════════════════════════════
     if (save.carDev && team) {
-      ['aero','chassis','engine','reliability','suspension','pitstop'].forEach(compId => {
-        if (!save.carDev[compId]) return;
-        const baseStat = team[compId] !== undefined ? team[compId] : 70;
-        save.carDev[compId] = { level: baseStat, upgrades: 0 };
+      const DOMAINS = ['aero','chassis','engine','reliability'];
+      const seasonsPlayed = save.completedSeasons?.length || 1;
+
+      // ── Calculer les gains de la saison (delta vs base équipe)
+      const seasonGains = {};
+      DOMAINS.forEach(d => {
+        const base = team[d] !== undefined ? team[d] : 70;
+        const current = save.carDev[d]?.level || base;
+        seasonGains[d] = Math.max(0, current - base);
+      });
+
+      // ── Héritage partiel : 35% des gains conservés
+      // Plus on est avancé (saisons jouées), moins on hérite (équipe mature)
+      const heritageFactor = Math.max(0.15, 0.35 - (seasonsPlayed - 1) * 0.03);
+
+      // ── Événements de stagnation (30% de chance, max 1 domaine/saison, jamais 2x le même)
+      let stagnationDomain = null;
+      const lastStagnation = save._lastStagnationDomain || null;
+      if (Math.random() < 0.30) {
+        const candidates = DOMAINS.filter(d => d !== lastStagnation && seasonGains[d] > 0);
+        if (candidates.length) {
+          stagnationDomain = candidates[Math.floor(Math.random() * candidates.length)];
+          save._lastStagnationDomain = stagnationDomain;
+          const stagnationEvents = [
+            `Concept technique dans une impasse en ${stagnationDomain}.`,
+            `Ingénieur clé parti chez un concurrent — ${stagnationDomain} gelé.`,
+            `Règlement défavorable au concept ${stagnationDomain} de l'équipe.`,
+            `Direction technique divisée sur l'avenir du ${stagnationDomain}.`,
+          ];
+          const msg = stagnationEvents[Math.floor(Math.random() * stagnationEvents.length)];
+          save.news = save.news || [];
+          save.news.push({ icon:'⚠️', category:'technical', title:'Stagnation technique', text: msg });
+          report.stagnation = { domain: stagnationDomain, msg };
+        }
+      } else {
+        save._lastStagnationDomain = null; // reset si pas de stagnation cette saison
+      }
+
+      // ── Coûts opérationnels croissants (+4% par saison, plafonné à +30%)
+      const opCostMultiplier = Math.min(1.30, 1 + (seasonsPlayed - 1) * 0.04);
+      save._opCostMultiplier = opCostMultiplier;
+
+      // ── Appliquer la nouvelle base pour chaque domaine
+      DOMAINS.forEach(d => {
+        const base = team[d] !== undefined ? team[d] : 70;
+        const gain = seasonGains[d];
+        const isStagnated = d === stagnationDomain;
+
+        // Héritage : gain × heritageFactor, annulé si stagnation
+        const inherited = isStagnated ? 0 : Math.round(gain * heritageFactor * 10) / 10;
+
+        // nextYearDev bonus
+        let nextYearBonus = 0;
+        if (save.nextYearDev) {
+          Object.values(save.nextYearDev).forEach(inv => {
+            if (inv.domainKey === d) nextYearBonus += (inv.gain || 0);
+          });
+        }
+
+        // Plafond relatif : au-delà de 85, progression réduite de 50%
+        const rawNew = base + inherited + nextYearBonus;
+        let newLevel;
+        if (rawNew > 85) {
+          const over = rawNew - 85;
+          newLevel = 85 + Math.round(over * 0.5);
+        } else {
+          newLevel = rawNew;
+        }
+        newLevel = Math.max(base, Math.min(99, newLevel)); // jamais en dessous de la base
+
+        save.carDev[d] = {
+          level: Math.round(newLevel * 10) / 10,
+          upgrades: 0,
+          done: [],
+          pending: [],
+          _heritage: inherited,
+          _nextYear: nextYearBonus,
+        };
+      });
+
+      // ── Filet de sécurité : upgrade "low cost" toujours disponible
+      // Marqué dans le save pour que rd.html puisse l'afficher
+      save._safetyUpgradeAvailable = true;
+
+      // Reset nextYearDev
+      save.nextYearDev = {};
+      save.rdBudget      = Math.round((team.budget || 200) * (F1Data.rdBudgetRatio || 0.4));
+      save.rdBudgetTotal = save.rdBudget;
+
+      // Log héritage dans les news
+      const inheritedTotal = DOMAINS.reduce((s,d)=>s+(save.carDev[d]?._heritage||0),0);
+      if (inheritedTotal > 0) {
+        save.news = save.news || [];
+        save.news.push({
+          icon:'🔧', category:'technical', title:'Héritage technique conservé',
+          text:`Votre équipe conserve ${inheritedTotal.toFixed(1)} pts de développement pour la nouvelle saison.`,
+        });
+      }
+    }
+
+    // ── IA progresse chaque saison (course perpétuelle)
+    // Budget-dépendant : grosses équipes progressent plus vite
+    this.progressAITeams(save, currentSeason);
+
+    // ── Filet de sécurité budget : droits TV minimum garanti
+    // Même au pire classement, l'équipe touche 18M€ (TV rights plancher)
+    const TV_FLOOR = 18;
+    if ((save.budget || 0) < TV_FLOOR) {
+      const boost = TV_FLOOR - (save.budget || 0);
+      save.budget = TV_FLOOR;
+      save.news = save.news || [];
+      save.news.push({
+        icon:'📺', category:'finance', title:'Droits TV — plancher garanti',
+        text:`La FIA verse ${boost.toFixed(1)}M€ de droits TV minimum. L'équipe peut continuer à opérer.`,
       });
     }
 
-    // 12. Appliquer les investissements R&D voiture suivante
-    if (save.nextYearDev) {
-      Object.entries(save.nextYearDev).forEach(([upgradeId, inv]) => {
-        const domKey = inv.domainKey;
-        if (!domKey || !save.carDev?.[domKey]) return;
-        save.carDev[domKey].level = Math.min(100, (save.carDev[domKey].level || 70) + inv.gain);
+    // ── Token de consolation si 3 GP sans points consécutifs
+    save._noPointsStreak = save._noPointsStreak || 0;
+    const lastRaces = (save.raceResults || []).slice(-3);
+    const allZero = lastRaces.length === 3 && lastRaces.every(r => (r.teamPoints||0) === 0);
+    if (allZero && save._noPointsStreak >= 2) {
+      save.tokens = (save.tokens || 0) + 1;
+      save._noPointsStreak = 0;
+      save.news = save.news || [];
+      save.news.push({
+        icon:'🔬', category:'technical', title:'Compensation technique FIA',
+        text:'La FIA alloue un token R&D supplémentaire aux équipes en difficulté.',
       });
-      save.nextYearDev = {}; // reset pour la nouvelle saison
-      // Recharger le budget R&D pour la nouvelle saison
-      const team = F1Data.teams.find(t => t.id === save.playerTeamId);
-      save.rdBudget      = Math.round((team?.budget || 200) * (F1Data.rdBudgetRatio || 0.4));
-      save.rdBudgetTotal = save.rdBudget;
+    } else if (allZero) {
+      save._noPointsStreak++;
+    } else {
+      save._noPointsStreak = 0;
     }
 
     // 11. Traiter le staff généré (vieillissement + nouveaux + mouvements IA)
@@ -368,6 +486,73 @@ const Career = {
 
     Save.save(save);
     return report;
+  },
+
+  // ── PROGRESSION IA ANNUELLE ──────────────────────────────
+  // Les équipes rivales progressent chaque saison — budget-dépendant
+  // Crée une course perpétuelle, empêche le joueur d'atteindre un mur fixe
+  progressAITeams(save, season) {
+    const DOMAINS = ['aero','chassis','engine','reliability'];
+    F1Data.teams.forEach(team => {
+      if (team.id === save.playerTeamId) return; // joueur géré séparément
+
+      // Progression basée sur le budget : riche = +2 à +3 pts/domaine, pauvre = +0.5 à +1.5
+      const richness = Math.min(1, (team.budget || 100) / 210); // 0→1
+      const baseGain = 0.5 + richness * 2.5; // 0.5 à 3.0 pts
+      const variance = (Math.random() - 0.5) * 1.5; // ±0.75
+
+      // 20% de chance de stagnation IA (rend le jeu moins prévisible)
+      const stagnates = Math.random() < 0.20;
+
+      DOMAINS.forEach(d => {
+        if (!team[d]) return;
+        if (stagnates && Math.random() < 0.5) return; // stagnation partielle
+        const gain = Math.round((baseGain + variance) * 10) / 10;
+        // Plafond 99, plancher = valeur actuelle (pas de régression IA)
+        team[d] = Math.max(team[d], Math.min(99, Math.round((team[d] + gain) * 10) / 10));
+      });
+
+      // Recalcul performance globale
+      team.performance = Math.round(
+        (team.aero * 0.3 + team.chassis * 0.3 + team.engine * 0.3 + team.reliability * 0.1)
+      );
+
+      // Croissance budget IA (plus modérée que le joueur pour ne pas trop s'envoler)
+      const budgetGain = Math.round(richness * 8 + Math.random() * 5);
+      team.budget = Math.min(350, (team.budget || 100) + budgetGain);
+    });
+  },
+
+  // ── UPGRADE LOW-COST (filet sécurité) ────────────────────
+  // Toujours disponible, gain minimal, gratuit en tokens
+  // Empêche le blocage total sur budget serré
+  getLowCostUpgrades() {
+    const DOMAINS = ['aero','chassis','engine','reliability'];
+    return DOMAINS.map(d => ({
+      id:         `lowcost_${d}`,
+      domain:     d,
+      name:       'Optimisation de base',
+      desc:       'Petit ajustement sans grande R&D. Gain modeste mais garanti.',
+      cost:       4,    // M€ seulement
+      tokens:     0,    // gratuit en tokens
+      gain:       1,    // +1 pt
+      deliveryGps:1,
+      isLowCost:  true,
+    }));
+  },
+
+  // ── RÉSUMÉ DE FIN DE SAISON (pour affichage) ─────────────
+  getSeasonSummary(save, report) {
+    if (!save) return '';
+    const DOMAINS = ['aero','chassis','engine','reliability'];
+    const lines = DOMAINS.map(d => {
+      const h = save.carDev?.[d]?._heritage || 0;
+      const n = save.carDev?.[d]?._nextYear || 0;
+      const lvl = save.carDev?.[d]?.level || 0;
+      return `${d.toUpperCase()} → ${lvl.toFixed(0)} pts (héritage +${h.toFixed(1)}, nextYear +${n})`;
+    });
+    const stag = report?.stagnation ? `⚠️ Stagnation : ${report.stagnation.domain}` : '✅ Pas de stagnation';
+    return lines.join(' · ') + ' · ' + stag;
   },
 
   // ── RECRUTER UN PILOTE ───────────────────────────────────

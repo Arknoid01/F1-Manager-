@@ -243,9 +243,14 @@ const Save = {
 
     const currentRaceIndex = Number(save.race) || 0;
     const annualExpenses   = Number(save.finances?.expenses) || 0;
-    const gpOperatingCost  = Math.round((2.5 + annualExpenses / Math.max(1, F1Data.circuits.length)) * 10) / 10;
+    // Coûts opérationnels croissants par saison (+4%/an, plafonné à +30%)
+    const opMult = save._opCostMultiplier || 1.0;
+    const gpOperatingCost  = Math.round((2.5 + annualExpenses / Math.max(1, F1Data.circuits.length)) * opMult * 10) / 10;
     save.budget  = Math.round(((Number(save.budget)||0) + reward + sponsorBonus - gpOperatingCost) * 10) / 10;
+    // Budget plancher par course : minimum 0 (le plancher annuel est géré en fin de saison)
     if (save.budget < 0) { save.reputation = Math.max(0,(save.reputation||50)-3); save.budget = 0; }
+    // Upgrade low-cost toujours disponible si budget < 15M (filet de sécurité mid-saison)
+    if ((save.budget||0) < 15) save._safetyUpgradeAvailable = true;
     save.tokens  = (Number(save.tokens)||0) + tokens;
     save.race    = currentRaceIndex + 1;
 
