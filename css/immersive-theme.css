@@ -1,11 +1,83 @@
+/* Thème commun SAFE — palette + typo, sans casser les layouts propres à chaque page */
+:root{
+  --f1-bg:#07080d;
+  --f1-panel:#11131d;
+  --f1-panel-2:#171a27;
+  --f1-red:#e10600;
+  --f1-gold:#f5c842;
+  --f1-muted:#8b90a3;
+  --f1-text:#f4f6fb;
+  --f1-green:#22c55e;
+  --f1-line:rgba(255,255,255,.10);
+  --f1-title-font:"Arial Black","Impact","Barlow Condensed",sans-serif;
+}
 
-:root{--bg:#07080d;--panel:#11131d;--panel2:#171a27;--red:#e10600;--gold:#f5c842;--muted:#8b90a3;--text:#f4f6fb;--green:#22c55e;--line:rgba(255,255,255,.1);--fh:"Arial Black","Impact",sans-serif}
-body{background:radial-gradient(circle at top,#1b1d2b,#07080d 55%)!important;color:var(--text)!important;font-family:Inter,Arial,sans-serif!important}
-header,.header,.topbar,.card,.panel,.tile,.box,.widget,.modal-content,.sidebar,.content-card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02))!important;border:1px solid var(--line)!important;border-radius:18px!important;box-shadow:0 18px 40px rgba(0,0,0,.20)!important}
-button,.btn,.button,a.btn,input[type="submit"]{background:var(--red)!important;color:#fff!important;border:none!important;border-radius:14px!important;font-weight:800!important}
-button.secondary,.btn.secondary,.btn.sec{background:#2a2e3f!important}
-h1,h2,h3,.title,.section-title{font-family:var(--fh)!important;letter-spacing:1px}
-small,.muted,.subtitle,.hint{color:var(--muted)!important}
-table{background:rgba(255,255,255,.03)!important;border-radius:14px!important;overflow:hidden}
-tr:nth-child(even){background:rgba(255,255,255,.02)!important}
-input,select{background:#171a27!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:10px!important}
+html,body{
+  background:radial-gradient(circle at top,#171927 0%,#07080d 58%) !important;
+  color:var(--text,var(--f1-text));
+}
+
+/* Topbar : seulement l'habillage, pas de radius/carte globale */
+.topbar{
+  background:rgba(15,15,24,.96) !important;
+  border-bottom:1px solid var(--border,var(--f1-line)) !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+
+.logo{
+  letter-spacing:2px;
+}
+
+h1,h2,h3,.title,.section-title,.sec-lbl{
+  letter-spacing:.8px;
+}
+
+/* Cartes : légère harmonisation, sans forcer tailles/marges */
+.card,.panel,.tile,.box,.widget,.content-card,
+.budget-hero,.alloc-panel,.domain-panel,.queue-panel,.freeze-banner{
+  border-color:var(--border,var(--f1-line)) !important;
+}
+
+/* Boutons : ne pas toucher aux tabs / boutons métier */
+.btn-red,
+a.btn-red,
+button.btn-red{
+  background:var(--accent,var(--f1-red)) !important;
+  color:#fff !important;
+}
+
+.btn-sec,
+a.btn-sec,
+button.btn-sec,
+button.secondary,.btn.secondary{
+  background:var(--surface2,var(--f1-panel-2)) !important;
+  color:var(--text,var(--f1-text)) !important;
+  border:1px solid var(--border,var(--f1-line)) !important;
+}
+
+/* Formulaires : visuel seulement */
+input:not([type="range"]),select,textarea{
+  background:var(--surface2,var(--f1-panel-2)) !important;
+  color:var(--text,var(--f1-text)) !important;
+  border-color:var(--border,var(--f1-line)) !important;
+}
+
+/* Liens : garder la couleur de page si déjà définie */
+a{ color:inherit; }
+
+/* Mobile : empêcher le thème commun de créer des débordements */
+@media (max-width:640px){
+  .topbar{
+    min-height:52px;
+    overflow:visible;
+  }
+  .top-pills{
+    min-width:0;
+  }
+  .pill{
+    max-width:42vw;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+}
