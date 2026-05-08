@@ -1,0 +1,11 @@
+
+:root{--bg:#07080d;--panel:#11131d;--panel2:#171a27;--red:#e10600;--gold:#f5c842;--muted:#8b90a3;--text:#f4f6fb;--green:#22c55e;--line:rgba(255,255,255,.1);--fh:"Arial Black","Impact",sans-serif}
+body{background:radial-gradient(circle at top,#1b1d2b,#07080d 55%)!important;color:var(--text)!important;font-family:Inter,Arial,sans-serif!important}
+header,.header,.topbar,.card,.panel,.tile,.box,.widget,.modal-content,.sidebar,.content-card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02))!important;border:1px solid var(--line)!important;border-radius:18px!important;box-shadow:0 18px 40px rgba(0,0,0,.20)!important}
+button,.btn,.button,a.btn,input[type="submit"]{background:var(--red)!important;color:#fff!important;border:none!important;border-radius:14px!important;font-weight:800!important}
+button.secondary,.btn.secondary,.btn.sec{background:#2a2e3f!important}
+h1,h2,h3,.title,.section-title{font-family:var(--fh)!important;letter-spacing:1px}
+small,.muted,.subtitle,.hint{color:var(--muted)!important}
+table{background:rgba(255,255,255,.03)!important;border-radius:14px!important;overflow:hidden}
+tr:nth-child(even){background:rgba(255,255,255,.02)!important}
+input,select{background:#171a27!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:10px!important}
