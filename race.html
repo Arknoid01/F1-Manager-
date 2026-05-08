@@ -107,6 +107,8 @@
     .ev-dnf{color:#ff6666} .ev-pit{color:var(--gold)} .ev-weather{color:#88aaff}
     .ev-safety_car{color:var(--yellow)} .ev-safety_car_end{color:var(--green)}
     .ev-finish{color:var(--green);font-weight:700} .ev-penalty{color:#ff9944}
+    .ev-radio{color:#7dd3fc}.ev-engineer{color:#f5c842}.ev-broadcast{color:#d8d8f0}.ev-strategy{color:#c084fc}.ev-grid{color:#f5c842}.ev-podium{color:var(--gold)}
+    .ev span:last-child b{color:var(--text)}
 
     .strat-panel { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; width:220px; flex-shrink:0; }
     @media(max-width:650px) { .strat-panel { width:100%; } }
@@ -1035,6 +1037,7 @@ function startRace() {
   renderStandings();
   renderStratReco();
   renderPlayerControls();
+  initRaceBroadcast();
   console.log('[10] Lights');
 
   CR.startLights(() => runSim());
@@ -1072,7 +1075,7 @@ function runSim() {
 
     updateWeather();
     renderStandings();
-    addEvents(res.events);
+    addEvents([...(res.events || []), ...buildRaceNarrative(res)]);
     renderStrat();
     renderPlayerControls();
     syncOrdersTab();
@@ -1184,6 +1187,141 @@ function renderStandings() {
     `;
     body.appendChild(row);
   });
+}
+
+// ══════════════════════════════════════════════════════════
+//  IMMERSION COURSE — Radio, ingénieur, broadcast
+//  Surcouche uniquement : lit Race.state / Race.getStandings(), ne modifie pas la simulation.
+// ══════════════════════════════════════════════════════════
+const RaceNarrative = {
+  lastGeneralLap: 0,
+  said: {},
+  lastPlayerPos: {},
+  reset() { this.lastGeneralLap = 0; this.said = {}; this.lastPlayerPos = {}; },
+  once(key) { if (this.said[key]) return false; this.said[key] = true; return true; }
+};
+
+function driverLabel(driver) {
+  if (!driver) return '—';
+  return `${driver.firstName ? driver.firstName + ' ' : ''}${driver.name}`.trim();
+}
+function teamShort(teamId) {
+  return F1Data.teams.find(t => t.id === teamId)?.shortName || teamId || '—';
+}
+function getPlayerCars() {
+  const save = Save.load();
+  const pid = save?.playerTeamId;
+  if (!Race.state || !pid) return [];
+  return Race.getStandings().filter(c => c.driver.teamId === pid);
+}
+function lapEvent(lap, type, message) { return { lap, type, message }; }
+
+function initRaceBroadcast() {
+  RaceNarrative.reset();
+  if (!Race.state) return;
+  const cir = Race.state.circuit;
+  const grid = Race.getStandings();
+  const pole = grid[0];
+  const pCars = getPlayerCars();
+  const weatherTxt = Race.state.weather === 'heavy_rain' ? 'pluie forte' : Race.state.weather === 'light_rain' ? 'piste humide' : 'piste sèche';
+  const messages = [
+    lapEvent(0, 'broadcast', `🎙️ Bienvenue à <b>${cir.name}</b> — ${cir.laps} tours, ${weatherTxt}.`)
+  ];
+  if (pole) messages.push(lapEvent(0, 'grid', `🏁 Pole position : <b>${driverLabel(pole.driver)}</b> (${teamShort(pole.driver.teamId)}).`));
+  if (pCars.length) {
+    messages.push(lapEvent(0, 'engineer', `🎧 Ingénieur : nos voitures partent P${pCars.map(c => c.position).join(' / P')}. Objectif : course propre et fenêtres de pit surveillées.`));
+    pCars.forEach(c => { RaceNarrative.lastPlayerPos[c.driver.id] = c.position; });
+  }
+  addEvents(messages);
+}
+
+function buildRaceNarrative(res) {
+  if (!Race.state) return [];
+  const lap = Race.state.currentLap;
+  const total = Race.state.totalLaps;
+  const standings = Race.getStandings();
+  const leader = standings[0];
+  const msgs = [];
+  const pCars = getPlayerCars();
+
+  // Départ, mi-course, money time — uniquement selon les données réelles.
+  if (lap === 1 && RaceNarrative.once('start')) {
+    msgs.push(lapEvent(lap, 'broadcast', `🚦 Départ lancé ! <b>${driverLabel(leader?.driver)}</b> mène le Grand Prix.`));
+  }
+  if (lap === Math.ceil(total / 2) && RaceNarrative.once('halfway')) {
+    msgs.push(lapEvent(lap, 'broadcast', `📊 Mi-course : <b>${driverLabel(leader?.driver)}</b> leader, ${total - lap} tours restants.`));
+  }
+  if (lap === Math.max(1, total - 10) && RaceNarrative.once('last10')) {
+    msgs.push(lapEvent(lap, 'broadcast', `🔥 Derniers 10 tours : les écarts et les pneus deviennent décisifs.`));
+  }
+
+  // Messages ingénieur pour les pilotes joueur : position, gap proche, pneus, pit.
+  pCars.forEach(car => {
+    const name = car.driver.name;
+    const id = car.driver.id;
+    const cond = Math.round((car.tyre?.condition || 0) * 100);
+    const lastPos = RaceNarrative.lastPlayerPos[id] || car.position;
+    if (car.position < lastPos) msgs.push(lapEvent(lap, 'radio', `📻 ${name} gagne une place : P${car.position}. Bon rythme.`));
+    if (car.position > lastPos) msgs.push(lapEvent(lap, 'radio', `📻 ${name} perd une position : P${car.position}. On reste calmes.`));
+    RaceNarrative.lastPlayerPos[id] = car.position;
+
+    if (cond <= 25 && RaceNarrative.once(`tyre_crit_${id}_${Math.floor(lap/4)}`)) {
+      msgs.push(lapEvent(lap, 'engineer', `🎧 ${name} : pneus à <b>${cond}%</b>. Risque de perte de rythme, pense au pit stop.`));
+    } else if (cond <= 45 && RaceNarrative.once(`tyre_warn_${id}_${Math.floor(lap/8)}`)) {
+      msgs.push(lapEvent(lap, 'engineer', `🎧 ${name} : pneus à ${cond}%. On commence à surveiller la dégradation.`));
+    }
+
+    const ahead = standings.find(x => x.position === car.position - 1 && x.status !== 'dnf');
+    const behind = standings.find(x => x.position === car.position + 1 && x.status !== 'dnf');
+    if (ahead && car.gap !== null && ahead.gap !== null) {
+      const deltaAhead = car.gap - ahead.gap;
+      if (deltaAhead > 0 && deltaAhead < 1.2 && RaceNarrative.once(`attack_${id}_${Math.floor(lap/3)}`)) {
+        msgs.push(lapEvent(lap, 'radio', `📻 ${name} est à ${deltaAhead.toFixed(1)}s de ${ahead.driver.name}. DRS/attaque possible.`));
+      }
+    }
+    if (behind && car.gap !== null && behind.gap !== null) {
+      const deltaBehind = behind.gap - car.gap;
+      if (deltaBehind > 0 && deltaBehind < 1.0 && RaceNarrative.once(`defend_${id}_${Math.floor(lap/3)}`)) {
+        msgs.push(lapEvent(lap, 'radio', `📻 ${name} sous pression : ${behind.driver.name} revient à ${deltaBehind.toFixed(1)}s.`));
+      }
+    }
+  });
+
+  // Transformer certains événements existants en commentaires plus vivants, sans inventer.
+  (res?.events || []).forEach(ev => {
+    if (ev.type === 'pit') msgs.push(lapEvent(lap, 'strategy', `🧠 Muret : arrêt confirmé, la fenêtre stratégique s'ouvre.`));
+    if (ev.type === 'safety_car') msgs.push(lapEvent(lap, 'engineer', `🎧 Safety Car : attention aux pneus froids et aux arrêts opportunistes.`));
+    if (ev.type === 'safety_car_end') msgs.push(lapEvent(lap, 'broadcast', `🟢 Relance imminente : le peloton est regroupé.`));
+    if (ev.type === 'weather') msgs.push(lapEvent(lap, 'engineer', `🎧 Météo : on recalcule la fenêtre pneus avec l'humidité piste.`));
+    if (ev.type === 'dnf') msgs.push(lapEvent(lap, 'broadcast', `🎙️ Abandon confirmé, cela peut bouleverser la stratégie.`));
+  });
+
+  // Commentaire général toutes les 4 boucles minimum, basé sur le vrai classement.
+  if (lap - RaceNarrative.lastGeneralLap >= 4 && leader) {
+    RaceNarrative.lastGeneralLap = lap;
+    const p2 = standings[1];
+    const leadGap = p2 && p2.gap !== null ? p2.gap.toFixed(1) + 's' : '—';
+    msgs.push(lapEvent(lap, 'broadcast', `🎙️ Point course : <b>${driverLabel(leader.driver)}</b> mène avec ${leadGap} d'avance.`));
+  }
+
+  return msgs;
+}
+
+function addPostRaceBroadcast(results) {
+  if (!results?.length || !Race.state) return;
+  const winner = results[0];
+  const podium = results.slice(0,3).map(r => `${r.position}. ${driverLabel(r.driver)}`).join(' · ');
+  const save = Save.load();
+  const pid = save?.playerTeamId;
+  const playerResults = pid ? results.filter(r => r.driver.teamId === pid) : [];
+  const msg = [
+    lapEvent(Race.state.currentLap || Race.state.totalLaps, 'podium', `🏆 Victoire de <b>${driverLabel(winner.driver)}</b> — Podium : ${podium}.`)
+  ];
+  if (playerResults.length) {
+    const pts = playerResults.reduce((sum, r) => sum + (r.points || 0), 0);
+    msg.push(lapEvent(Race.state.currentLap || Race.state.totalLaps, 'engineer', `🎧 Débrief équipe : P${playerResults.map(r=>r.position).join(' / P')} · ${pts} point${pts>1?'s':''}.`));
+  }
+  addEvents(msg);
 }
 
 function addEvents(evs) {
@@ -1402,6 +1540,7 @@ function showResults() {
     `;
     body.appendChild(row);
   });
+  try { addPostRaceBroadcast(results); } catch(e) { console.warn('[Race] post broadcast:', e); }
   document.getElementById('resOverlay').style.display = 'flex';
   document.getElementById('btnPause').disabled = true;
   document.getElementById('btnSkip').disabled = true;
@@ -1413,6 +1552,7 @@ function resetRace() {
   closeRes();
   clearInterval(simInterval);
   CR.stopAnim();
+  try { RaceNarrative.reset(); } catch(e) {}
   started = isPaused = false;
   document.getElementById('btnStart').disabled  = false;
   document.getElementById('btnPause').disabled  = true;
