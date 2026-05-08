@@ -425,8 +425,8 @@ const CR = {
     Race.state.grid.forEach((car, idx) => {
       const g = document.createElementNS('http://www.w3.org/2000/svg','g');
 
-      // Couleur via F1Data - match insensible à la casse
-      const teamColor = F1Data.teams.find(t =>
+      // Couleur directement depuis car.team (déjà résolu par getEffectiveTeam)
+      const teamColor = car.team?.color || F1Data.teams.find(t =>
         t.id?.toLowerCase() === car.driver.teamId?.toLowerCase()
       )?.color || '#888888';
 

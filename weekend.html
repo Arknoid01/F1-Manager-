@@ -897,11 +897,15 @@ function calcTyreEstimates() {
     tested[r.compound] = true;
 
     const wearPerLap = (100 - r.tyreLife) / r.laps;
-    if (wearPerLap <= 0) return;
+    // Ignorer si le run est trop court (<8 tours) — données non représentatives
+    if (wearPerLap <= 0 || r.laps < 8) return;
 
     // Estimer combien de tours avant d'atteindre 20% de vie (cliff)
     const lifeTotal = Math.round(80 / wearPerLap);
     const tyre      = F1Data.tyres[r.compound];
+
+    // Sanity check — si la durée estimée dépasse 90% des tours de course, ignorer
+    if (lifeTotal > circuit.laps * 0.9) return;
 
     estimates.push({
       compound:   r.compound,
