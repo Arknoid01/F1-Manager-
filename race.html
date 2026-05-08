@@ -378,7 +378,7 @@ const TRACKS = {
 const CR = {
   pathEl: null,
   len: 0,
-  carEls: [], // éléments SVG par INDEX de grille (pas position)
+  carEls: [], _carMap: {}, // éléments SVG
   raf: null,
 
   // Fraction du tour parcourue par chaque voiture (0..1), par index de grille
@@ -420,20 +420,20 @@ const CR = {
 
     // Créer 1 élément SVG par voiture (triés par grille de départ)
     if (!Race.state) return;
-    // Table de couleurs directe depuis F1Data — source de vérité unique
+    // Table de couleurs directe depuis F1Data
     const colorMap = {};
     F1Data.teams.forEach(t => { colorMap[t.id.toLowerCase()] = t.color; });
-
     const _sv  = Save.load();
     const _pid = _sv?.playerTeamId?.toLowerCase() || '';
+
+    // Map driverId → {el, frac, speed} pour éviter tout problème d'index
+    this._carMap = {};
 
     Race.state.grid.forEach((car, idx) => {
       const g   = document.createElementNS('http://www.w3.org/2000/svg','g');
       const tid = car.driver.teamId?.toLowerCase() || '';
-
-      // Couleur depuis la table — fallback gris si équipe inconnue
-      const teamColor    = colorMap[tid] || colorMap[car.driver.teamId] || '#888888';
-      const isPlayerCar  = tid === _pid;
+      const teamColor   = colorMap[tid] || '#888888';
+      const isPlayerCar = tid === _pid;
       const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
       c.setAttribute('r', isPlayerCar ? '7' : '5');
       c.setAttribute('fill', teamColor);
@@ -478,40 +478,42 @@ const CR = {
 
   // Appelé à chaque tour simulé — met à jour les vitesses individuelles
   advanceLap() {
-    if (!Race.state || !this.pathEl) return;
+    if (!Race.state || !this.pathEl || !this._carMap) return;
 
-    const standings  = Race.getStandings();
-    const totalCars  = standings.length;
-    const leader     = standings[0];
+    const standings = Race.getStandings();
+    const leader    = standings[0];
     if (!leader) return;
 
-    standings.forEach((car, pos) => {
-      const idx = Race.state.grid.findIndex(function(g) { return g.driver.id === car.driver.id; });
-      if (idx < 0) return;
+    const leaderEntry = this._carMap[leader.driver.id];
+    const leaderFrac  = leaderEntry ? leaderEntry.frac : 0.98;
+    const lapTime     = Race.state.circuit.baseLapTime || 90;
+    const baseSpeed   = 1 / (getInterval() / 1000);
+
+    standings.forEach(function(car) {
+      const entry = this._carMap[car.driver.id];
+      if (!entry) return;
 
       if (car.status === 'dnf') {
-        if (this.carEls[idx]) this.carEls[idx].style.display = 'none';
-        this.carSpeed[idx] = 0;
+        entry.el.style.display = 'none';
+        entry.speed = 0;
         return;
       }
 
-      // Vitesse basée sur le temps au dernier tour
-      const lastLap  = car.lapTimes.length > 0
-        ? car.lapTimes[car.lapTimes.length - 1]
-        : Race.state.circuit.baseLapTime;
-      const baseSpeed = 1 / (getInterval() / 1000);
-      const relSpeed  = Race.state.circuit.baseLapTime / lastLap;
-      this.carSpeed[idx] = baseSpeed * relSpeed;
+      // Vitesse relative
+      const lastLap  = car.lapTimes.length > 0 ? car.lapTimes[car.lapTimes.length-1] : lapTime;
+      entry.speed = baseSpeed * (lapTime / lastLap);
 
-      // Synchroniser la position sur le circuit selon le gap réel
-      // Leader = fraction 0.98, chaque voiture derrière selon son gap
-      const gap = car.gap || 0;
-      const lapTime = Race.state.circuit.baseLapTime || 90;
-      const fracBehind = (gap / lapTime) % 1; // fraction de tour de retard
-      const leaderIdx  = Race.state.grid.findIndex(function(g){ return g.driver.id===leader.driver.id; });
-      const leaderFrac = this._displayFrac[leaderIdx] || 0.98;
-      this.fractions[idx] = (leaderFrac - fracBehind + 1) % 1;
-    });
+      // Synchroniser la fraction selon le gap réel
+      const gap        = car.gap || 0;
+      const fracBehind = (gap / lapTime) % 1;
+      entry.frac       = (leaderFrac - fracBehind + 1) % 1;
+    }.bind(this));
+
+    // Sync aussi carSpeed[] pour la boucle RAF existante
+    Race.state.grid.forEach(function(car, idx) {
+      const entry = this._carMap[car.driver.id];
+      if (entry) this.carSpeed[idx] = entry.speed;
+    }.bind(this));
   },
 
   // Animation RAF — vitesse constante et fluide pour chaque voiture
@@ -523,25 +525,14 @@ const CR = {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
-      if (Race.state && !isPaused && this._started) {
-        Race.state.grid.forEach((car, idx) => {
-          if (car.status === 'dnf') return;
-
-          const speed = this.carSpeed[idx] || (1 / (getInterval() / 1000));
-
-          // Avancer en continu à vitesse propre — JAMAIS de saut
-          let cur = this._displayFrac[idx] !== undefined
-            ? this._displayFrac[idx]
-            : this.fractions[idx] || 0;
-
-          cur = (cur + dt * speed) % 1;
-          this._displayFrac[idx] = cur;
-
-          const pt = this.pathEl.getPointAtLength(cur * this.len);
-          if (this.carEls[idx]) {
-            this.carEls[idx].setAttribute('transform', `translate(${pt.x},${pt.y})`);
-            this.carEls[idx].style.display = '';
-          }
+      if (Race.state && !isPaused && this._started && this._carMap) {
+        var self = this;
+        Object.values(this._carMap).forEach(function(entry) {
+          if (entry.speed === 0) return;
+          entry.frac = (entry.frac + dt * entry.speed) % 1;
+          var pt = self.pathEl.getPointAtLength(entry.frac * self.len);
+          entry.el.setAttribute('transform', 'translate('+pt.x+','+pt.y+')');
+          entry.el.style.display = '';
         });
 
         // Compteur de tour synchronisé sur le leader visuel
