@@ -284,3 +284,32 @@ h1, h2, h3, .title, .section-title, .kicker {
   /* Masquer la 2e pill si ça déborde */
   .top-pills .pill:last-child { display: none !important; }
 }
+
+/* ── 14. Logo unifié — F1(accent) + Manager(texte) ─────────── */
+.logo { color: var(--accent) !important; }
+.logo span { color: var(--text) !important; }
+
+/* ── 15. Grilles de tuiles ──────────────────────────────────── */
+/* Par défaut : 2 colonnes */
+.tiles-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+}
+/* Classe opt-in pour 3 colonnes */
+.tiles-grid-3 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: 8px !important;
+}
+
+@media (max-width: 640px) {
+  /* Sur mobile : tiles-grid reste 2 colonnes (lisible) */
+  .tiles-grid { grid-template-columns: 1fr 1fr !important; }
+  /* tiles-grid-3 passe à 2 col sur mobile */
+  .tiles-grid-3 { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 380px) {
+  /* Très petit : tout en 1 col */
+  .tiles-grid, .tiles-grid-3 { grid-template-columns: 1fr !important; }
+}
