@@ -162,12 +162,12 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/data.js"></script>
-<script src="js/save.js"></script>
-<script src="js/immersion.js"></script>
-<script src="js/events.js"></script>
-<script src="js/career.js"></script>
-<script src="js/profiles.js"></script>
+<script src="js/data.js?v=20260508b"></script>
+<script src="js/save.js?v=20260508b"></script>
+<script src="js/immersion.js?v=20260508b"></script>
+<script src="js/events.js?v=20260508b"></script>
+<script src="js/career.js?v=20260508b"></script>
+<script src="js/profiles.js?v=20260508b"></script>
 <script>
 
 const CIRCUIT_FLAGS={bahrain:'🇧🇭',jeddah:'🇸🇦',melbourne:'🇦🇺',imola:'🇮🇹',miami:'🇺🇸',monaco:'🇲🇨',canada:'🇨🇦',barcelona:'🇪🇸',austria:'🇦🇹',silverstone:'🇬🇧',hungary:'🇭🇺',spa:'🇧🇪',zandvoort:'🇳🇱',monza:'🇮🇹',baku:'🇦🇿',singapore:'🇸🇬',suzuka:'🇯🇵',qatar:'🇶🇦',cota:'🇺🇸',mexico:'🇲🇽',brazil:'🇧🇷',vegas:'🇺🇸',abudhabi:'🇦🇪'};
@@ -177,7 +177,15 @@ let save = null;
 function init() {
   try {
     save = Save.load();
-    if (save && window.Immersion) { Immersion.ensure(save); Immersion.syncLatestGp(save); Save.save(save); }
+    if (save && window.Immersion) {
+      Immersion.ensure(save);
+      if (typeof Immersion.syncLatestGp === 'function') {
+        Immersion.syncLatestGp(save);
+      } else if (save.lastGpSummary && typeof Immersion.updateAfterGp === 'function') {
+        Immersion.updateAfterGp(save, save.lastGpSummary);
+      }
+      Save.save(save);
+    }
     if (!save || !save.playerTeamId) { showTeamSelection(); return; }
     restoreDriverStates(save);
     if (typeof Career !== 'undefined' && typeof Career.restoreTeamStates === 'function') Career.restoreTeamStates(save);
