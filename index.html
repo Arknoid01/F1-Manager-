@@ -82,7 +82,7 @@
 
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
-<link rel="stylesheet" href="css/immersive-theme.css">
+<link rel="stylesheet" href="css/immersive-theme.css?v=20260508c">
 </head>
 <body>
 
@@ -173,6 +173,29 @@
 const CIRCUIT_FLAGS={bahrain:'🇧🇭',jeddah:'🇸🇦',melbourne:'🇦🇺',imola:'🇮🇹',miami:'🇺🇸',monaco:'🇲🇨',canada:'🇨🇦',barcelona:'🇪🇸',austria:'🇦🇹',silverstone:'🇬🇧',hungary:'🇭🇺',spa:'🇧🇪',zandvoort:'🇳🇱',monza:'🇮🇹',baku:'🇦🇿',singapore:'🇸🇬',suzuka:'🇯🇵',qatar:'🇶🇦',cota:'🇺🇸',mexico:'🇲🇽',brazil:'🇧🇷',vegas:'🇺🇸',abudhabi:'🇦🇪'};
 
 let save = null;
+
+
+function isSeasonComplete(sv){
+  const total = F1Data.circuits.length || 23;
+  const raceNum = Number(sv?.race) || 0;
+  if (raceNum >= total) return true;
+
+  const lastCircuit = F1Data.circuits[total - 1];
+  const lastResults = Array.isArray(sv?.raceResults) ? sv.raceResults : [];
+  if (lastResults.length >= total) return true;
+
+  const lastRecorded = lastResults[lastResults.length - 1];
+  const lastSummary  = sv?.lastGpSummary;
+  const lastId = lastCircuit?.id;
+  const lastName = lastCircuit?.name;
+
+  // Sécurité : si le dernier GP du calendrier est déjà archivé, la saison est terminée,
+  // même si une ancienne save n'a pas incrémenté save.race correctement.
+  if (lastRecorded && (lastRecorded.circuitId === lastId || lastRecorded.circuitName === lastName)) return true;
+  if (lastSummary && (lastSummary.circuitId === lastId || lastSummary.circuitName === lastName || lastSummary.gp === lastName)) return true;
+
+  return false;
+}
 
 function init() {
   try {
@@ -271,7 +294,7 @@ function showDashboard() {
 
   const team=F1Data.teams.find(t=>t.id===save.playerTeamId);
   const totalRaces = F1Data.circuits.length || 23;
-  const seasonFinished = (save.race || 0) >= totalRaces;
+  const seasonFinished = isSeasonComplete(save);
   const circuit=seasonFinished ? null : F1Data.circuits[(save.race||0)%totalRaces];
   const drivers=F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
 
@@ -315,10 +338,14 @@ function showDashboard() {
 function launchEndOfSeason() {
   if (!save || !save.playerTeamId) return;
   const totalRaces = F1Data.circuits.length || 23;
-  if ((save.race || 0) < totalRaces) {
+  if (!isSeasonComplete(save)) {
     location.href = 'weekend.html';
     return;
   }
+  // Répare les anciennes sauvegardes où la dernière course a été archivée
+  // sans que save.race atteigne exactement le nombre de GP.
+  save.race = Math.max(Number(save.race)||0, totalRaces);
+  Save.save(save);
   if (typeof Career === 'undefined' || typeof Career.endOfSeason !== 'function') {
     showToast('Fin de saison indisponible : module Career non chargé.', true);
     return;
