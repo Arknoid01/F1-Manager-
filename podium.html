@@ -17,6 +17,7 @@
 </div>
 <script src="js/data.js"></script>
 <script src="js/save.js"></script>
+<script src="js/immersion.js"></script>
 <script>
 function fmtTime(sec){ if(!Number.isFinite(sec)) return '—'; const m=Math.floor(sec/60), s=sec-m*60; return `${m}:${s.toFixed(3).padStart(6,'0')}`; }
 function esc(s){ return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }

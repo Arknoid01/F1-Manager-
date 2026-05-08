@@ -361,6 +361,7 @@
 <script src="js/weekend.js"></script>
 <script src="js/race.js"></script>
 <script src="js/save.js"></script>
+<script src="js/immersion.js"></script>
 <script src="js/sponsors.js"></script>
 <script src="js/career.js"></script>
 <script src="js/profiles.js"></script>
@@ -1518,6 +1519,9 @@ function saveLastGpSummary(results, careerReward) {
         message: String(ev.message || ev.text || '').replace(/<[^>]*>/g, '')
       }))
     };
+    if (window.Immersion && typeof Immersion.afterRace === 'function') {
+      Immersion.afterRace(save, save.lastGpSummary);
+    }
     Save.save(save);
   } catch (e) {
     console.warn('[Race] lastGpSummary:', e);

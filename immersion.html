@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>F1 Manager — Paddock</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#1a1c2c,#07080d 58%);color:#f2f2fb;font-family:Barlow,Arial,sans-serif;min-height:100vh}.wrap{max-width:980px;margin:0 auto;padding:14px}.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.brand{font-family:'Barlow Condensed';font-weight:900;font-size:28px;letter-spacing:3px;color:#ff0050}.brand span{color:white}.back{color:#a7a7bd;text-decoration:none;background:#171827;border:1px solid #292a44;border-radius:14px;padding:9px 12px;font-family:'Barlow Condensed';font-weight:700}.hero{background:linear-gradient(135deg,rgba(255,0,70,.16),rgba(245,200,66,.07));border:1px solid #2a2c48;border-left:4px solid #ff0050;border-radius:22px;padding:18px;margin-bottom:12px}.kicker{font-family:'Barlow Condensed';font-size:12px;color:#ff0050;letter-spacing:3px;text-transform:uppercase}.title{font-family:'Barlow Condensed';font-size:34px;font-weight:900;line-height:1;margin:6px 0}.sub{color:#a7a7bd;font-size:14px;line-height:1.45}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));border:1px solid #282943;border-radius:20px;padding:15px;margin-bottom:12px;overflow:hidden}.card h2{font-family:'Barlow Condensed';font-size:19px;letter-spacing:3px;text-transform:uppercase;margin:0 0 12px;color:#c9c9da}.meter{height:10px;background:#11121c;border-radius:99px;overflow:hidden;border:1px solid #292a44;margin-top:8px}.fill{height:100%;background:linear-gradient(90deg,#ff0050,#f5c842);border-radius:99px}.big{font-family:'Barlow Condensed';font-size:42px;font-weight:900}.tag{display:inline-block;margin:4px 4px 0 0;padding:5px 8px;border-radius:999px;background:#18192a;border:1px solid #30314c;color:#f5c842;font-size:12px;font-weight:700}.news{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid #24253c}.news:last-child{border-bottom:0}.ico{font-size:22px;width:28px;text-align:center}.nt{font-weight:800}.nx{color:#a7a7bd;font-size:13px;line-height:1.45;margin-top:2px}.quote{background:#11121c;border:1px solid #282943;border-radius:16px;padding:12px;margin:8px 0;color:#ececf6}.quote b{color:#f5c842}.row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #24253c}.row:last-child{border-bottom:0}.val{font-family:'Barlow Condensed';font-weight:900;font-size:20px;color:#f5c842}.small{color:#a7a7bd;font-size:12px}.junior{display:grid;grid-template-columns:42px 1fr 54px;gap:10px;align-items:center;padding:10px;background:rgba(255,255,255,.035);border:1px solid #282943;border-radius:16px;margin-bottom:8px}.flag{font-size:26px}.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.btn{border:0;border-radius:14px;padding:12px 14px;font-family:'Barlow Condensed';font-weight:900;letter-spacing:1px;text-transform:uppercase;color:white;background:#e8003d;text-decoration:none}.btn.sec{background:#202237;color:#d8d8e8}.empty{color:#a7a7bd;text-align:center;padding:20px}.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:12px;padding-bottom:2px}.tab{white-space:nowrap;background:#171827;border:1px solid #292a44;color:#d8d8e8;border-radius:999px;padding:9px 13px;font-family:'Barlow Condensed';font-weight:900;letter-spacing:1px}.tab.active{background:#e8003d;color:white}.pane{display:none}.pane.active{display:block}@media(max-width:720px){.wrap{padding:10px}.grid{grid-template-columns:1fr}.top{align-items:flex-start}.brand{font-size:24px}.title{font-size:28px}.tabs{margin-left:-2px;margin-right:-2px}.card{border-radius:16px;padding:13px}.junior{grid-template-columns:36px 1fr 44px}.btn{width:100%;text-align:center}}
+</style>
+<link rel="stylesheet" href="css/immersive-theme.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="brand">F1<span>Manager</span></div><a class="back" href="index.html">← Retour HQ</a></div>
+  <section class="hero">
+    <div class="kicker">Centre narratif</div>
+    <div class="title">Paddock & Saison</div>
+    <div class="sub" id="heroSub">Réputation, moral, sponsors, interviews, historique et records de carrière.</div>
+  </section>
+  <div class="tabs">
+    <button class="tab active" onclick="showPane('overview',this)">🎙️ Vue paddock</button>
+    <button class="tab" onclick="showPane('history',this)">📚 Historique</button>
+    <button class="tab" onclick="showPane('records',this)">🏛️ Records</button>
+    <button class="tab" onclick="showPane('academy',this)">🌱 Académie</button>
+  </div>
+  <main id="content"></main>
+</div>
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script src="js/immersion.js"></script>
+<script>
+let save=null;
+function clamp(v){return Math.max(0,Math.min(100,Math.round(v||0)));}
+function esc(s){return Immersion.esc(s);}
+function bar(v){return `<div class="meter"><div class="fill" style="width:${clamp(v)}%"></div></div>`;}
+function showPane(id,btn){document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById(id)?.classList.add('active');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn?.classList.add('active');}
+function renderNews(items){ if(!items?.length) return '<div class="empty">Aucune nouvelle paddock pour le moment. Termine un GP pour générer des articles.</div>'; return items.slice(-8).reverse().map(n=>`<div class="news"><div class="ico">${n.icon||'📰'}</div><div><div class="nt">${esc(n.title)}</div><div class="nx">${esc(n.text)}</div></div></div>`).join('');}
+function renderInterviews(items){ if(!items?.length) return '<div class="empty">Aucune interview disponible.</div>'; return items.slice(-3).reverse().map(i=>`<div class="quote"><b>${esc(i.circuitName)} — ${esc(i.headline)}</b>${(i.quotes||[]).map(q=>`<div style="margin-top:8px">${esc(q)}</div>`).join('')}</div>`).join('');}
+function moraleList(m){ const vals=Object.values(m||{}); if(!vals.length) return '<div class="small">Moral pilote disponible après le prochain GP.</div>'; return vals.slice(0,4).map(d=>`<div class="row"><div><b>${esc(d.name)}</b><div class="small">${esc(d.note)}</div></div><div class="val">${clamp(d.value)}</div></div>`).join('');}
+function topRows(arr,suffix=''){ if(!arr.length) return '<div class="empty">Pas encore assez de données.</div>'; return arr.map((r,i)=>`<div class="row"><div><b>${i+1}. ${esc(r.name)}</b></div><div class="val">${r.value}${suffix}</div></div>`).join('');}
+function init(){
+  save=Save.load(); if(!save){document.getElementById('content').innerHTML='<div class="card empty">Aucune carrière chargée.</div>';return;}
+  Immersion.ensure(save); Save.save(save);
+  const im=save.immersion; const rep=im.teamReputation||{};
+  document.getElementById('heroSub').textContent=`Saison ${save.season||2025} · Réputation ${clamp(rep.value)}/100 · ${im.gpHistory.length} GP archivé${im.gpHistory.length>1?'s':''}`;
+  const bestHistory=(im.gpHistory||[]).slice(-1)[0];
+  const content=document.getElementById('content');
+  content.innerHTML=`
+  <section class="pane active" id="overview">
+    <div class="grid">
+      <div class="card"><h2>Réputation équipe</h2><div class="big">${clamp(rep.value)}</div>${bar(rep.value)}<div style="margin-top:8px">${(rep.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div></div>
+      <div class="card"><h2>Sponsors vivants</h2><div class="big">${clamp(im.sponsorMood.value)}</div>${bar(im.sponsorMood.value)}<div class="small" style="margin-top:8px">${esc(im.sponsorMood.note)}</div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h2>Moral pilotes</h2>${moraleList(im.driverMorale)}</div>
+      <div class="card"><h2>Garage & staff</h2><div class="big">${clamp(im.staffMorale.value)}</div>${bar(im.staffMorale.value)}<div class="small" style="margin-top:8px">${esc(im.staffMorale.note)}</div></div>
+    </div>
+    <div class="card"><h2>📰 Paddock news</h2>${renderNews(im.paddockNews)}</div>
+    <div class="card"><h2>🎤 Interviews post-course</h2>${renderInterviews(im.interviews)}</div>
+    <div class="btns"><a class="btn sec" href="news.html">Actualités classiques</a><a class="btn" href="weekend.html">Prochain week-end</a></div>
+  </section>
+  <section class="pane" id="history">
+    <div class="card"><h2>Résumé récent</h2>${bestHistory?`<div class="quote"><b>${esc(bestHistory.circuitName)}</b><div>${esc(bestHistory.winner)} gagne pour ${esc(bestHistory.winnerTeam)}.</div><div class="small">Podium : ${(bestHistory.podium||[]).map(esc).join(' · ')||'—'} · Votre meilleur résultat : ${bestHistory.playerBest?'P'+bestHistory.playerBest:'—'} · ${bestHistory.teamPoints||0} pts</div></div>`:'<div class="empty">Aucun GP archivé.</div>'}</div>
+    <div class="card"><h2>Historique des GP</h2>${(im.gpHistory||[]).slice().reverse().map(g=>`<div class="row"><div><b>S${g.season} — ${esc(g.circuitName)}</b><div class="small">Victoire ${esc(g.winner)} · ${esc(g.weather)} · SC ${g.safetyCarLaps||0}t · DNF ${g.dnf||0}</div></div><div class="val">${g.teamPoints||0} pts</div></div>`).join('') || '<div class="empty">Termine une course pour remplir l’historique.</div>'}</div>
+  </section>
+  <section class="pane" id="records">
+    <div class="grid">
+      <div class="card"><h2>Victoires</h2>${topRows(Immersion.top(im.records.wins,6))}</div>
+      <div class="card"><h2>Podiums</h2>${topRows(Immersion.top(im.records.podiums,6))}</div>
+      <div class="card"><h2>Points carrière</h2>${topRows(Immersion.top(im.records.points,6),' pts')}</div>
+      <div class="card"><h2>Meilleurs résultats</h2>${topRows(Immersion.top(im.records.bestResults,6,true).map(r=>({...r,value:'P'+r.value})))}</div>
+    </div>
+  </section>
+  <section class="pane" id="academy">
+    <div class="card"><h2>Académie junior</h2><div class="small" style="margin-bottom:10px">Prospects suivis par votre cellule junior. Leur progression avance à chaque GP terminé.</div>${(im.juniorAcademy||[]).map(j=>`<div class="junior"><div class="flag">${j.flag}</div><div><b>${esc(j.firstName)} ${esc(j.name)}</b><div class="small">${j.age} ans · potentiel ${j.potential} · ${esc(j.note)}</div>${bar(j.progress)}</div><div class="val">${j.progress}%</div></div>`).join('')}</div>
+  </section>`;
+}
+init();
+</script>
+</body>
+</html>
