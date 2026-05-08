@@ -422,7 +422,7 @@ const CR = {
     if (!Race.state) return;
     // Table de couleurs directe depuis F1Data — source de vérité unique
     const colorMap = {};
-    F1Data.teams.forEach(t => { colorMap[t.id] = t.color; });
+    F1Data.teams.forEach(t => { colorMap[t.id.toLowerCase()] = t.color; });
 
     const _sv  = Save.load();
     const _pid = _sv?.playerTeamId?.toLowerCase() || '';
@@ -455,9 +455,11 @@ const CR = {
       cG.appendChild(g);
 
       this.carEls.push(g);
-
-      // Position initiale : toutes sur la ligne de départ, serrées
-      const startFrac = 0.001 * idx; // très peu d'écart, alignées au départ
+      // Stocker l'id du pilote pour retrouver l'élément facilement
+      g.dataset.driverId = car.driver.id;
+      const totalCars = Race.state.grid.length;
+      // Espacer les voitures sur ~3% du circuit pour représenter l'ordre de grille
+      const startFrac = (1.0 - idx * (0.03 / Math.max(totalCars, 1))) % 1;
       this.fractions.push(startFrac);
       this.targetFrac.push(startFrac);
     });
@@ -478,22 +480,37 @@ const CR = {
   advanceLap() {
     if (!Race.state || !this.pathEl) return;
 
-    const standings = Race.getStandings();
+    const standings  = Race.getStandings();
+    const totalCars  = standings.length;
+    const leader     = standings[0];
+    if (!leader) return;
 
-    standings.forEach((car) => {
-      const idx = Race.state.grid.indexOf(car);
+    standings.forEach((car, pos) => {
+      const idx = Race.state.grid.findIndex(function(g) { return g.driver.id === car.driver.id; });
       if (idx < 0) return;
+
       if (car.status === 'dnf') {
         if (this.carEls[idx]) this.carEls[idx].style.display = 'none';
         this.carSpeed[idx] = 0;
         return;
       }
-      const lastLap   = car.lapTimes.length > 0
+
+      // Vitesse basée sur le temps au dernier tour
+      const lastLap  = car.lapTimes.length > 0
         ? car.lapTimes[car.lapTimes.length - 1]
         : Race.state.circuit.baseLapTime;
       const baseSpeed = 1 / (getInterval() / 1000);
       const relSpeed  = Race.state.circuit.baseLapTime / lastLap;
       this.carSpeed[idx] = baseSpeed * relSpeed;
+
+      // Synchroniser la position sur le circuit selon le gap réel
+      // Leader = fraction 0.98, chaque voiture derrière selon son gap
+      const gap = car.gap || 0;
+      const lapTime = Race.state.circuit.baseLapTime || 90;
+      const fracBehind = (gap / lapTime) % 1; // fraction de tour de retard
+      const leaderIdx  = Race.state.grid.findIndex(function(g){ return g.driver.id===leader.driver.id; });
+      const leaderFrac = this._displayFrac[leaderIdx] || 0.98;
+      this.fractions[idx] = (leaderFrac - fracBehind + 1) % 1;
     });
   },
 
