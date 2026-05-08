@@ -177,7 +177,7 @@ let save = null;
 function init() {
   try {
     save = Save.load();
-    if (save && window.Immersion) { Immersion.ensure(save); Save.save(save); }
+    if (save && window.Immersion) { Immersion.ensure(save); Immersion.syncLatestGp(save); Save.save(save); }
     if (!save || !save.playerTeamId) { showTeamSelection(); return; }
     restoreDriverStates(save);
     if (typeof Career !== 'undefined' && typeof Career.restoreTeamStates === 'function') Career.restoreTeamStates(save);

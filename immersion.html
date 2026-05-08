@@ -58,7 +58,7 @@ function memoryRows(items){ if(!items?.length) return '<div class="empty">La mé
 function rivalryRows(items){ if(!items?.length) return '<div class="empty">Aucune rivalité forte pour le moment.</div>'; return items.slice().sort((a,b)=>(b.heat||0)-(a.heat||0)).slice(0,8).map(r=>`<div class="row"><div class="row-main"><div class="row-name">${esc(r.aName)} vs ${esc(r.bName)}</div><div class="row-sub">${r.races||0} duel${(r.races||0)>1?'s':''} marqué${(r.races||0)>1?'s':''}</div>${bar(r.heat||0,'orange')}</div><div class="row-val">${clamp(r.heat)}</div></div>`).join('');}
 function init(){
   save=Save.load(); if(!save){document.getElementById('content').innerHTML=panel('Erreur','<div class="empty">Aucune carrière chargée.</div>');return;}
-  Immersion.ensure(save); Save.save(save);
+  Immersion.ensure(save); Immersion.syncLatestGp(save); Save.save(save);
   const im=save.immersion; const rep=im.teamReputation||{};
   document.getElementById('seasonBadge').textContent=`Saison ${save.season||2025}`;
   document.getElementById('repBadge').textContent=`⭐ ${clamp(rep.value)}`;
