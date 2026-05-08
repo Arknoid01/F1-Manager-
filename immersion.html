@@ -170,7 +170,7 @@ function renderAcademy(im){
   </div>`;
   const intro = `<div class="tile-sub" style="margin-bottom:12px">
     Chaque junior progresse à chaque GP. À 3 paliers ou potentiel ≥ 88, il devient promouvable et une fiche complète est générée.
-    Lance-le en essais libres avant de le promouvoir en titulaire.
+    Lance-le en essais libres avant de le promouvoir en titulaire. Niveau de sortie plafonné à 77, potentiel conservé.
   </div>`;
   const cards = juniors.map(j=>renderJuniorCard(j)).join('');
   return panel('🌱 Académie Junior', intro+cards, extra);
@@ -202,14 +202,30 @@ function doFP(juniorId, session){
 }
 
 function doPromote(juniorId){
-  if(!confirm('Promouvoir ce pilote comme titulaire ? Il rejoindra immédiatement votre équipe.')) return;
-  const result = Immersion.promoteJunior(save, juniorId);
+  Immersion.ensure(save);
+  const teamDrivers = (typeof F1Data !== 'undefined')
+    ? F1Data.drivers.filter(d=>d.teamId===save.playerTeamId && !d.retired)
+    : [];
+  let replaceId = null;
+  if(teamDrivers.length >= 2){
+    const lines = teamDrivers.map((d,i)=>`${i+1}. ${d.firstName} ${d.name} — ${d.salary||0}M€/an`).join('\n');
+    const choice = prompt(`Promouvoir ce junior comme titulaire. Quel pilote veux-tu remplacer ?\n\n${lines}\n\nTape 1 ou 2.`);
+    if(choice===null) return;
+    const idx = Number(choice)-1;
+    if(!teamDrivers[idx]){ alert('Choix invalide. Promotion annulée.'); return; }
+    replaceId = teamDrivers[idx].id;
+    if(!confirm(`${teamDrivers[idx].firstName} ${teamDrivers[idx].name} deviendra agent libre. Confirmer la promotion ?`)) return;
+  } else {
+    if(!confirm('Promouvoir ce pilote comme titulaire ? Il rejoindra immédiatement votre équipe.')) return;
+  }
+  const result = Immersion.promoteJunior(save, juniorId, replaceId);
   if(!result.ok){ alert(result.msg); return; }
   save = Save.load();
   Immersion.ensure(save);
   document.getElementById('academyContent').innerHTML = renderAcademy(save.immersion);
-  alert(result.msg + '\n\nAllez sur la page Pilotes pour gérer votre effectif.');
+  alert(result.msg + '\n\nContrat et masse salariale mis à jour automatiquement.');
 }
+
 
 init();
 </script>
