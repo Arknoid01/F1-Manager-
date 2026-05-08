@@ -320,7 +320,7 @@
     <div id="resBody"></div>
     <div style="margin-top:14px;display:flex;gap:8px">
       <button class="btn btn-red" onclick="closeRes()">Fermer</button>
-      <button class="btn btn-sec" onclick="window.location.href='index.html'">Course suivante</button>
+      <button class="btn btn-sec" onclick="window.location.href='podium.html'">Voir le podium</button>
     </div>
   </div>
 </div>
@@ -1437,11 +1437,69 @@ function persistRaceResults(results) {
   return careerReward;
 }
 
+
+function saveLastGpSummary(results, careerReward) {
+  try {
+    const save = Save.load();
+    if (!save || !Race.state || !Array.isArray(results) || !results.length) return;
+    const circuit = Race.state.circuit || {};
+    const playerTeamId = save.playerTeamId;
+    const playerResults = results.filter(r => r.team?.id === playerTeamId);
+    const weatherLabel = Race.state.weather === 'heavy_rain' ? 'Pluie forte'
+      : Race.state.weather === 'light_rain' ? 'Piste humide'
+      : 'Sec';
+    const normalized = results.map(r => ({
+      position: r.position,
+      driverId: r.driver?.id || null,
+      driverName: `${r.driver?.firstName || ''} ${r.driver?.name || ''}`.trim(),
+      driverNumber: r.driver?.number || '',
+      teamId: r.team?.id || null,
+      teamName: r.team?.name || '',
+      teamColor: r.team?.color || '#999',
+      points: r.points || 0,
+      status: r.status || 'finished',
+      gap: Number.isFinite(r.gap) ? r.gap : null,
+      totalTime: Number.isFinite(r.totalTime) ? r.totalTime : null,
+      bestLap: Number.isFinite(r.bestLap) ? r.bestLap : null,
+      dnfLap: r.dnfLap || null,
+      pitStops: Array.isArray(r.pitStops) ? r.pitStops : []
+    }));
+    save.lastGpSummary = {
+      season: save.season,
+      raceNumber: Math.max(1, Number(save.race) || 1),
+      circuitId: circuit.id || null,
+      circuitName: circuit.name || 'Grand Prix',
+      date: new Date().toISOString(),
+      weather: weatherLabel,
+      totalLaps: Race.state.totalLaps || circuit.laps || null,
+      safetyCarLaps: Race.state.safetyCar?.laps || 0,
+      winner: normalized[0] || null,
+      podium: normalized.slice(0, 3),
+      playerTeamId,
+      playerResults: normalized.filter(r => r.teamId === playerTeamId),
+      teamPoints: playerResults.reduce((sum, r) => sum + (r.points || 0), 0),
+      reward: careerReward?.reward || 0,
+      operatingCost: careerReward?.operatingCost || 0,
+      tokens: careerReward?.tokens || 0,
+      results: normalized,
+      events: (Race.state.events || []).slice(-30).map(ev => ({
+        lap: ev.lap ?? Race.state.currentLap ?? null,
+        type: ev.type || 'event',
+        message: String(ev.message || ev.text || '').replace(/<[^>]*>/g, '')
+      }))
+    };
+    Save.save(save);
+  } catch (e) {
+    console.warn('[Race] lastGpSummary:', e);
+  }
+}
+
 function showResults() {
   try { CR.stopAnim(); } catch(e) { console.warn(e); }
   let results = [];
   try { results = Race.assignPoints(); } catch(e) { console.error('[Race] Erreur assignPoints', e); }
-  try { persistRaceResults(results); } catch(e) { console.error('[Race] Erreur sauvegarde résultats', e); }
+  let careerReward = null;
+  try { careerReward = persistRaceResults(results); } catch(e) { console.error('[Race] Erreur sauvegarde résultats', e); }
   // Déclencher événement post-course
   try {
     const sv2 = Save.load();
@@ -1450,7 +1508,8 @@ function showResults() {
       Save.save(sv2);
     }
   } catch(e) { console.warn('[Race] triggerPostRace:', e); }
-  const careerReward = Race.state?._careerReward;
+  careerReward = careerReward || Race.state?._careerReward;
+  try { saveLastGpSummary(results, careerReward); } catch(e) { console.warn('[Race] sauvegarde résumé GP:', e); }
   document.getElementById('resSub').textContent = `Grand Prix de ${Race.state.circuit.name}` + (careerReward ? ` · Gains équipe : +${careerReward.reward}M € · Frais GP : -${careerReward.operatingCost || 0}M € · +${careerReward.tokens} token${careerReward.tokens > 1 ? 's' : ''}` : '');
   const body = document.getElementById('resBody');
   body.innerHTML = '';

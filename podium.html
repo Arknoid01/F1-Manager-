@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Podium — F1 Manager</title>
+<style>
+:root{--bg:#07080d;--panel:#11131d;--panel2:#171a27;--red:#e10600;--gold:#f5c842;--muted:#8b90a3;--text:#f4f6fb;--green:#22c55e;--line:rgba(255,255,255,.1);--fh:'Arial Black','Impact',sans-serif}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#1b1d2b,#07080d 55%);color:var(--text);font-family:Inter,Arial,sans-serif;padding:16px;min-height:100vh}.wrap{max-width:900px;margin:0 auto}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.kicker{font-family:var(--fh);letter-spacing:2px;color:var(--red);font-size:11px;text-transform:uppercase}.title{font-family:var(--fh);font-size:34px;letter-spacing:1px;margin:4px 0}.sub{color:var(--muted);font-size:13px}.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 18px 40px rgba(0,0,0,.28);margin-bottom:14px}.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:12px;align-items:end;margin-top:18px}.step{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center;min-height:170px;display:flex;flex-direction:column;justify-content:center}.p1{min-height:230px;border-color:rgba(245,200,66,.45);box-shadow:0 0 30px rgba(245,200,66,.08)}.p2{min-height:195px}.p3{min-height:175px}.pos{font-family:var(--fh);font-size:38px;color:var(--gold)}.name{font-family:var(--fh);font-size:18px;margin-top:6px}.team{font-size:12px;color:var(--muted);margin-top:4px}.pts{font-size:13px;margin-top:10px;color:var(--green);font-weight:800}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:12px}.stat b{display:block;font-family:var(--fh);font-size:18px}.stat span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}.teamres{display:grid;gap:8px}.row{display:grid;grid-template-columns:42px 1fr 70px;gap:10px;align-items:center;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:10px}.badge{font-family:var(--fh);font-size:18px}.btns{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}.btn{border:0;border-radius:14px;padding:12px 16px;font-weight:900;cursor:pointer;color:white;background:var(--red);text-decoration:none}.btn.sec{background:#2a2e3f}.empty{text-align:center;color:var(--muted);padding:40px 10px}@media(max-width:700px){.podium{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.top{display:block}.btns{flex-direction:column}.btn{text-align:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div><div class="kicker">Cérémonie officielle</div><h1 class="title" id="gpTitle">Podium</h1><div class="sub" id="gpSub">Chargement…</div></div></div>
+  <div id="content"></div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script>
+function fmtTime(sec){ if(!Number.isFinite(sec)) return '—'; const m=Math.floor(sec/60), s=sec-m*60; return `${m}:${s.toFixed(3).padStart(6,'0')}`; }
+function esc(s){ return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function getSummary(){ const save=Save.load(); return {save, gp:save?.lastGpSummary}; }
+function step(r, cls){ if(!r) return `<div class="step ${cls}"><div class="pos">—</div><div class="name">Aucun</div></div>`; return `<div class="step ${cls}"><div class="pos">P${r.position}</div><div class="name" style="color:${esc(r.teamColor)}">${esc(r.driverName)}</div><div class="team">${esc(r.teamName)}</div><div class="pts">${r.points||0} pts</div></div>`; }
+function render(){
+ const {save,gp}=getSummary();
+ if(!gp){ document.getElementById('content').innerHTML='<div class="card empty">Aucun Grand Prix terminé trouvé. Lance une course pour générer le podium.</div><div class="btns"><a class="btn sec" href="index.html">Retour HQ</a></div>'; return; }
+ document.getElementById('gpTitle').textContent=`Grand Prix de ${gp.circuitName}`;
+ document.getElementById('gpSub').textContent=`${gp.weather||'Météo inconnue'} · ${gp.totalLaps||'—'} tours · Saison ${gp.season||save?.season||'—'}`;
+ const p=gp.podium||[];
+ const playerRows=(gp.playerResults||[]).map(r=>`<div class="row"><div class="badge">P${r.position}</div><div><b style="color:${esc(r.teamColor)}">${esc(r.driverName)}</b><div class="sub">${esc(r.teamName)}</div></div><div>${r.points||0} pts</div></div>`).join('') || '<div class="sub">Aucun résultat équipe détecté.</div>';
+ const bestLap=[...(gp.results||[])].filter(r=>Number.isFinite(r.bestLap)).sort((a,b)=>a.bestLap-b.bestLap)[0];
+ document.getElementById('content').innerHTML=`
+  <div class="card"><div class="kicker">Top 3</div><div class="podium">${step(p[1],'p2')}${step(p[0],'p1')}${step(p[2],'p3')}</div></div>
+  <div class="card"><div class="kicker">Bilan rapide</div><div class="grid">
+    <div class="stat"><span>Vainqueur</span><b>${esc(gp.winner?.driverName||'—')}</b></div>
+    <div class="stat"><span>Safety Car</span><b>${gp.safetyCarLaps||0} tour(s)</b></div>
+    <div class="stat"><span>Meilleur tour</span><b>${bestLap?esc(bestLap.driverName)+' · '+fmtTime(bestLap.bestLap):'—'}</b></div>
+  </div></div>
+  <div class="card"><div class="kicker">Votre équipe</div><div class="teamres">${playerRows}</div><div class="grid" style="margin-top:10px"><div class="stat"><span>Points GP</span><b>${gp.teamPoints||0}</b></div><div class="stat"><span>Gains</span><b>+${gp.reward||0}M€</b></div><div class="stat"><span>Tokens</span><b>+${gp.tokens||0}</b></div></div></div>
+  <div class="btns"><a class="btn sec" href="race.html">Revoir course</a><a class="btn" href="gp-journal.html">Voir le journal du GP</a></div>`;
+}
+render();
+</script>
+</body>
+</html>

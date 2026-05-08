@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Journal du GP — F1 Manager</title>
+<style>
+:root{--bg:#07080d;--panel:#11131d;--red:#e10600;--gold:#f5c842;--muted:#8b90a3;--text:#f4f6fb;--green:#22c55e;--line:rgba(255,255,255,.1);--fh:'Arial Black','Impact',sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#151a2b,#07080d 55%);color:var(--text);font-family:Inter,Arial,sans-serif;padding:16px;min-height:100vh}.wrap{max-width:920px;margin:0 auto}.kicker{font-family:var(--fh);letter-spacing:2px;color:var(--red);font-size:11px;text-transform:uppercase}.title{font-family:var(--fh);font-size:34px;margin:4px 0}.sub{color:var(--muted);font-size:13px}.card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 18px 40px rgba(0,0,0,.25)}.timeline{position:relative;padding-left:18px}.timeline:before{content:'';position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:rgba(255,255,255,.12)}.entry{position:relative;margin:0 0 14px;padding:12px 12px 12px 16px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px}.entry:before{content:'';position:absolute;left:-18px;top:16px;width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 18px rgba(245,200,66,.4)}.entry b{font-family:var(--fh);font-size:12px;letter-spacing:1px}.entry p{margin:5px 0 0;color:#dfe3ee;font-size:14px;line-height:1.45}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:12px}.stat span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}.stat b{font-family:var(--fh);font-size:18px}.btns{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}.btn{border:0;border-radius:14px;padding:12px 16px;font-weight:900;cursor:pointer;color:white;background:var(--red);text-decoration:none}.btn.sec{background:#2a2e3f}.empty{text-align:center;color:var(--muted);padding:40px 10px}@media(max-width:700px){.grid{grid-template-columns:1fr}.btns{flex-direction:column}.btn{text-align:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Journal du week-end</div>
+  <h1 class="title" id="gpTitle">Grand Prix</h1>
+  <div class="sub" id="gpSub">Résumé narratif basé sur les données de course.</div>
+  <div id="content"></div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script>
+function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function e(t,msg){return `<div class="entry"><b>${esc(t)}</b><p>${esc(msg)}</p></div>`;}
+function render(){
+ const save=Save.load(); const gp=save?.lastGpSummary;
+ if(!gp){document.getElementById('content').innerHTML='<div class="card empty">Aucun journal disponible pour le moment.</div><div class="btns"><a class="btn sec" href="index.html">Retour HQ</a></div>';return;}
+ document.getElementById('gpTitle').textContent=`Grand Prix de ${gp.circuitName}`;
+ document.getElementById('gpSub').textContent=`${gp.weather||'Météo inconnue'} · ${gp.totalLaps||'—'} tours · ${new Date(gp.date).toLocaleDateString('fr-FR')}`;
+ const results=gp.results||[]; const winner=gp.winner; const podium=(gp.podium||[]).map(r=>`P${r.position} ${r.driverName}`).join(' · ');
+ const player=gp.playerResults||[]; const best=player.slice().sort((a,b)=>a.position-b.position)[0];
+ const dnf=results.filter(r=>r.status==='dnf');
+ const pitCount=results.reduce((s,r)=>s+(r.pitStops?.length||0),0);
+ const bestLap=results.filter(r=>Number.isFinite(r.bestLap)).sort((a,b)=>a.bestLap-b.bestLap)[0];
+ const lines=[];
+ lines.push(e('Arrivée au circuit', `${gp.circuitName} accueille le paddock avec une météo ${String(gp.weather||'inconnue').toLowerCase()}. L’objectif : transformer le rythme du week-end en résultat concret.`));
+ lines.push(e('Départ', `${winner?.driverName||'Le leader'} prend la course en main. Le peloton s’étire sur ${gp.totalLaps||'plusieurs'} tours.`));
+ if(gp.safetyCarLaps>0) lines.push(e('Neutralisation', `La Safety Car intervient pendant ${gp.safetyCarLaps} tour(s), ouvrant des opportunités stratégiques.`));
+ if(pitCount>0) lines.push(e('Stratégie', `${pitCount} arrêt(s) recensé(s) dans le peloton. Les fenêtres de pit ont pesé sur le résultat final.`));
+ if(dnf.length) lines.push(e('Incidents', `${dnf.length} abandon(s) : ${dnf.slice(0,4).map(r=>r.driverName).join(', ')}${dnf.length>4?'…':''}.`));
+ if(best) lines.push(e('Votre équipe', `Meilleur résultat équipe : ${best.driverName} termine P${best.position}. Total du GP : ${gp.teamPoints||0} point(s).`));
+ if(bestLap) lines.push(e('Rythme pur', `${bestLap.driverName} signe le meilleur tour de course.`));
+ lines.push(e('Podium', `${podium||'Podium non disponible'}. Victoire de ${winner?.driverName||'—'} pour ${winner?.teamName||'—'}.`));
+ lines.push(e('Bilan management', `Gains : +${gp.reward||0}M€, frais GP : -${gp.operatingCost||0}M€, développement : +${gp.tokens||0} token(s).`));
+ const rawEvents=(gp.events||[]).filter(x=>x.message).slice(-8).map(x=>e(`Tour ${x.lap||'—'}`, x.message)).join('');
+ document.getElementById('content').innerHTML=`
+ <div class="card"><div class="kicker">Résumé du Grand Prix</div><div class="timeline">${lines.join('')}</div></div>
+ ${rawEvents?`<div class="card"><div class="kicker">Moments enregistrés en course</div><div class="timeline">${rawEvents}</div></div>`:''}
+ <div class="card"><div class="kicker">Conséquences</div><div class="grid"><div class="stat"><span>Points équipe</span><b>${gp.teamPoints||0}</b></div><div class="stat"><span>Vainqueur</span><b>${esc(winner?.driverName||'—')}</b></div></div></div>
+ <div class="btns"><a class="btn sec" href="podium.html">Retour podium</a><a class="btn" href="index.html">Retour au siège</a></div>`;
+}
+render();
+</script>
+</body>
+</html>
