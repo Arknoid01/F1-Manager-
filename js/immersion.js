@@ -437,6 +437,20 @@ const Immersion = {
     });
   },
 
+  syncLatestGp(save){
+    // Compatibilité avec les pages qui appellent Immersion.syncLatestGp() au chargement.
+    // Si un GP a déjà été sauvegardé mais pas encore traité par la couche immersion,
+    // on l'injecte une seule fois grâce à lastProcessedGpKey.
+    if(!save || !save.lastGpSummary) return save;
+    this.ensure(save);
+    const gp = save.lastGpSummary;
+    const key = `${gp.season || save.season}-${gp.raceNumber || save.race}-${gp.circuitId || gp.circuitName}`;
+    if(save.immersion.lastProcessedGpKey !== key){
+      this.afterRace(save, gp);
+    }
+    return save;
+  },
+
   top(obj, n=5, asc=false){
     return Object.entries(obj||{}).map(([id,v])=>({id, name:v.name||id, value:v.value||0}))
       .sort((a,b)=>asc?a.value-b.value:b.value-a.value).slice(0,n);
