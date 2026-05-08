@@ -21,7 +21,46 @@ const Immersion = {
     im.sponsorMood = im.sponsorMood || { value: 60, note:'Les partenaires attendent des résultats réguliers.' };
     im.juniorAcademy = Array.isArray(im.juniorAcademy) ? im.juniorAcademy : this.defaultJuniors(save);
     im.seasonStory = im.seasonStory || [];
+    this.capAcademyDriverStats(save);
     return save;
+  },
+
+  // Les juniors sortent de l'académie avec du potentiel, pas comme stars immédiates.
+  // Le potentiel reste élevé, mais le niveau F1 initial est plafonné pour garder l'équilibrage.
+  ACADEMY_MAX_OVR: 77,
+
+  capVal(v, max=this.ACADEMY_MAX_OVR){ return Math.max(45, Math.min(max, Math.round(Number(v)||60))); },
+
+  capProfile(profile, potential){
+    if(!profile) return profile;
+    const max = this.ACADEMY_MAX_OVR;
+    profile.ovr = this.capVal(profile.ovr, max);
+    profile.stats = profile.stats || {};
+    ['pace','consistency','wetSkill','overtaking','defending'].forEach(k=>{
+      profile.stats[k] = this.capVal(profile.stats[k], max);
+    });
+    return profile;
+  },
+
+  capAcademyDriverStats(save){
+    try{
+      const cap = this.ACADEMY_MAX_OVR;
+      const capDriver = (d)=>{
+        if(!d || !(d.fromAcademy || String(d.id||'').startsWith('JR_'))) return;
+        ['pace','consistency','wetSkill','overtaking','defending'].forEach(k=>{ d[k] = this.capVal(d[k], cap); });
+        d.potential = Math.max(d.potential || cap, cap);
+        d.salary = Math.max(1, Math.min(Number(d.salary)||2, 3));
+      };
+      if(typeof F1Data !== 'undefined' && Array.isArray(F1Data.drivers)) F1Data.drivers.forEach(capDriver);
+      if(Array.isArray(save?.generatedDrivers)) save.generatedDrivers.forEach(capDriver);
+      if(save?.driverStates){
+        Object.keys(save.driverStates).forEach(id=>{
+          const st = save.driverStates[id];
+          if(st?.fromAcademy || String(id).startsWith('JR_')) capDriver(st);
+        });
+      }
+      save?.immersion?.juniorAcademy?.forEach(j=>{ if(j.profile) this.capProfile(j.profile, j.potential); });
+    }catch(e){ console.warn('[Immersion] capAcademyDriverStats', e); }
   },
 
   defaultJuniors(save){
@@ -206,19 +245,21 @@ const Immersion = {
   ],
 
   generateJuniorProfile(j, save){
-    const base = 62 + Math.round((j.potential||75) * 0.12);
-    const ovr = Math.min(85, base + Math.floor(Math.random()*8));
+    const cap = this.ACADEMY_MAX_OVR;
+    // Un gros potentiel donne une meilleure base, mais la sortie d'académie reste plafonnée.
+    const base = Math.min(cap - 5, 58 + Math.round((j.potential||75) * 0.14));
+    const ovr = this.capVal(base + Math.floor(Math.random()*5), cap);
     const shuffled = [...this.JUNIOR_TRAITS].sort(()=>Math.random()-0.5);
     const traits = shuffled.slice(0, 2 + Math.floor(Math.random()*2));
     const stats = {
-      pace:        Math.min(j.potential, Math.max(55, base + (Math.random()>0.5?3:-2))),
-      consistency: Math.min(j.potential, Math.max(52, base + (Math.random()>0.5?2:-3))),
-      wetSkill:    Math.min(j.potential, Math.max(50, base + (Math.random()>0.5?4:-1))),
-      overtaking:  Math.min(j.potential, Math.max(50, base + (Math.random()>0.5?3:-2))),
-      defending:   Math.min(j.potential, Math.max(50, base + (Math.random()>0.5?2:-2))),
+      pace:        this.capVal(base + (Math.random()>0.5?3:-2), cap),
+      consistency: this.capVal(base + (Math.random()>0.5?2:-3), cap),
+      wetSkill:    this.capVal(base + (Math.random()>0.5?4:-1), cap),
+      overtaking:  this.capVal(base + (Math.random()>0.5?3:-2), cap),
+      defending:   this.capVal(base + (Math.random()>0.5?2:-2), cap),
     };
-    traits.forEach(t=>{ if(t.stat && stats[t.stat]!==undefined) stats[t.stat]=Math.max(40,Math.min(j.potential,stats[t.stat]+t.bonus)); });
-    return { ovr, stats, traits: traits.map(t=>t.id) };
+    traits.forEach(t=>{ if(t.stat && stats[t.stat]!==undefined) stats[t.stat]=this.capVal(stats[t.stat]+t.bonus, cap); });
+    return this.capProfile({ ovr, stats, traits: traits.map(t=>t.id) }, j.potential);
   },
 
   progressJuniors(save){
@@ -287,8 +328,9 @@ const Immersion = {
     const repGain = crash ? -2 : (t<0 ? 5 : 2);
     if(!crash && j.profile){
       const stat = ['pace','consistency','wetSkill'][Math.floor(Math.random()*3)];
-      j.profile.stats[stat] = Math.min(j.potential||90,(j.profile.stats[stat]||65)+gain);
-      j.profile.ovr = Math.min(j.potential||90,(j.profile.ovr||65)+Math.ceil(gain/2));
+      j.profile.stats[stat] = this.capVal((j.profile.stats[stat]||65)+gain);
+      j.profile.ovr = this.capVal((j.profile.ovr||65)+Math.ceil(gain/2));
+      this.capProfile(j.profile, j.potential);
     }
     if(im.teamReputation) im.teamReputation.value = Math.max(0,Math.min(100,(im.teamReputation.value||50)+repGain));
     const fn = `${j.firstName} ${j.name}`;
@@ -302,36 +344,84 @@ const Immersion = {
     return { ok:true, crash, timeStr, gain, repGain, session:lbl };
   },
 
-  promoteJunior(save, juniorId){
+  promoteJunior(save, juniorId, replaceDriverId=null){
     this.ensure(save);
     const im = save.immersion;
     const j = im.juniorAcademy.find(x=>x.id===juniorId);
     if(!j || !j.promotable) return { ok:false, msg:'Ce junior n\'est pas promouvable.' };
     if(j.promoted) return { ok:false, msg:'Déjà promu.' };
+    if(!j.profile) j.profile = this.generateJuniorProfile(j, save);
+    this.capProfile(j.profile, j.potential);
+
+    const currentTeamDrivers = (typeof F1Data !== 'undefined')
+      ? F1Data.drivers.filter(d=>d.teamId===save.playerTeamId && !d.retired)
+      : [];
+    if(currentTeamDrivers.length >= 2 && !replaceDriverId){
+      return { ok:false, needReplacement:true, msg:'Choisis le titulaire à remplacer avant de promouvoir ce junior.' };
+    }
+
     let newDriver = null;
+    let transfer = { ok:true, replaced:null };
     if(typeof F1Data !== 'undefined'){
+      const stats = j.profile?.stats || {};
+      const ovr = this.capVal(j.profile?.ovr || 70);
       newDriver = {
         id:`JR_${j.id}`, name:j.name, firstName:j.firstName, nationality:j.flag,
-        teamId:save.playerTeamId, number:10+Math.floor(Math.random()*89),
+        teamId:null, number:10+Math.floor(Math.random()*89),
         age:j.age||18, potential:j.potential||80, trait:j.profile?.traits?.[0]||'prodigy',
         retired:false, generated:true, fromAcademy:true,
-        pace:j.profile?.stats?.pace||68, consistency:j.profile?.stats?.consistency||65,
-        wetSkill:j.profile?.stats?.wetSkill||65, overtaking:j.profile?.stats?.overtaking||63,
-        defending:j.profile?.stats?.defending||62,
-        salary:Math.max(1,Math.round((j.profile?.ovr||68)*0.04)), seasons:0,
+        pace:this.capVal(stats.pace||ovr), consistency:this.capVal(stats.consistency||ovr-1),
+        wetSkill:this.capVal(stats.wetSkill||ovr-2), overtaking:this.capVal(stats.overtaking||ovr-2),
+        defending:this.capVal(stats.defending||ovr-3),
+        salary:Math.max(1,Math.min(3,Math.round(ovr*0.035))), seasons:0, contractYears:2,
       };
-      F1Data.drivers.push(newDriver);
+      const existing = F1Data.drivers.find(d=>d.id===newDriver.id);
+      if(existing) Object.assign(existing, newDriver);
+      else F1Data.drivers.push(newDriver);
+
+      const contract = { salary:newDriver.salary, years:2, role:'pilote2' };
+      if(typeof Career !== 'undefined' && Career.replacePlayerDriver){
+        transfer = Career.replacePlayerDriver(save, newDriver, replaceDriverId, contract);
+        if(!transfer.ok) return transfer;
+      } else {
+        if(currentTeamDrivers.length >= 2){
+          const replaced = F1Data.drivers.find(x=>x.id===replaceDriverId && x.teamId===save.playerTeamId && !x.retired);
+          if(!replaced) return { ok:false, msg:'Pilote à remplacer introuvable.' };
+          replaced.teamId = null;
+          replaced.contractYears = 0;
+          transfer.replaced = replaced;
+        }
+        newDriver.teamId = save.playerTeamId;
+      }
+
+      save.generatedDrivers = save.generatedDrivers || [];
+      const gdIndex = save.generatedDrivers.findIndex(d=>d.id===newDriver.id);
+      const generatedCopy = { ...newDriver };
+      if(gdIndex >= 0) save.generatedDrivers[gdIndex] = generatedCopy;
+      else save.generatedDrivers.push(generatedCopy);
+
+      save.contracts = save.contracts || {};
+      save.contracts[newDriver.id] = { years:2, salary:newDriver.salary, status:'pilote2', refus:0, cooldownUntilSeason:0, satisfaction:68 };
+      if(transfer.replaced){
+        save.contracts[transfer.replaced.id] = { ...(save.contracts[transfer.replaced.id]||{}), years:0, status:'agent libre', satisfaction:Math.max(25,(save.contracts[transfer.replaced.id]?.satisfaction||50)-12) };
+      }
+
       save.driverStates=save.driverStates||{};
-      save.driverStates[newDriver.id]={...newDriver};
+      save.driverStates[newDriver.id]={...newDriver, fromAcademy:true};
+      if(transfer.replaced) save.driverStates[transfer.replaced.id] = { ...(save.driverStates[transfer.replaced.id]||{}), teamId:null, contractYears:0 };
+      if(typeof Save !== 'undefined' && Save.persistDriverStates) Save.persistDriverStates(save);
+      save.finances = save.finances || { income:0, expenses:0 };
+      save.finances.expenses = Math.round(F1Data.drivers.filter(x=>x.teamId===save.playerTeamId&&!x.retired).reduce((sum,x)=>sum+(Number(x.salary)||0),0)*10)/10;
     }
     j.promoted=true; j.promotedSeason=save.season||2025; j.driverId=newDriver?.id; j.stage='f1';
     const fn=`${j.firstName} ${j.name}`;
-    this.addNews(save,'🏁','Promotion en F1 !',`${fn} rejoint l\'équipe comme pilote titulaire. Une carrière forgée depuis les débuts à l\'académie.`,'promotion');
-    if(im.staffMorale){ im.staffMorale.value=Math.min(100,(im.staffMorale.value||60)+8); im.staffMorale.note=`L'équipe est fière de voir ${j.firstName} franchir le pas.`; }
-    if(im.sponsorMood){ im.sponsorMood.value=Math.min(100,(im.sponsorMood.value||60)+5); im.sponsorMood.note=`Les sponsors voient d'un bon œil la promotion d'un jeune talent maison.`; }
-    if(im.teamReputation){ im.teamReputation.value=Math.min(100,(im.teamReputation.value||50)+6); if(!im.teamReputation.tags.includes('Formation jeunes')) im.teamReputation.tags.push('Formation jeunes'); }
+    const repTxt = transfer?.replaced ? ` Il remplace ${transfer.replaced.firstName} ${transfer.replaced.name}, désormais agent libre.` : '';
+    this.addNews(save,'🏁','Promotion en F1 !',`${fn} rejoint l\'équipe comme titulaire.${repTxt} Contrat rookie : ${newDriver?.salary||1}M€/an sur 2 ans.`,'promotion');
+    if(im.staffMorale){ im.staffMorale.value=Math.min(100,(im.staffMorale.value||60)+6); im.staffMorale.note=`L'équipe est fière de voir ${j.firstName} franchir le pas.`; }
+    if(im.sponsorMood){ im.sponsorMood.value=Math.min(100,(im.sponsorMood.value||60)+3); im.sponsorMood.note=`Les sponsors apprécient la promotion d'un jeune talent maison.`; }
+    if(im.teamReputation){ im.teamReputation.value=Math.min(100,(im.teamReputation.value||50)+4); if(!im.teamReputation.tags.includes('Formation jeunes')) im.teamReputation.tags.push('Formation jeunes'); }
     Save.save(save);
-    return { ok:true, driver:newDriver, msg:`${fn} est officiellement en Formule 1 !` };
+    return { ok:true, driver:newDriver, replaced:transfer?.replaced||null, msg:`${fn} est officiellement en Formule 1 !${repTxt}\nContrat rookie : ${newDriver?.salary||1}M€/an, 2 ans.` };
   },
 
   evolvePromotedJuniors(save){
