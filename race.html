@@ -260,13 +260,6 @@
     </div>
 
   </div>
-
-
-  <div class="player-box">
-    <div class="player-title">🎧 Muret des stands — Ordres joueurs</div>
-    <div id="playerControls"><span style="color:var(--muted);font-size:11px">Démarre une course pour donner des consignes à tes pilotes.</span></div>
-  </div>
-
   <!-- BOTTOM ROW : events + stratégie -->
   <div class="bottom-row">
     <div class="events-panel">
@@ -276,9 +269,9 @@
       </div>
     </div>
     <div class="strat-panel">
-      <div class="panel-head"><div class="dot"></div> 🛞 Stratégies recommandées</div>
+      <div class="panel-head"><div class="dot"></div> 🛞 Durée estimée des pneus</div>
       <div id="stratRecoBody" style="padding:8px;display:flex;flex-direction:column;gap:6px">
-        <div style="color:var(--muted);font-size:11px;text-align:center;padding:8px">Lance une course pour voir les recommandations.</div>
+        <div style="color:var(--muted);font-size:11px;text-align:center;padding:8px">Lance une course pour voir les estimations pneus.</div>
       </div>
     </div>
   </div>
@@ -731,7 +724,7 @@ function renderStratReco() {
   if (!box) return;
 
   if (!Race.state) {
-    box.innerHTML = '<div style="color:var(--muted);font-size:11px;text-align:center;padding:8px">Lance une course pour voir les recommandations.</div>';
+    box.innerHTML = '<div style="color:var(--muted);font-size:11px;text-align:center;padding:8px">Lance une course pour voir les estimations pneus.</div>';
     return;
   }
 
@@ -739,70 +732,36 @@ function renderStratReco() {
   const wSave     = Save.load();
   const fpResults = wSave?.weekendFPResults || [];
   const lifeMap   = calcTyreLifeFromEL(fpResults, circuit);
-  const options   = buildStrategyOptions(circuit, lifeMap);
 
-  if (!options.length) {
-    box.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:8px">Pas assez de données pour calculer une stratégie.</div>';
-    return;
-  }
-
-  // Trier : options réalisables en premier, puis 1 arrêt > 2 > 3
-  options.sort((a, b) => {
-    if (a.feasible !== b.feasible) return b.feasible - a.feasible;
-    return a.stops - b.stops;
-  });
-
-  // Garder max 4 options
-  const shown = options.slice(0, 4);
-
-  // Légende durées pneus (depuis EL ou estimation)
   const hasFP = fpResults.some(r => r.program === 'long_run' || r.program === 'quali_sim');
-  const legendSource = hasFP ? '📊 Données EL' : '📐 Estimation';
+  const legendSource = hasFP ? '📊 Données issues des essais libres' : '📐 Estimation circuit';
+  const compounds = ['SOFT','MEDIUM','HARD','INTER','WET'].filter(c => lifeMap[c] && F1Data.tyres[c]);
 
   box.innerHTML = `
-    <div style="font-family:var(--fh);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;padding:0 2px">
-      ${legendSource} · ${circuit.laps} tours total
+    <div style="font-family:var(--fh);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;padding:0 2px">
+      ${legendSource} · ${circuit.laps} tours · usure x${circuit.tyreDegradation?.toFixed ? circuit.tyreDegradation.toFixed(2) : circuit.tyreDegradation}
     </div>
-    <div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-bottom:6px;padding:0 2px;display:flex;gap:8px;flex-wrap:wrap">
-      ${Object.entries(lifeMap).map(([c,l]) => {
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">
+      ${compounds.map(c => {
         const t = F1Data.tyres[c];
-        return `<span style="color:${t.color}">● ${t.name} ~${l}t</span>`;
+        const life = lifeMap[c];
+        const pct = Math.max(8, Math.min(100, Math.round((life / Math.max(1, circuit.laps)) * 100)));
+        return `
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px">
+              <span style="font-family:var(--fh);font-size:12px;font-weight:800;color:${t.color}">● ${t.name}</span>
+              <span style="font-family:var(--fh);font-size:13px;font-weight:900;color:var(--text)">~${life}t</span>
+            </div>
+            <div style="height:5px;border-radius:4px;background:#111827;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${t.color};border-radius:4px"></div>
+            </div>
+          </div>
+        `;
       }).join('')}
     </div>
-    ${shown.map((opt, optIdx) => {
-      const isRec   = optIdx === 0 && opt.feasible;
-      const isRisky = !opt.feasible;
-      const badgeCls= isRec ? 'rec' : isRisky ? 'risky' : 'alt';
-      const badgeTxt= isRec ? '⭐ Recommandée' : isRisky ? '⚠️ Risquée' : '✅ Viable';
-
-      // Calculer les laps par compound AVANT le template
-      const compoundLaps = opt.compounds.map((c, ci) => {
-        const laps = ci === 0
-          ? (opt.pitLaps[0] || circuit.laps)
-          : ci < opt.pitLaps.length
-            ? opt.pitLaps[ci] - opt.pitLaps[ci-1]
-            : circuit.laps - opt.pitLaps[opt.pitLaps.length-1];
-        return { c, laps };
-      });
-
-      return `
-        <div class="strat-option ${isRec?'recommended':isRisky?'':'possible'}">
-          <span class="strat-badge ${badgeCls}">${badgeTxt}</span>
-          <div style="font-family:var(--fh);font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">
-            ${opt.stops} arrêt${opt.stops>1?'s':''}
-          </div>
-          <div class="strat-compounds">
-            ${compoundLaps.map(({c, laps}, cIdx) => {
-              const t = F1Data.tyres[c];
-              const arrow = cIdx > 0 ? '<span class="strat-arrow">→</span>' : '';
-              return arrow + '<div class="strat-dot" style="background:'+t.color+'"></div><span class="strat-laps" style="color:'+t.color+'">'+laps+'t</span>';
-            }).join('')}
-          </div>
-          <div class="strat-detail">${opt.detail}</div>
-          ${opt.pitLaps.length ? `<div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-top:3px">Pit T.${opt.pitLaps.join(' / ')}</div>` : ''}
-        </div>
-      `;
-    }).join('')}
+    <div style="font-family:var(--fh);font-size:10px;color:var(--muted);line-height:1.35;margin-top:2px;padding:0 2px">
+      Repère stratégique uniquement : pluie, Safety Car et rythme pilote peuvent déplacer la fenêtre réelle.
+    </div>
   `;
 }
 
@@ -1400,41 +1359,13 @@ function collectPreRaceStrategies() {
 }
 
 function renderPlayerControls() {
-  // Sync telemetry orders tab with player controls
-  const newBox = document.getElementById('playerControlsNew');
-  if (newBox && document.getElementById('playerControls')) {
-    // Will be filled below
-  }
-  const box = document.getElementById('playerControls');
-  if (!box || !Race.state) return;
-  const save = Save.load();
-  const playerTeamId = save?.playerTeamId;
-  const cars = Race.state.grid.filter(c => c.driver.teamId === playerTeamId);
-  if (!cars.length) { box.innerHTML = '<span style="color:var(--muted);font-size:11px">Aucune carrière chargée : les ordres ne sont disponibles que pour ton équipe.</span>'; return; }
-  box.innerHTML = '';
-  cars.forEach(car => {
-    const row = document.createElement('div');
-    row.className = 'player-row';
-    row.innerHTML = `
-      <div class="player-name">${car.driver.name}</div>
-      <button class="btn btn-gold" onclick="setMode('${car.driver.id}','attack')">Attaquer</button>
-      <button class="btn btn-sec" onclick="setMode('${car.driver.id}','normal')">Normal</button>
-      <button class="btn btn-sec" onclick="setMode('${car.driver.id}','save')">Économiser</button>
-      <select class="mini-sel" id="pit_${car.driver.id}">
-        <option value="SOFT">Soft</option><option value="MEDIUM" selected>Medium</option><option value="HARD">Hard</option><option value="INTER">Inter</option><option value="WET">Wet</option>
-      </select>
-      <button class="btn btn-red" onclick="forcePit('${car.driver.id}')">Pit ce tour</button>
-      <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">Mode: ${car.orderMode || 'normal'} · Pneu ${F1Data.tyres[car.tyre.compound].name} ${Math.round(car.tyre.condition*100)}%</span>
-    `;
-    box.appendChild(row);
-  });
+  syncOrdersTab();
 }
 function setMode(driverId, mode) { Race.setDriverMode(driverId, mode); addEvents(Race.state.events.slice(-1)); renderPlayerControls(); syncOrdersTab(); }
 function forcePitNew(driverId) { const sel = document.getElementById('pit_new_'+driverId); Race.forcePitStop(driverId, sel ? sel.value : 'MEDIUM'); addEvents(Race.state.events.slice(-1)); renderPlayerControls(); syncOrdersTab(); }
 function syncOrdersTab() {
   const box = document.getElementById('playerControlsNew');
-  const src = document.getElementById('playerControls');
-  if (!box || !src) return;
+  if (!box) return;
   if (!Race.state) { box.innerHTML = '<span style="color:var(--muted);font-size:11px">Démarre une course.</span>'; return; }
   const save = Save.load(); const pid = save?.playerTeamId;
   const cars = Race.state.grid.filter(c => c.driver.teamId === pid && c.status === 'racing');
