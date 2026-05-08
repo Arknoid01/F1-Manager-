@@ -254,7 +254,7 @@ h1, h2, h3, .title, .section-title, .kicker {
   .hero-title { font-size: 22px !important; }
 
   /* Grilles → 1 colonne */
-  .tiles-grid, .grid, .podium, .offer,
+  .tiles-grid, .grid, .podium:not(.res-row), .offer,
   .hero-body, .budget-hero { grid-template-columns: 1fr !important; }
 
   /* Boutons pleine largeur */
@@ -274,8 +274,8 @@ h1, h2, h3, .title, .section-title, .kicker {
   input:not([type="range"]), select, textarea { max-width: 100% !important; }
 
   /* Podium : réordonner P2/P1/P3 → P1 en haut */
-  .p1 { order: -1 !important; min-height: 160px !important; }
-  .p2, .p3 { min-height: 130px !important; }
+  .podium:not(.res-row) .p1 { order: -1 !important; min-height: 160px !important; }
+  .podium:not(.res-row) .p2, .podium:not(.res-row) .p3 { min-height: 130px !important; }
 }
 
 /* Très petit écran (<380px) */
@@ -336,4 +336,42 @@ h1, h2, h3, .title, .section-title, .kicker {
     padding-top: 7px !important;
     padding-bottom: 7px !important;
   }
+}
+
+
+/* ── Hotfix définitif course/résultats : les styles podium ne doivent jamais toucher les tableaux ── */
+.stand-panel .s-row,
+.stand-panel .s-head {
+  display: grid !important;
+  grid-template-columns: 26px 22px 3px 1fr 60px 52px !important;
+  align-items: center !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+.stand-panel .s-row { padding: 4px 8px !important; }
+.stand-panel .s-row > *,
+.stand-panel .s-head > *,
+.res-card .res-row > * {
+  min-height: 0 !important;
+  height: auto !important;
+  order: 0 !important;
+}
+.stand-panel .pos.p1, .stand-panel .pos.p2, .stand-panel .pos.p3,
+.res-card .rpos.p1, .res-card .rpos.p2, .res-card .rpos.p3 {
+  min-height: 0 !important;
+  height: auto !important;
+  order: 0 !important;
+}
+.res-card .res-row,
+.res-card .res-row.podium {
+  display: grid !important;
+  grid-template-columns: 30px 24px 1fr 46px 56px !important;
+  align-items: center !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 6px 0 !important;
+}
+@media (max-width:640px){
+  .stand-panel .s-row, .stand-panel .s-head { grid-template-columns: 26px 22px 3px 1fr 60px 52px !important; }
+  .res-card .res-row, .res-card .res-row.podium { grid-template-columns: 30px 24px 1fr 46px 56px !important; }
 }
