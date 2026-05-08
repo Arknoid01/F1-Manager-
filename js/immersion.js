@@ -356,8 +356,26 @@ const Immersion = {
     });
   },
 
+  syncLatestGp(save){
+    if(!save || !save.lastGpSummary) return save;
+    this.ensure(save);
+    const gp = save.lastGpSummary;
+    const key = `${gp.season || save.season}-${gp.raceNumber || save.race}-${gp.circuitId || gp.circuitName}`;
+    if(save.immersion.lastProcessedGpKey !== key){
+      this.afterRace(save, gp);
+    }
+    return save;
+  },
+
   top(obj, n=5, asc=false){
     return Object.entries(obj||{}).map(([id,v])=>({id, name:v.name||id, value:v.value||0}))
       .sort((a,b)=>asc?a.value-b.value:b.value-a.value).slice(0,n);
   }
 };
+
+
+// Exposition globale : nécessaire pour que race.html puisse appeler Immersion.afterRace()
+// depuis un autre bloc <script>. Sans ça, les stats existent mais ne sont jamais alimentées.
+if (typeof window !== 'undefined') {
+  window.Immersion = Immersion;
+}
