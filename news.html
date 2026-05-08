@@ -204,10 +204,6 @@ const CATEGORIES = {
   board:        { label:'Direction',    icon:'🏢' },
   media:        { label:'Médias',       icon:'🎤' },
   competitor:   { label:'Concurrents',  icon:'⚡' },
-  story:        { label:'Décisions',    icon:'📌' },
-  driver:       { label:'Pilotes',      icon:'🎧' },
-  academy:      { label:'Académie',     icon:'🌱' },
-  rivalry:      { label:'Rivalités',    icon:'🔥' },
 };
 
 function getNewsStyle(item) {
@@ -270,8 +266,6 @@ function setFilter(cat) {
   renderNews();
 }
 
-function escHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
 function renderNews() {
   const news = (save.news||[]).filter(n => {
     if (activeFilter === 'all') return true;
@@ -294,32 +288,20 @@ function renderNews() {
     const icon  = item.icon || catDef.icon || '📰';
     const meta  = formatDate(item.date, item.season, item.race);
 
-    const notif = item.notificationId ? (save.notifications||[]).find(n=>n.id===item.notificationId && !n.resolved) : null;
-    const choices = notif ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">${(notif.choices||[]).map(c=>`<button class="filter-btn" style="text-align:left;white-space:normal;line-height:1.2" onclick="resolveNewsDecision('${notif.id}','${c.id}')">${escHtml(c.label)}${c.preview?`<br><small style=\"color:var(--muted)\">${escHtml(c.preview)}</small>`:''}</button>`).join('')}</div>` : '';
     return `
       <div class="news-item ${style}">
         <div class="news-icon">${icon}</div>
         <div class="news-content">
           <div class="news-header">
-            <div class="news-title">${escHtml(item.title||'—')}</div>
+            <div class="news-title">${item.title||'—'}</div>
             <div class="news-meta">${meta}</div>
           </div>
-          <div class="news-text">${escHtml(item.text||'')}</div>
+          <div class="news-text">${item.text||''}</div>
           <span class="news-category cat-${cat}">${catDef.icon} ${catDef.label}</span>
-          ${choices}
         </div>
       </div>
     `;
   }).join('');
-}
-
-
-function resolveNewsDecision(id,choiceId){
-  if(typeof CareerEvents==='undefined') return;
-  const res=CareerEvents.resolveNotification(save,id,choiceId);
-  save=Save.load()||save;
-  renderQuickStats(); renderFilters(); renderNews();
-  alert(res.msg || (res.ok?'Décision appliquée':'Erreur'));
 }
 
 init();

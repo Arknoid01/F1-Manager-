@@ -185,41 +185,6 @@
     }
 </style>
 <link rel="stylesheet" href="css/immersive-theme.css">
-<style id="race-mobile-display-fixes">
-/* Correctifs anti-cartes géantes : le thème global ne doit pas étirer les lignes de course */
-#standBody .s-row{
-  display:grid!important;
-  grid-template-columns:26px 22px 3px minmax(0,1fr) 74px 48px!important;
-  align-items:center!important;
-  gap:4px!important;
-  min-height:46px!important;
-  height:auto!important;
-  padding:6px 8px!important;
-}
-#standBody .s-row>*{min-height:0!important;align-self:center!important;}
-#standBody .dname{line-height:1.05!important;}
-#standBody .dteam-s,#standBody .gap-cell,#standBody .last-cell{line-height:1.1!important;}
-#standBody .tyre-cell{min-width:0!important;}
-#standBody .tyre-cond{width:44px!important;}
-#resBody .res-row{
-  display:grid!important;
-  grid-template-columns:30px 24px minmax(0,1fr) 48px 58px!important;
-  align-items:center!important;
-  gap:6px!important;
-  min-height:52px!important;
-  height:auto!important;
-  padding:8px 0!important;
-}
-#resBody .res-row>*{min-height:0!important;align-self:center!important;}
-#resBody .rname{line-height:1.1!important;min-width:0!important;}
-@media(max-width:650px){
-  .stand-panel{width:100%!important;}
-  #standBody{max-height:none!important;overflow-y:visible!important;flex:0 0 auto!important;}
-  #standBody .s-row{grid-template-columns:28px 22px 4px minmax(0,1fr) 86px 38px!important;min-height:48px!important;}
-  #resBody .res-row{grid-template-columns:28px 22px minmax(0,1fr) 46px 54px!important;min-height:54px!important;}
-}
-</style>
-
 </head>
 <body>
 
@@ -1524,9 +1489,8 @@ function saveLastGpSummary(results, careerReward) {
         message: String(ev.message || ev.text || '').replace(/<[^>]*>/g, '')
       }))
     };
-    const Imm = window.Immersion || (typeof Immersion !== 'undefined' ? Immersion : null);
-    if (Imm && typeof Imm.afterRace === 'function') {
-      Imm.afterRace(save, save.lastGpSummary);
+    if (window.Immersion && typeof Immersion.afterRace === 'function') {
+      Immersion.afterRace(save, save.lastGpSummary);
     }
     Save.save(save);
   } catch (e) {

@@ -270,15 +270,32 @@ function showDashboard() {
   dash.style.flexDirection='column';
 
   const team=F1Data.teams.find(t=>t.id===save.playerTeamId);
-  const circuit=F1Data.circuits[(save.race||0)%F1Data.circuits.length];
+  const totalRaces = F1Data.circuits.length || 23;
+  const seasonFinished = (save.race || 0) >= totalRaces;
+  const circuit=seasonFinished ? null : F1Data.circuits[(save.race||0)%totalRaces];
   const drivers=F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
 
   document.getElementById('seasonBadge').textContent=`Saison ${save.season||2025}`;
   document.getElementById('budgetBadge').textContent=`💰 ${Math.round((save.budget||0)*10)/10}M €`;
 
-  document.getElementById('raceFlag').textContent=CIRCUIT_FLAGS[circuit?.id]||'🏁';
-  document.getElementById('nextRaceName').textContent=circuit?.fullName||circuit?.name||'—';
-  document.getElementById('nextRaceDetail').textContent=`Course ${(save.race||0)+1}/23 · ${circuit?.laps} tours · ${circuit?.lapDistance}km`;
+  const raceHero = document.getElementById('raceHero');
+  if (seasonFinished) {
+    document.getElementById('raceFlag').textContent='🏆';
+    document.getElementById('nextRaceName').textContent='Fin de saison';
+    document.getElementById('nextRaceDetail').textContent=`Saison ${save.season||2025} terminée · Revue annuelle disponible`;
+    raceHero.setAttribute('href', 'javascript:void(0)');
+    raceHero.onclick = (ev) => { ev.preventDefault(); launchEndOfSeason(); };
+    const cta = raceHero.querySelector('.rh-cta');
+    if (cta) cta.textContent = 'Clôturer →';
+  } else {
+    document.getElementById('raceFlag').textContent=CIRCUIT_FLAGS[circuit?.id]||'🏁';
+    document.getElementById('nextRaceName').textContent=circuit?.fullName||circuit?.name||'—';
+    document.getElementById('nextRaceDetail').textContent=`Course ${(save.race||0)+1}/${totalRaces} · ${circuit?.laps} tours · ${circuit?.lapDistance}km`;
+    raceHero.setAttribute('href','weekend.html');
+    raceHero.onclick = null;
+    const cta = raceHero.querySelector('.rh-cta');
+    if (cta) cta.textContent = 'Weekend →';
+  }
 
   if (save._newSeasonBanner&&!save._bannerDismissed) {
     document.getElementById('newSeasonBanner').style.display='block';
@@ -292,6 +309,42 @@ function showDashboard() {
   renderStoryDecisions();
   renderStandings();
   renderNews();
+}
+
+
+function launchEndOfSeason() {
+  if (!save || !save.playerTeamId) return;
+  const totalRaces = F1Data.circuits.length || 23;
+  if ((save.race || 0) < totalRaces) {
+    location.href = 'weekend.html';
+    return;
+  }
+  if (typeof Career === 'undefined' || typeof Career.endOfSeason !== 'function') {
+    showToast('Fin de saison indisponible : module Career non chargé.', true);
+    return;
+  }
+  const ok = confirm(`Clôturer la saison ${save.season || 2025} ?
+
+Cela applique les primes, la R&D intersaison, les retraites, les transferts et la revue de l'académie.`);
+  if (!ok) return;
+  try {
+    const report = Career.endOfSeason(save) || {};
+    save = Save.load() || save;
+    const academyTxt = report.academy?.released
+      ? ` Académie : ${report.academy.released.firstName} ${report.academy.released.name} libéré, ${report.academy.newJunior?.firstName || 'un nouveau talent'} rejoint le centre.`
+      : '';
+    save._newSeasonBanner = `Prime de fin de saison appliquée. ${report.retired?.length || 0} retraite(s), ${report.newTalents?.length || 0} nouveau(x) talent(s).${academyTxt}`;
+    save._bannerDismissed = false;
+    Save.save(save);
+    restoreDriverStates(save);
+    if (typeof Career.restoreTeamStates === 'function') Career.restoreTeamStates(save);
+    migrateSave(save);
+    showDashboard();
+    showToast(`🏆 Saison ${save.season} lancée !`);
+  } catch (err) {
+    console.error('end season error:', err);
+    showToast('Erreur fin de saison : ' + err.message, true);
+  }
 }
 
 function renderDrivers(drivers,team) {

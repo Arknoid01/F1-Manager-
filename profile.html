@@ -51,7 +51,7 @@ function hero(icon, title, subtitle, score, accent){ return `<div class="hero"><
 
 function clamp(v){return Math.max(0,Math.min(100,Math.round(v||0)));}
 function immersiveDriverPanel(d){
-  try{ if(window.Immersion){ Immersion.ensure(save); Immersion.syncLatestGp(save); } }catch(e){}
+  try{ if(window.Immersion) Immersion.ensure(save); }catch(e){}
   const im=save.immersion||{}; const id=String(d.id); const morale=im.driverMorale?.[d.id]||im.driverMorale?.[id]||null;
   const rec=im.records||{}; const wins=rec.wins?.[id]?.value||0, pods=rec.podiums?.[id]?.value||0, pts=rec.points?.[id]?.value||0, best=rec.bestResults?.[id]?.value||null;
   const recent=(im.gpHistory||[]).slice(-5).reverse().filter(g=>(g.podium||[]).some(n=>String(n).includes(d.name))).slice(0,3);
@@ -60,7 +60,7 @@ function immersiveDriverPanel(d){
   ])}<div class="desc" style="margin-top:12px">${morale?esc(morale.note):'Le moral sera alimenté après les prochains GP.'}</div>${recent.length?`<div style="margin-top:10px">${recent.map(g=>`<span class="badge">${esc(g.circuitName)} · podium</span>`).join('')}</div>`:''}</div></div>`;
 }
 function immersiveTeamPanel(t){
-  try{ if(window.Immersion){ Immersion.ensure(save); Immersion.syncLatestGp(save); } }catch(e){}
+  try{ if(window.Immersion) Immersion.ensure(save); }catch(e){}
   const im=save.immersion||{}, rep=im.teamReputation||{}, sponsor=im.sponsorMood||{}, staff=im.staffMorale||{};
   const hist=(im.gpHistory||[]).slice(-3).reverse();
   const tags=(rep.tags||[]).map(x=>`<span class="badge">${esc(x)}</span>`).join('');
