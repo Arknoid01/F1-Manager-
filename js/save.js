@@ -205,14 +205,13 @@ const Save = {
     // Récompense course de base
     const reward = 1 + Math.round(teamPoints * 0.3) + (bestPosition <= 3 ? 3 : bestPosition <= 10 ? 1 : 0);
 
-    // Tokens performance-based + 1 garanti (évite le blocage total)
-    // Petite équipe (~0 podiums) : ~20-25/saison → doit choisir 2-3 domaines
-    // Top équipe (~8 podiums)    : ~45-55/saison → peut tout développer en 2 ans
-    const tokens = 1                               // minimum garanti
-                 + (teamPoints > 0 ? 1 : 0)       // top 10 = +1
-                 + (bestPosition <= 5  ? 1 : 0)   // top 5  = +1
-                 + (bestPosition <= 3  ? 1 : 0)   // podium = +1
-                 + (bestPosition === 1 ? 1 : 0);  // victoire = +1 (max 5/course)
+    // Tokens performance-based + 0.5 garanti (demi-token = 1 token tous les 2 GP)
+    // Nerf v2 : gains réduits pour allonger la progression R&D
+    // Petite équipe : ~12-15/saison → 1-2 domaines par saison max
+    // Top équipe    : ~25-30/saison → peut développer 2-3 domaines
+    const tokens = (Math.random() < 0.5 ? 1 : 0)  // 1 garanti sur 2 GP (demi-token)
+                 + (teamPoints > 0 ? 1 : 0)         // top 10 = +1
+                 + (bestPosition <= 5  ? 1 : 0);    // top 5  = +1 (max 3/course)
 
     // Revenus sponsors — 3 versements clairs dans la saison
     let sponsorBonus = 0;

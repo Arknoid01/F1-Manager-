@@ -327,7 +327,7 @@ const Career = {
     (save.sponsors || []).forEach(sp => { sp.progress = 0; sp.paid = false; });
 
     // 7. Tokens bonus + prime fin de saison
-    save.tokens = (save.tokens || 0) + 5;
+    save.tokens = (save.tokens || 0) + 3; // réduit de 5→3 (nerf R&D)
     save.budget = Math.round(((save.budget || 0) + prize) * 10) / 10;
 
     // 8. Revenus annuels

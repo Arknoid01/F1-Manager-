@@ -208,55 +208,55 @@ const F1Data = {
       label: 'Aérodynamique', icon: '🌊', color: '#3d7eff',
       stat: 'aero',
       upgrades: [
-        { id:'aero_1', level:1, name:'Fond plat optimisé',      desc:'Refonte du fond plat pour réduire la traînée.',          cost:8,  tokens:1, gain:3, deliveryGps:2, requires:null },
-        { id:'aero_2', level:2, name:'Nouveau aileron avant',   desc:'Aileron avant à 5 volets, meilleure charge en virage.',   cost:15, tokens:2, gain:4, deliveryGps:3, requires:'aero_1' },
-        { id:'aero_3', level:3, name:'Concept aéro radical',    desc:'Refonte complète du concept aérodynamique.',             cost:28, tokens:3, gain:6, deliveryGps:4, requires:'aero_2' },
+        { id:'aero_1', level:1, name:'Fond plat optimisé',      desc:'Refonte du fond plat pour réduire la traînée.',          cost:10, tokens:1, gain:2, deliveryGps:3, requires:null },
+        { id:'aero_2', level:2, name:'Nouveau aileron avant',   desc:'Aileron avant à 5 volets, meilleure charge en virage.',   cost:20, tokens:3, gain:3, deliveryGps:4, requires:'aero_1' },
+        { id:'aero_3', level:3, name:'Concept aéro radical',    desc:'Refonte complète du concept aérodynamique.',             cost:38, tokens:5, gain:4, deliveryGps:6, requires:'aero_2' },
       ],
-      nextYear: { id:'aero_ny', name:'Architecture 2026',       desc:'Nouveau concept pour le règlement 2026.',                cost:35, tokens:4, gain:8, isNextYear:true },
+      nextYear: { id:'aero_ny', name:'Architecture 2026',       desc:'Nouveau concept pour le règlement 2026.',                cost:50, tokens:6, gain:5, isNextYear:true },
     },
 
     chassis: {
       label: 'Châssis', icon: '🏗️', color: '#e8003d',
       stat: 'chassis',
       upgrades: [
-        { id:'chas_1', level:1, name:'Suspension révisée',      desc:'Géométrie de suspension améliorée, meilleur transfert.',  cost:10, tokens:1, gain:3, deliveryGps:2, requires:null },
-        { id:'chas_2', level:2, name:'Monocoque allégée',       desc:'Nouvelle monocoque en composite carbone.',               cost:18, tokens:2, gain:4, deliveryGps:3, requires:'chas_1' },
-        { id:'chas_3', level:3, name:'Plateforme renforcée',    desc:'Refonte complète de la plateforme châssis.',             cost:30, tokens:3, gain:6, deliveryGps:4, requires:'chas_2' },
+        { id:'chas_1', level:1, name:'Suspension révisée',      desc:'Géométrie de suspension améliorée, meilleur transfert.',  cost:12, tokens:1, gain:2, deliveryGps:3, requires:null },
+        { id:'chas_2', level:2, name:'Monocoque allégée',       desc:'Nouvelle monocoque en composite carbone.',               cost:24, tokens:3, gain:3, deliveryGps:4, requires:'chas_1' },
+        { id:'chas_3', level:3, name:'Plateforme renforcée',    desc:'Refonte complète de la plateforme châssis.',             cost:42, tokens:5, gain:4, deliveryGps:6, requires:'chas_2' },
       ],
-      nextYear: { id:'chas_ny', name:'Châssis 2026',            desc:'Architecture châssis conçue pour le nouveau règlement.', cost:40, tokens:4, gain:8, isNextYear:true },
+      nextYear: { id:'chas_ny', name:'Châssis 2026',            desc:'Architecture châssis conçue pour le nouveau règlement.', cost:55, tokens:6, gain:5, isNextYear:true },
     },
 
     engine: {
       label: 'Moteur / ERS', icon: '⚡', color: '#ff8c42',
       stat: 'engine',
       upgrades: [
-        { id:'eng_1',  level:1, name:'Mapping moteur optimisé', desc:'Nouveau mapping, meilleure utilisation de l\'énergie.',   cost:12, tokens:1, gain:2, deliveryGps:1, requires:null },
-        { id:'eng_2',  level:2, name:'ERS amélioré',            desc:'Nouvelle batterie ERS, déploiement plus efficace.',      cost:20, tokens:2, gain:3, deliveryGps:3, requires:'eng_1' },
-        { id:'eng_3',  level:3, name:'Unité de puissance V3',   desc:'Troisième spec moteur de la saison.',                    cost:35, tokens:3, gain:5, deliveryGps:4, requires:'eng_2' },
+        { id:'eng_1',  level:1, name:'Mapping moteur optimisé', desc:'Nouveau mapping, meilleure utilisation de l\'énergie.',   cost:15, tokens:1, gain:2, deliveryGps:2, requires:null },
+        { id:'eng_2',  level:2, name:'ERS amélioré',            desc:'Nouvelle batterie ERS, déploiement plus efficace.',      cost:28, tokens:3, gain:2, deliveryGps:4, requires:'eng_1' },
+        { id:'eng_3',  level:3, name:'Unité de puissance V3',   desc:'Troisième spec moteur de la saison.',                    cost:48, tokens:5, gain:3, deliveryGps:6, requires:'eng_2' },
       ],
-      nextYear: { id:'eng_ny', name:'Moteur hybride 2026',      desc:'Nouveau groupe propulseur pour le règlement 2026.',      cost:50, tokens:5, gain:7, isNextYear:true },
+      nextYear: { id:'eng_ny', name:'Moteur hybride 2026',      desc:'Nouveau groupe propulseur pour le règlement 2026.',      cost:65, tokens:7, gain:5, isNextYear:true },
     },
 
     reliability: {
       label: 'Fiabilité', icon: '🛡️', color: '#00d97e',
       stat: 'reliability',
       upgrades: [
-        { id:'rel_1',  level:1, name:'Refroidissement amélioré',desc:'Meilleure gestion thermique, moins de surchauffe.',      cost:8,  tokens:1, gain:3, deliveryGps:1, requires:null },
-        { id:'rel_2',  level:2, name:'Hydraulique renforcé',    desc:'Circuit hydraulique revu, réduction des fuites.',        cost:14, tokens:2, gain:4, deliveryGps:2, requires:'rel_1' },
-        { id:'rel_3',  level:3, name:'Système de contrôle v3',  desc:'Nouveau software de monitoring pièces critiques.',       cost:22, tokens:2, gain:5, deliveryGps:3, requires:'rel_2' },
+        { id:'rel_1',  level:1, name:'Refroidissement amélioré',desc:'Meilleure gestion thermique, moins de surchauffe.',      cost:10, tokens:1, gain:2, deliveryGps:2, requires:null },
+        { id:'rel_2',  level:2, name:'Hydraulique renforcé',    desc:'Circuit hydraulique revu, réduction des fuites.',        cost:18, tokens:3, gain:3, deliveryGps:3, requires:'rel_1' },
+        { id:'rel_3',  level:3, name:'Système de contrôle v3',  desc:'Nouveau software de monitoring pièces critiques.',       cost:30, tokens:4, gain:3, deliveryGps:5, requires:'rel_2' },
       ],
-      nextYear: { id:'rel_ny', name:'Fiabilité 2026',           desc:'Conception durable pour le nouveau règlement.',          cost:30, tokens:3, gain:6, isNextYear:true },
+      nextYear: { id:'rel_ny', name:'Fiabilité 2026',           desc:'Conception durable pour le nouveau règlement.',          cost:42, tokens:5, gain:4, isNextYear:true },
     },
 
     pitstop: {
       label: 'Pit Stop', icon: '⏱️', color: '#f5c842',
       stat: 'pitstop',
       upgrades: [
-        { id:'pit_1',  level:1, name:'Outils pneumatiques v2',  desc:'Nouvelle génération d\'outils, gain de 0.3s.',           cost:6,  tokens:1, gain:3, deliveryGps:1, requires:null },
-        { id:'pit_2',  level:2, name:'Procédures optimisées',   desc:'Révision complète des procédures stands.',               cost:10, tokens:1, gain:4, deliveryGps:2, requires:'pit_1' },
-        { id:'pit_3',  level:3, name:'Rig d\'entraînement',     desc:'Simulateur d\'arrêts pour améliorer la précision.',      cost:18, tokens:2, gain:5, deliveryGps:2, requires:'pit_2' },
+        { id:'pit_1',  level:1, name:'Outils pneumatiques v2',  desc:'Nouvelle génération d\'outils, gain de 0.3s.',           cost:8,  tokens:1, gain:2, deliveryGps:2, requires:null },
+        { id:'pit_2',  level:2, name:'Procédures optimisées',   desc:'Révision complète des procédures stands.',               cost:14, tokens:2, gain:3, deliveryGps:3, requires:'pit_1' },
+        { id:'pit_3',  level:3, name:'Rig d\'entraînement',     desc:'Simulateur d\'arrêts pour améliorer la précision.',      cost:24, tokens:3, gain:3, deliveryGps:4, requires:'pit_2' },
       ],
-      nextYear: { id:'pit_ny', name:'Stand 2026',               desc:'Refonte complète du processus pit stop.',                cost:20, tokens:2, gain:6, isNextYear:true },
+      nextYear: { id:'pit_ny', name:'Stand 2026',               desc:'Refonte complète du processus pit stop.',                cost:28, tokens:4, gain:4, isNextYear:true },
     },
   },
 
@@ -286,9 +286,9 @@ const F1Data = {
   // Succès : +bigGain, Échec : -smallLoss, Probabilité selon niveau tech équipe
   riskyConceptCost: { budget: 20, tokens: 3 },
   riskyConceptOutcomes: {
-    success: { gain: 10, probability: 0.45 },
-    partial: { gain:  4, probability: 0.35 },
-    failure: { gain: -3, probability: 0.20 },
+    success: { gain: 6, probability: 0.35 },
+    partial: { gain:  2, probability: 0.35 },
+    failure: { gain: -5, probability: 0.30 },
   },
 
   // Spécialisations — bonus sur certains circuits si domaine élevé

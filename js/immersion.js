@@ -178,12 +178,181 @@ const Immersion = {
     save.immersion.interviews = save.immersion.interviews.slice(-30);
   },
 
+  // ══════════════════════════════════════════════════════════
+  //  SYSTÈME ACADÉMIE JUNIOR — étapes 1 à 6
+  // ══════════════════════════════════════════════════════════
+
+  JUNIOR_TRAITS: [
+    { id:'rain',       label:'Très rapide sous pluie',     icon:'🌧️', stat:'wetSkill',    bonus:+8 },
+    { id:'aggressive', label:'Agressif',                   icon:'🔥', stat:'overtaking',  bonus:+6 },
+    { id:'tyres',      label:'Mauvaise gestion pneus',     icon:'⚠️', stat:'consistency', bonus:-5 },
+    { id:'quali',      label:'Excellent en qualif',        icon:'⚡', stat:'pace',        bonus:+6 },
+    { id:'consistent', label:'Régulier',                   icon:'🎯', stat:'consistency', bonus:+7 },
+    { id:'smart',      label:'Intelligent tactiquement',   icon:'🧠', stat:'defending',   bonus:+5 },
+    { id:'pressure',   label:'Fort sous pression',         icon:'💪', stat:'consistency', bonus:+5 },
+    { id:'rookie',     label:'Inexpérimenté en F1',        icon:'😬', stat:'overtaking',  bonus:-4 },
+    { id:'marketing',  label:'Gros potentiel marketing',   icon:'📸', stat:null,          bonus:0  },
+    { id:'fragile',    label:'Parfois tête brûlée',        icon:'💥', stat:'consistency', bonus:-3 },
+  ],
+
+  PADDOCK_BUZZ: [
+    n => `Mercedes surveille votre junior ${n}.`,
+    n => `Red Bull s'intéresse de près à ${n}.`,
+    n => `Les médias parlent de ${n} comme futur crack.`,
+    n => `${n} épate les ingénieurs lors des tests.`,
+    n => `La presse classe ${n} parmi les meilleurs espoirs.`,
+    n => `Ferrari serait prête à faire une offre pour ${n}.`,
+    n => `${n} impressionne en F2 — les équipes top se réveillent.`,
+  ],
+
+  generateJuniorProfile(j, save){
+    const base = 62 + Math.round((j.potential||75) * 0.12);
+    const ovr = Math.min(85, base + Math.floor(Math.random()*8));
+    const shuffled = [...this.JUNIOR_TRAITS].sort(()=>Math.random()-0.5);
+    const traits = shuffled.slice(0, 2 + Math.floor(Math.random()*2));
+    const stats = {
+      pace:        Math.min(j.potential, Math.max(55, base + (Math.random()>0.5?3:-2))),
+      consistency: Math.min(j.potential, Math.max(52, base + (Math.random()>0.5?2:-3))),
+      wetSkill:    Math.min(j.potential, Math.max(50, base + (Math.random()>0.5?4:-1))),
+      overtaking:  Math.min(j.potential, Math.max(50, base + (Math.random()>0.5?3:-2))),
+      defending:   Math.min(j.potential, Math.max(50, base + (Math.random()>0.5?2:-2))),
+    };
+    traits.forEach(t=>{ if(t.stat && stats[t.stat]!==undefined) stats[t.stat]=Math.max(40,Math.min(j.potential,stats[t.stat]+t.bonus)); });
+    return { ovr, stats, traits: traits.map(t=>t.id) };
+  },
+
   progressJuniors(save){
     this.ensure(save);
-    save.immersion.juniorAcademy.forEach(j=>{
-      const gain = 1 + ((save.race || 0) % 3);
-      j.progress = Math.min(100, (j.progress||0) + gain);
-      if(j.progress>=100){ j.potential = Math.min(99,(j.potential||70)+1); j.progress = 35; j.note = 'Vient de franchir un palier en F2.'; }
+    const im = save.immersion;
+    im.juniorAcademy.forEach(j=>{
+      const base = 1 + Math.floor(Math.random()*3);
+      const prev = j.progress||0;
+      j.progress = Math.min(100, prev + base);
+      j.age = j.age || 17;
+
+      if(j.progress >= 100 && prev < 100){
+        j.potential = Math.min(99,(j.potential||70)+1);
+        j.progress = 30;
+        j.paliers = (j.paliers||0) + 1;
+        j.note = ['Franchit un cap décisif en F2.','Meilleur temps aux tests de Jerez.','Sa régularité impressionne les recruteurs.'][Math.floor(Math.random()*3)];
+      }
+
+      const paliers = j.paliers||0;
+      const wasPromotable = j.promotable;
+      j.promotable = !j.promoted && (paliers >= 3 || (j.potential||70) >= 88);
+
+      if(j.promotable && !wasPromotable && !j.profile){
+        j.profile = this.generateJuniorProfile(j, save);
+        j.stage = 'reserve';
+        const fn = `${j.firstName} ${j.name}`;
+        const buzz = this.PADDOCK_BUZZ[Math.floor(Math.random()*this.PADDOCK_BUZZ.length)](fn);
+        this.addNews(save,'🌟',`Académie — ${fn} promouvable`, buzz);
+      }
+
+      if(!j.promotable && Math.random()<0.18){
+        const fn = `${j.firstName} ${j.name}`;
+        const buzzes = [
+          `${fn} signe un hat-trick de poles en Formule 3.`,
+          `${fn} marque les esprits avec une remontée spectaculaire.`,
+          `L'académie note des progrès constants chez ${fn}.`,
+        ];
+        this.addNews(save,'🌱','Académie — Progression', buzzes[Math.floor(Math.random()*buzzes.length)]);
+      }
+    });
+
+    if((save.race||0) > 4){
+      const promotables = im.juniorAcademy.filter(j=>j.promotable && !j.promoted);
+      if(promotables.length && Math.random()<0.25){
+        const j = promotables[Math.floor(Math.random()*promotables.length)];
+        const msg = this.PADDOCK_BUZZ[Math.floor(Math.random()*this.PADDOCK_BUZZ.length)](`${j.firstName} ${j.name}`);
+        this.addNews(save,'👀','Intérêt extérieur — paddock', msg);
+      }
+    }
+
+    // Évolution des juniors déjà promus
+    this.evolvePromotedJuniors(save);
+  },
+
+  juniorFP(save, juniorId, session='fp1'){
+    this.ensure(save);
+    const im = save.immersion;
+    const j = im.juniorAcademy.find(x=>x.id===juniorId);
+    if(!j || !j.promotable) return { ok:false, msg:'Ce junior n\'est pas encore promouvable.' };
+    if(j.promoted) return { ok:false, msg:'Ce pilote est déjà titulaire.' };
+    j.fpSessions = (j.fpSessions||0) + 1;
+    const crash = Math.random() < 0.08;
+    const t = (Math.random()*1.2-0.6);
+    const timeStr = (t>=0?'+':'')+t.toFixed(3)+'s';
+    const gain = crash ? 0 : Math.ceil(Math.random()*2);
+    const repGain = crash ? -2 : (t<0 ? 5 : 2);
+    if(!crash && j.profile){
+      const stat = ['pace','consistency','wetSkill'][Math.floor(Math.random()*3)];
+      j.profile.stats[stat] = Math.min(j.potential||90,(j.profile.stats[stat]||65)+gain);
+      j.profile.ovr = Math.min(j.potential||90,(j.profile.ovr||65)+Math.ceil(gain/2));
+    }
+    if(im.teamReputation) im.teamReputation.value = Math.max(0,Math.min(100,(im.teamReputation.value||50)+repGain));
+    const fn = `${j.firstName} ${j.name}`;
+    const lbl = { fp1:'EL1', fp2:'EL2', rookie:'Session rookie' }[session]||session.toUpperCase();
+    let title, text;
+    if(crash){ title=`${fn} accroche lors des ${lbl}`; text=`Une erreur de jeunesse. Voiture endommagée, pilote indemne. Expérience acquise.`; }
+    else if(t<-0.2){ title=`${fn} impressionne aux ${lbl}`; text=`${timeStr} vs leader. L'ingénieur de piste est enthousiaste.`; }
+    else { title=`${fn} — ${lbl} terminés`; text=`${timeStr} vs leader. Session correcte, données récupérées.`; }
+    this.addNews(save, crash?'💥':'🏎️', title, text, 'junior');
+    Save.save(save);
+    return { ok:true, crash, timeStr, gain, repGain, session:lbl };
+  },
+
+  promoteJunior(save, juniorId){
+    this.ensure(save);
+    const im = save.immersion;
+    const j = im.juniorAcademy.find(x=>x.id===juniorId);
+    if(!j || !j.promotable) return { ok:false, msg:'Ce junior n\'est pas promouvable.' };
+    if(j.promoted) return { ok:false, msg:'Déjà promu.' };
+    let newDriver = null;
+    if(typeof F1Data !== 'undefined'){
+      newDriver = {
+        id:`JR_${j.id}`, name:j.name, firstName:j.firstName, nationality:j.flag,
+        teamId:save.playerTeamId, number:10+Math.floor(Math.random()*89),
+        age:j.age||18, potential:j.potential||80, trait:j.profile?.traits?.[0]||'prodigy',
+        retired:false, generated:true, fromAcademy:true,
+        pace:j.profile?.stats?.pace||68, consistency:j.profile?.stats?.consistency||65,
+        wetSkill:j.profile?.stats?.wetSkill||65, overtaking:j.profile?.stats?.overtaking||63,
+        defending:j.profile?.stats?.defending||62,
+        salary:Math.max(1,Math.round((j.profile?.ovr||68)*0.04)), seasons:0,
+      };
+      F1Data.drivers.push(newDriver);
+      save.driverStates=save.driverStates||{};
+      save.driverStates[newDriver.id]={...newDriver};
+    }
+    j.promoted=true; j.promotedSeason=save.season||2025; j.driverId=newDriver?.id; j.stage='f1';
+    const fn=`${j.firstName} ${j.name}`;
+    this.addNews(save,'🏁','Promotion en F1 !',`${fn} rejoint l\'équipe comme pilote titulaire. Une carrière forgée depuis les débuts à l\'académie.`,'promotion');
+    if(im.staffMorale){ im.staffMorale.value=Math.min(100,(im.staffMorale.value||60)+8); im.staffMorale.note=`L'équipe est fière de voir ${j.firstName} franchir le pas.`; }
+    if(im.sponsorMood){ im.sponsorMood.value=Math.min(100,(im.sponsorMood.value||60)+5); im.sponsorMood.note=`Les sponsors voient d'un bon œil la promotion d'un jeune talent maison.`; }
+    if(im.teamReputation){ im.teamReputation.value=Math.min(100,(im.teamReputation.value||50)+6); if(!im.teamReputation.tags.includes('Formation jeunes')) im.teamReputation.tags.push('Formation jeunes'); }
+    Save.save(save);
+    return { ok:true, driver:newDriver, msg:`${fn} est officiellement en Formule 1 !` };
+  },
+
+  evolvePromotedJuniors(save){
+    this.ensure(save);
+    const im = save.immersion;
+    im.juniorAcademy.filter(j=>j.promoted&&j.driverId).forEach(j=>{
+      const d = typeof F1Data!=='undefined' ? F1Data.drivers.find(x=>x.id===j.driverId) : null;
+      if(!d||d.retired) return;
+      if((d.age||18)<=22 && Math.random()<0.4){
+        const stat=['pace','consistency','wetSkill','overtaking'][Math.floor(Math.random()*4)];
+        d[stat]=Math.min(d.potential||90,(d[stat]||65)+1);
+      }
+      const race=save.race||0;
+      if(race>0 && race%6===0 && j._lastStoryRace!==race){
+        j._lastStoryRace=race;
+        const fn=`${j.firstName} ${j.name}`;
+        const roll=Math.random();
+        if(roll<0.15)      this.addNews(save,'🚀','Percée !',`${fn} signe sa meilleure course. Le paddock retient son nom.`,'junior');
+        else if(roll<0.25) this.addNews(save,'📉','Passage à vide',`${fn} traverse une période difficile. L'adaptation à la F1 prend du temps.`,'junior');
+        else if(roll<0.35) this.addNews(save,'💬','Médias',`La presse compare déjà ${fn} aux grands noms de sa génération.`,'junior');
+      }
     });
   },
 
