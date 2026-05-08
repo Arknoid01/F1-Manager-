@@ -247,6 +247,21 @@ input[type=number],input[type=text]{background:var(--surface);color:var(--text);
 .strat-row:last-child{border-bottom:0}
 .strat-name{min-width:80px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px}
 .strat-grid-pos{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:#f5c842;width:30px;text-align:center}
+
+/* FLOW WEEK-END IMMERSIF */
+.flow-card{background:linear-gradient(135deg,#11111d,#090911);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.flow-head{padding:11px 14px;border-bottom:1px solid var(--border);font-family:var(--fh);font-weight:900;font-size:15px;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.flow-body{padding:12px 14px;font-family:var(--fh)}
+.flow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+@media(max-width:700px){.flow-grid{grid-template-columns:1fr}}
+.flow-mini{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:9px}
+.flow-k{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.flow-v{font-size:16px;font-weight:900;color:var(--text)}
+.flow-sub{font-size:11px;color:var(--muted);line-height:1.35;margin-top:3px}
+.flow-list{display:flex;flex-direction:column;gap:5px;margin-top:8px;font-size:12px;color:var(--muted)}
+.flow-list strong{color:var(--text)}
+.flow-cta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
 </style>
 </head>
 <body>
@@ -392,6 +407,14 @@ function renderContent() {
   const content = document.getElementById('weekendContent');
   content.innerHTML = '';
   content.appendChild(buildCircuitHero());
+
+  // Flow immersif : uniquement des cartes de transition qui lisent les vraies données sauvegardées.
+  // Elles ne modifient pas la simulation et ne décident jamais des résultats.
+  if (phase === 'fp' && (save.weekendFPDone || 0) === 0) content.appendChild(buildArrivalBriefing());
+  if (phase === 'fp' && (save.weekendFPDone || 0) > 0) content.appendChild(buildFPDebriefCard());
+  if (phase === 'quali') content.appendChild(buildPreQualiStoryCard());
+  if (phase === 'race_briefing') content.appendChild(buildQualiStoryCard());
+
   if (phase === 'fp')            content.appendChild(buildFPSection());
   else if (phase === 'quali')    content.appendChild(buildQualiSection());
   else                           content.appendChild(buildRaceBriefing());
@@ -423,6 +446,114 @@ function buildCircuitHero() {
       <div class="weather-badge ${wCls}">${wText}</div>
     </div>`;
   return el;
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  FLOW IMMERSIF WEEK-END — CARTES NARRATIVES BASÉES DONNÉES
+// ══════════════════════════════════════════════════════════
+function makeFlowCard(title, html, icon='🎙️') {
+  const el = document.createElement('div');
+  el.className = 'flow-card';
+  el.innerHTML = `<div class="flow-head"><span>${icon}</span>${title}</div><div class="flow-body">${html}</div>`;
+  return el;
+}
+
+function getPlayerTeam() {
+  return F1Data.teams.find(t => t.id === save.playerTeamId) || null;
+}
+
+function flowWeatherLabel() {
+  const w = save.weekendWeather || 'dry';
+  if (w === 'heavy_rain') return 'Forte pluie';
+  if (w === 'light_rain') return 'Pluie légère';
+  return 'Sec';
+}
+
+function circuitProfileLine() {
+  const deg = circuit.tyreDegradation || 1;
+  const ovt = circuit.overtakingDifficulty || 0.5;
+  const tyreTxt = deg >= 1.35 ? 'dégradation très élevée' : deg >= 1.15 ? 'dégradation sensible' : deg <= 0.9 ? 'pneus assez protégés' : 'dégradation normale';
+  const ovtTxt = ovt >= 0.75 ? 'dépassements difficiles' : ovt <= 0.4 ? 'dépassements accessibles' : 'dépassements moyens';
+  return `${tyreTxt} · ${ovtTxt} · ${circuit.drsZones || 0} zone${(circuit.drsZones||0)>1?'s':''} DRS`;
+}
+
+function getBestFPRun(results) {
+  if (!results?.length) return null;
+  return [...results].sort((a,b)=>a.bestLap-b.bestLap)[0];
+}
+
+function buildArrivalBriefing() {
+  const team = getPlayerTeam();
+  const driversLine = myDrivers.map(d => `${d.firstName} ${d.name}`).join(' / ') || 'Pilotes non définis';
+  const expected = team?.performance >= 90 ? 'jouer la victoire' : team?.performance >= 78 ? 'viser les gros points' : team?.performance >= 65 ? 'se battre pour les points' : 'surprendre avec la stratégie';
+  return makeFlowCard('Arrivée au Grand Prix', `
+    <div style="font-size:13px;color:var(--muted);line-height:1.5">
+      Le garage <strong style="color:var(--text)">${team?.name || 'de ton équipe'}</strong> s'installe à ${circuit.fullName || circuit.name}. Objectif logique d'après la performance actuelle : <strong style="color:var(--gold)">${expected}</strong>.
+    </div>
+    <div class="flow-grid">
+      <div class="flow-mini"><div class="flow-k">Météo week-end</div><div class="flow-v">${flowWeatherLabel()}</div><div class="flow-sub">Valeur issue de la météo générée pour ce GP.</div></div>
+      <div class="flow-mini"><div class="flow-k">Profil piste</div><div class="flow-v">${circuit.circuitType || 'balanced'}</div><div class="flow-sub">${circuitProfileLine()}</div></div>
+      <div class="flow-mini"><div class="flow-k">Tes pilotes</div><div class="flow-v">${myDrivers.length} engagés</div><div class="flow-sub">${driversLine}</div></div>
+    </div>
+    <div class="flow-cta"><button class="btn btn-gold" onclick="document.getElementById('fpConfig')?.scrollIntoView({behavior:'smooth'})">Préparer EL1</button></div>
+  `, '🛬');
+}
+
+function buildFPDebriefCard() {
+  const done = save.weekendFPDone || 0;
+  const last = fpResults.slice(-myDrivers.length);
+  const best = getBestFPRun(fpResults);
+  const knowledge = Weekend.calcKnowledgeBonus(fpResults);
+  const bestDriver = best ? F1Data.drivers.find(d => d.id === best.driver) : null;
+  const tested = [...new Set(fpResults.map(r => r.compound))].map(c => F1Data.tyres[c]?.name || c).join(', ') || '—';
+  const avgWear = last.length ? (last.reduce((s,r)=>s+(r.finalWear||0),0)/last.length).toFixed(0) : '0';
+  return makeFlowCard(`Débrief EL${done}`, `
+    <div style="font-size:13px;color:var(--muted);line-height:1.5">
+      Les données affichées viennent uniquement des runs simulés en essais libres : pneus choisis, programmes, chronos et usure réelle de tes pilotes.
+    </div>
+    <div class="flow-grid">
+      <div class="flow-mini"><div class="flow-k">Meilleur tour équipe</div><div class="flow-v">${best ? Weekend.fmtTime(best.bestLap) : '—'}</div><div class="flow-sub">${bestDriver ? `${bestDriver.firstName} ${bestDriver.name}` : 'Aucun run'} · ${best ? (F1Data.tyres[best.compound]?.name || best.compound) : ''}</div></div>
+      <div class="flow-mini"><div class="flow-k">Pneus testés</div><div class="flow-v">${tested}</div><div class="flow-sub">Mélange basé sur tes choix d'EL.</div></div>
+      <div class="flow-mini"><div class="flow-k">Usure moyenne dernière séance</div><div class="flow-v">${avgWear}%</div><div class="flow-sub">Bonus pneus acquis : -${(knowledge.tyreBonus*100).toFixed(0)}% dégradation.</div></div>
+    </div>
+  `, '📊');
+}
+
+function buildPreQualiStoryCard() {
+  const knowledge = Weekend.calcKnowledgeBonus(fpResults);
+  const best = getBestFPRun(fpResults);
+  const bestDriver = best ? F1Data.drivers.find(d => d.id === best.driver) : null;
+  return makeFlowCard('Briefing qualifications', `
+    <div style="font-size:13px;color:var(--muted);line-height:1.5">
+      Les essais libres sont terminés. Ton rythme de qualification sera influencé par les vrais bonus acquis via les programmes EL.
+    </div>
+    <div class="flow-grid">
+      <div class="flow-mini"><div class="flow-k">Préparation</div><div class="flow-v">${knowledge.label}</div><div class="flow-sub">${save.weekendFPDone || 0}/3 séances effectuées.</div></div>
+      <div class="flow-mini"><div class="flow-k">Bonus pace</div><div class="flow-v">+${(knowledge.paceBonus*100).toFixed(0)}%</div><div class="flow-sub">Issu des programmes quali sim.</div></div>
+      <div class="flow-mini"><div class="flow-k">Référence EL</div><div class="flow-v">${best ? Weekend.fmtTime(best.bestLap) : '—'}</div><div class="flow-sub">${bestDriver ? `${bestDriver.firstName} ${bestDriver.name}` : 'Aucun run disponible'}.</div></div>
+    </div>
+  `, '⚡');
+}
+
+function buildQualiStoryCard() {
+  const grid = save.qualiGrid || [];
+  const pole = grid[0];
+  const player = grid.filter(g => g.isPlayer);
+  const bestPlayer = player.length ? [...player].sort((a,b)=>a.gridPos-b.gridPos)[0] : null;
+  const poleName = pole ? getDriverName(pole.driverId) : '—';
+  const playerLine = player.length ? player.map(p=>`${getDriverName(p.driverId)} P${p.gridPos}`).join(' · ') : '—';
+  const gap = bestPlayer && pole ? (bestPlayer.gridPos===1 ? 'Pole position' : Weekend.fmtGap(pole.qualiTime, bestPlayer.qualiTime)) : '—';
+  return makeFlowCard('Transition vers la course', `
+    <div style="font-size:13px;color:var(--muted);line-height:1.5">
+      La grille ci-dessous vient directement des qualifications sauvegardées. La stratégie pré-course utilise ensuite cette grille, la météo et les données pneus des EL.
+    </div>
+    <div class="flow-grid">
+      <div class="flow-mini"><div class="flow-k">Pole position</div><div class="flow-v">${poleName}</div><div class="flow-sub">${pole ? Weekend.fmtTime(pole.qualiTime) : 'Qualification non disponible'}.</div></div>
+      <div class="flow-mini"><div class="flow-k">Meilleur pilote équipe</div><div class="flow-v">${bestPlayer ? `P${bestPlayer.gridPos}` : '—'}</div><div class="flow-sub">${bestPlayer ? `${getDriverName(bestPlayer.driverId)} · ${gap}` : 'Aucun pilote joueur dans la grille'}.</div></div>
+      <div class="flow-mini"><div class="flow-k">Tes positions</div><div class="flow-v">${player.map(p=>`P${p.gridPos}`).join(' / ') || '—'}</div><div class="flow-sub">${playerLine}</div></div>
+    </div>
+  `, '🏁');
 }
 
 // ══════════════════════════════════════════════════════════
