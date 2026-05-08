@@ -62,12 +62,13 @@ html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var
 .dr-pace{font-family:var(--fh);font-weight:900;font-size:24px}
 
 /* TUILES */
-.tiles-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tile{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px;text-decoration:none;color:inherit;display:block;transition:background .1s}
+.tiles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;text-decoration:none;color:inherit;display:block;transition:background .1s;min-height:86px}
+@media(max-width:520px){.tiles-grid{grid-template-columns:repeat(2,1fr)}.tile{padding:9px;min-height:78px}.tile-icon{font-size:17px!important;margin-bottom:3px!important}.tile-val{font-size:17px!important}.tile-sub{font-size:10px!important}}
 .tile:active{background:var(--surface2)}
-.tile-icon{font-size:20px;margin-bottom:6px;display:block}
+.tile-icon{font-size:18px;margin-bottom:4px;display:block}
 .tile-lbl{font-family:var(--fh);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.tile-val{font-family:var(--fh);font-weight:900;font-size:20px;line-height:1;margin-bottom:3px}
+.tile-val{font-family:var(--fh);font-weight:900;font-size:18px;line-height:1;margin-bottom:3px}
 .tile-sub{font-family:var(--fh);font-size:11px;color:var(--muted);line-height:1.4}
 
 /* STAT BAR */
@@ -348,7 +349,10 @@ function renderNavTiles(team,drivers) {
     {href:'board.html',icon:'🏢',lbl:'Direction',val:`${save.boardPressure||0}%`,sub:'Pression du board',c:'var(--orange)'},
     {href:'sponsors.html',icon:'🤝',lbl:'Sponsors',val:`${(save.sponsors||[]).length}/7`,sub:`${(save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0)}M€/an`,c:'var(--green)'},
     {href:'news.html',icon:'📰',lbl:'Actualités',val:`${(save.news||[]).length}`,sub:'événements récents',c:'var(--orange)'},
-    {href:'immersion.html',icon:'🎙️',lbl:'Paddock',val:`${save.immersion?.teamReputation?.value || save.reputation || 50}`,sub:'réputation · moral · records',c:'var(--purple)'},
+    {href:'immersion.html#overview',icon:'🎙️',lbl:'Paddock',val:`${save.immersion?.teamReputation?.value || save.reputation || 50}`,sub:'réputation · moral',c:'var(--purple)'},
+    {href:'immersion.html#history',icon:'📚',lbl:'Historique',val:`${save.immersion?.gpHistory?.length || 0}`,sub:'GP archivés',c:'var(--gold)'},
+    {href:'immersion.html#records',icon:'🏛️',lbl:'Records',val:`${Object.keys(save.immersion?.records?.wins||{}).length}`,sub:'carrière',c:'var(--green)'},
+    {href:'immersion.html#academy',icon:'🌱',lbl:'Académie',val:`${save.immersion?.juniorAcademy?.length || 0}`,sub:'jeunes talents',c:'var(--blue)'},
     {href:'rd.html',icon:'🔬',lbl:'R&D',val:`${save.tokens||0} tokens`,sub:`Budget : ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--blue)'},
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
   ];
