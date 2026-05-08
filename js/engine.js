@@ -183,12 +183,37 @@ const Engine = {
   shouldPit(tyreState, lap, totalLaps, strategy, someoneJustPitted=false, weather='dry', safetyCarActive=false) {
     if (tyreState.condition < 0.12) return { pit: true, reason: 'tyre_dead' };
 
-    if ((weather === 'light_rain' || weather === 'heavy_rain') &&
-        !['INTER', 'WET'].includes(tyreState.compound)) {
-      return { pit: true, reason: 'weather_change' };
-    }
-    if (weather === 'dry' && ['INTER', 'WET'].includes(tyreState.compound)) {
-      return { pit: true, reason: 'weather_change' };
+    // Changement météo — réaction immédiate basée sur l'humidité réelle
+    // Pas besoin d'attendre le prochain tour pour détecter le bon pneu
+    if (typeof currentHumidity !== 'undefined') {
+      const hum = currentHumidity;
+      const compound = tyreState.compound;
+
+      // Piste sèche → pneus pluie = changer immédiatement
+      if (hum < 25 && ['INTER','WET'].includes(compound)) {
+        return { pit: true, reason: 'weather_change' };
+      }
+      // Pluie légère → slicks = changer immédiatement
+      if (hum >= 30 && hum < 70 && ['SOFT','MEDIUM','HARD'].includes(compound)) {
+        return { pit: true, reason: 'weather_change' };
+      }
+      // Pluie forte → inter = changer immédiatement
+      if (hum >= 70 && compound === 'INTER') {
+        return { pit: true, reason: 'weather_change' };
+      }
+      // Pluie légère qui diminue → WET = changer vers INTER
+      if (hum >= 25 && hum < 50 && compound === 'WET') {
+        return { pit: true, reason: 'weather_change' };
+      }
+    } else {
+      // Fallback si currentHumidity non disponible
+      if ((weather === 'light_rain' || weather === 'heavy_rain') &&
+          !['INTER','WET'].includes(tyreState.compound)) {
+        return { pit: true, reason: 'weather_change' };
+      }
+      if (weather === 'dry' && ['INTER','WET'].includes(tyreState.compound)) {
+        return { pit: true, reason: 'weather_change' };
+      }
     }
 
     if (lap > totalLaps - 4) return { pit: false };

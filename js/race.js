@@ -209,11 +209,13 @@ const Race = {
 
         let nextCompound = car.requestedCompound || car.strategy.compounds[car.currentCompoundIndex];
 
-        // Auto-switch météo UNIQUEMENT si le joueur n'a pas forcé un compound
+        // Choix du pneu selon l'humidité réelle — immédiat et précis
         if (!car.requestedCompound) {
-          if      (s.weather === 'heavy_rain')                          nextCompound = 'WET';
-          else if (s.weather === 'light_rain' && currentHumidity > 45)  nextCompound = 'INTER';
-          else if (['INTER','WET'].includes(car.tyre.compound) && currentHumidity < 25) nextCompound = 'MEDIUM';
+          const hum = typeof currentHumidity !== 'undefined' ? currentHumidity : 0;
+          if      (hum >= 70)  nextCompound = 'WET';
+          else if (hum >= 30)  nextCompound = 'INTER';
+          else if (hum >= 10)  nextCompound = 'INTER'; // piste encore humide
+          else                 nextCompound = 'MEDIUM'; // piste sèche
         }
 
         car.pitStops.push({
