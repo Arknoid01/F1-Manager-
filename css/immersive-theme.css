@@ -313,3 +313,27 @@ h1, h2, h3, .title, .section-title, .kicker {
   /* Très petit : tout en 1 col */
   .tiles-grid, .tiles-grid-3 { grid-template-columns: 1fr !important; }
 }
+
+
+/* ── Correctifs course/résultats : ne pas appliquer le style podium générique aux positions ── */
+.s-row .p1, .s-row .p2, .s-row .p3,
+.res-row .p1, .res-row .p2, .res-row .p3,
+.pos.p1, .pos.p2, .pos.p3,
+.rpos.p1, .rpos.p2, .rpos.p3 {
+  order: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+.s-row { min-height: 0 !important; }
+.res-row { min-height: 0 !important; }
+
+@media (max-width:640px){
+  .stand-panel .s-row {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+  .res-card .res-row {
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+  }
+}
