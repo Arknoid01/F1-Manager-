@@ -102,6 +102,16 @@
     .filter-btn:hover{color:var(--text);border-color:var(--text)}
     .filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 
+
+    /* DÉCISIONS */
+    .decision-list{padding:10px;display:flex;flex-direction:column;gap:8px}
+    .decision-card{background:linear-gradient(135deg,rgba(225,6,0,.10),rgba(255,215,0,.04));border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:12px}
+    .decision-title{font-family:var(--fh);font-weight:900;font-size:16px;letter-spacing:.5px;margin-bottom:4px}
+    .decision-text{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px}
+    .decision-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .decision-btn{font-family:var(--fh);font-weight:900;font-size:11px;letter-spacing:.8px;text-transform:uppercase;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:8px 10px;cursor:pointer;flex:1;min-width:130px;text-align:left}
+    .decision-btn span{display:block;font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted);font-size:10px;margin-top:2px;line-height:1.25}
+
     /* NEWS ITEMS */
     .news-list{padding:10px;display:flex;flex-direction:column;gap:8px}
     .news-item{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px;display:flex;gap:12px;transition:border-color .2s;cursor:default}
@@ -169,6 +179,12 @@
     <div class="quick-stats" id="quickStats"></div>
   </div>
 
+  <!-- DÉCISIONS -->
+  <div class="panel" id="decisionsBox" style="display:none">
+    <div class="ph"><div class="dot"></div>📩 Décisions en attente</div>
+    <div class="decision-list" id="decisionList"></div>
+  </div>
+
   <!-- NEWS FEED -->
   <div class="panel">
     <div class="ph">
@@ -204,6 +220,10 @@ const CATEGORIES = {
   board:        { label:'Direction',    icon:'🏢' },
   media:        { label:'Médias',       icon:'🎤' },
   competitor:   { label:'Concurrents',  icon:'⚡' },
+  academy:      { label:'Académie',     icon:'🌱' },
+  sponsor:      { label:'Sponsor',      icon:'🤝' },
+  decision:     { label:'Décisions',    icon:'📩' },
+  decision_resolved:{ label:'Choix faits', icon:'✅' },
 };
 
 function getNewsStyle(item) {
@@ -229,8 +249,12 @@ function init() {
     return;
   }
   CareerEvents.ensure(save);
+  CareerEvents.generateDynamicInteractions(save);
+  Save.save(save);
   document.getElementById('seasonBadge').textContent = `Saison ${save.season||2025}`;
+  const bb=document.getElementById('budgetBadge'); if(bb) bb.textContent=`💰 ${Math.round((save.budget||0)*10)/10}M €`;
   renderQuickStats();
+  renderDecisions();
   renderFilters();
   renderNews();
 }
@@ -264,6 +288,25 @@ function setFilter(cat) {
   activeFilter = cat;
   renderFilters();
   renderNews();
+}
+
+
+function renderDecisions(){
+  const box=document.getElementById('decisionsBox');
+  const list=document.getElementById('decisionList');
+  const inbox=(save.interactions?.inbox||[]);
+  if(!box || !list) return;
+  if(!inbox.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  list.innerHTML=inbox.map(i=>`<div class="decision-card"><div class="decision-title">${i.icon||'📩'} ${i.title}</div><div class="decision-text">${i.text||''}</div><div class="decision-actions">${(i.choices||[]).map(c=>`<button class="decision-btn" onclick="resolveDecision('${i.id}','${c.id}')">${c.label}<span>${c.detail||''}</span></button>`).join('')}</div></div>`).join('');
+}
+
+function resolveDecision(id,choiceId){
+  const res=CareerEvents.resolveInteraction(save,id,choiceId);
+  Save.save(save);
+  renderQuickStats(); renderDecisions(); renderFilters(); renderNews();
+  document.getElementById('budgetBadge').textContent = `💰 ${Math.round((save.budget||0)*10)/10}M €`;
+  alert(res.msg || 'Décision appliquée');
 }
 
 function renderNews() {

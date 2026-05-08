@@ -60,6 +60,22 @@
 .st-name{flex:1}
 .st-pts{color:var(--gold);font-weight:700}
 
+
+
+/* DÉCISIONS PADDOCK */
+.decision-row{padding:12px 14px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(225,6,0,.08),transparent)}
+.decision-row:last-child{border-bottom:0}
+.decision-head{display:flex;gap:8px;align-items:flex-start;margin-bottom:5px}
+.decision-icon{font-size:22px;line-height:1;flex-shrink:0}
+.decision-title{font-family:var(--fh);font-weight:900;font-size:15px;letter-spacing:.5px;line-height:1.1}
+.decision-tag{margin-left:auto;font-family:var(--fh);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);border:1px solid rgba(255,215,0,.25);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.decision-text{font-family:var(--fb);font-size:12px;color:var(--muted);line-height:1.45;margin:4px 0 9px}
+.decision-actions{display:flex;gap:6px;flex-wrap:wrap}
+.decision-btn{font-family:var(--fh);font-weight:900;font-size:11px;letter-spacing:.8px;text-transform:uppercase;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:7px 9px;cursor:pointer;flex:1;min-width:118px;text-align:left}
+.decision-btn:active{transform:scale(.98)}
+.decision-detail{display:block;font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted);font-size:10px;margin-top:2px;line-height:1.25}
+@media(max-width:520px){.decision-actions{flex-direction:column}.decision-btn{width:100%}.decision-tag{display:none}}
+
 /* NEWS */
 .news-row{padding:11px 14px;border-bottom:1px solid var(--border)}
 .news-row:last-child{border-bottom:0}
@@ -145,6 +161,10 @@
     <div class="sec-lbl">Navigation</div>
     <div class="tiles-grid" id="navTiles"></div>
 
+    <!-- DÉCISIONS PADDOCK -->
+    <div class="sec-lbl" id="decisionsLabel" style="display:none">Décisions du paddock</div>
+    <div class="panel" id="decisionsPanel" style="display:none"></div>
+
     <!-- CLASSEMENT -->
     <div class="sec-lbl">Classement constructeurs</div>
     <div class="panel" id="standingsPanel"></div>
@@ -173,7 +193,9 @@ let save = null;
 function init() {
   try {
     save = Save.load();
-    if (save && window.Immersion) { Immersion.ensure(save); Save.save(save); }
+    if (save && window.Immersion) { Immersion.ensure(save); }
+    if (save && typeof CareerEvents !== 'undefined') { CareerEvents.ensure(save); CareerEvents.generateDynamicInteractions(save); }
+    if (save) Save.save(save);
     if (!save || !save.playerTeamId) { showTeamSelection(); return; }
     restoreDriverStates(save);
     if (typeof Career !== 'undefined' && typeof Career.restoreTeamStates === 'function') Career.restoreTeamStates(save);
@@ -277,6 +299,7 @@ function showDashboard() {
   renderDrivers(drivers,team);
   renderCarTiles(team);
   renderNavTiles(team,drivers);
+  renderDecisions();
   renderStandings();
   renderNews();
 }
@@ -332,6 +355,34 @@ function renderNavTiles(team,drivers) {
   ];
 
   document.getElementById('navTiles').innerHTML=tiles.map(t=>`<a href="${t.href}" class="tile" style="border-left:2px solid ${t.c}"><span class="tile-icon">${t.icon}</span><div class="tile-lbl">${t.lbl}</div><div class="tile-val" style="color:${t.c}">${t.val}</div><div class="tile-sub">${t.sub}</div></a>`).join('');
+}
+
+
+function renderDecisions() {
+  const label=document.getElementById('decisionsLabel');
+  const panel=document.getElementById('decisionsPanel');
+  if(!panel || !label) return;
+  const inbox=(save.interactions?.inbox||[]).slice(0,3);
+  if(!inbox.length){ label.style.display='none'; panel.style.display='none'; return; }
+  label.style.display='block'; panel.style.display='block';
+  panel.innerHTML=inbox.map(i=>{
+    const tag=i.importance==='high'?'IMPORTANT':'DÉCISION';
+    const choices=(i.choices||[]).map(c=>`<button class="decision-btn" onclick="resolveDecision('${i.id}','${c.id}')">${c.label}<span class="decision-detail">${c.detail||''}</span></button>`).join('');
+    return `<div class="decision-row"><div class="decision-head"><div class="decision-icon">${i.icon||'📩'}</div><div class="decision-title">${i.title}</div><div class="decision-tag">${tag}</div></div><div class="decision-text">${i.text||''}</div><div class="decision-actions">${choices}</div></div>`;
+  }).join('');
+}
+
+function resolveDecision(id, choiceId) {
+  if(typeof CareerEvents === 'undefined') return;
+  const res=CareerEvents.resolveInteraction(save,id,choiceId);
+  Save.save(save);
+  renderDecisions();
+  renderNews();
+  const team=F1Data.teams.find(t=>t.id===save.playerTeamId);
+  const drivers=F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
+  renderCarTiles(team); renderDrivers(drivers); renderNavTiles(team,drivers);
+  document.getElementById('budgetBadge').textContent=`💰 ${Math.round((save.budget||0)*10)/10}M €`;
+  showToast(res.msg || 'Décision appliquée');
 }
 
 function renderStandings() {
