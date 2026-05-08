@@ -459,9 +459,17 @@ const CR = {
       g.dataset.driverId = car.driver.id;
       const totalCars = Race.state.grid.length;
       // Espacer les voitures sur ~3% du circuit pour représenter l'ordre de grille
-      const startFrac = (1.0 - idx * (0.03 / Math.max(totalCars, 1))) % 1;
+      const startFrac = (1.0 - idx * (0.03 / Math.max(totalCars, 1)) + 1) % 1;
       this.fractions.push(startFrac);
       this.targetFrac.push(startFrac);
+
+      // IMPORTANT : advanceLap() et startAnim() lisent uniquement _carMap.
+      // Sans cette ligne, les éléments SVG sont créés mais jamais animés/positionnés.
+      this._carMap[car.driver.id] = { el: g, frac: startFrac, speed: 0 };
+
+      // Position initiale visible avant le départ.
+      const pt = this.pathEl.getPointAtLength(startFrac * this.len);
+      g.setAttribute('transform', `translate(${pt.x},${pt.y})`);
     });
   },
 
@@ -503,10 +511,15 @@ const CR = {
       const lastLap  = car.lapTimes.length > 0 ? car.lapTimes[car.lapTimes.length-1] : lapTime;
       entry.speed = baseSpeed * (lapTime / lastLap);
 
-      // Synchroniser la fraction selon le gap réel
-      const gap        = car.gap || 0;
-      const fracBehind = (gap / lapTime) % 1;
-      entry.frac       = (leaderFrac - fracBehind + 1) % 1;
+      // Synchroniser la fraction selon le classement réel.
+      // Le gap donne la distance derrière le leader, mais on ajoute aussi un
+      // très petit espacement minimum par position pour éviter que deux points
+      // se superposent ou semblent inversés quand les écarts sont quasi égaux.
+      const gap          = car.gap || 0;
+      const realBehind   = gap / lapTime;
+      const minBehind    = standings.indexOf(car) * 0.006;
+      const fracBehind   = Math.max(realBehind, minBehind) % 1;
+      entry.frac         = (leaderFrac - fracBehind + 1) % 1;
     }.bind(this));
 
     // Sync aussi carSpeed[] pour la boucle RAF existante
@@ -588,11 +601,11 @@ const CR = {
     // Trouver le leader actuel (position 1)
     const leader = Race.state.grid.find(c => c.position === 1 && c.status === 'racing');
     if (!leader) return;
-    const idx = Race.state.grid.indexOf(leader);
-    if (idx < 0) return;
+    const entry = this._carMap[leader.driver.id];
+    if (!entry) return;
 
-    const cur  = this._displayFrac[idx] || 0;
-    const prev = this._prevFrac[idx]    || 0;
+    const cur  = entry.frac || 0;
+    const prev = this._prevFracLeader ?? cur;
 
     // Passage de la ligne : la fraction passe de ~0.98+ à ~0.02 (wraparound)
     if (prev > 0.85 && cur < 0.15) {
@@ -603,7 +616,7 @@ const CR = {
         `Tour <b>${this._visualLap}</b>/<span>${Race.state.totalLaps}</span>`;
     }
 
-    this._prevFrac[idx] = cur;
+    this._prevFracLeader = cur;
   },
 
   stopAnim() {
