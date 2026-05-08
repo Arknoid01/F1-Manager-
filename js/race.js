@@ -177,9 +177,22 @@ const Race = {
       }
 
       // ── Pit stop ─────────────────────────────────────────────
+      const isPlayerCar  = car.driver.teamId?.toLowerCase() === (s.playerTeamId||'').toLowerCase();
+      const maxPits      = (car.strategy?.compounds?.length || 2) - 1;
+      const pitsDone     = car.pitStops?.length || 0;
+
       let pitDecision = Engine.shouldPit(
         car.tyre, lap, s.totalLaps, car.strategy, someoneJustPitted, s.weather, s.safetyCar.active
       );
+
+      // Pour le joueur : respecter strictement le nombre d'arrêts prévu
+      // sauf urgence absolue (pneus < 8%) ou changement météo
+      if (isPlayerCar && pitsDone >= maxPits && pitDecision.pit) {
+        if (pitDecision.reason !== 'weather_change' && car.tyre.condition > 0.08) {
+          pitDecision = { pit: false }; // bloquer le pit non prévu
+        }
+      }
+
       if (car.forcePit) pitDecision = { pit: true, reason: 'team_order' };
       if (car.autoPitSafetyCar && s.safetyCar.active && !pitDecision.pit && car.strategy?.pitLaps?.some(pl => Math.abs(pl - lap) <= 4)) {
         pitDecision = { pit: true, reason: 'safety_car_opportunity' };
