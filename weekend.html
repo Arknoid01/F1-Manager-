@@ -305,7 +305,8 @@ function init() {
   circuit   = F1Data.circuits[(save.race || 0) % F1Data.circuits.length];
   myDrivers = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
 
-  // Générer météo weekend si pas encore fait
+  // Générer météo + événement paddock si nouveau circuit
+  const evKey = `paddock_${save.season}-${save.race}`;
   if (!save.weekendWeather || save.weekendCircuit !== circuit.id) {
     save.weekendWeather   = Weekend.generateWeekendWeather(circuit);
     save.weekendCircuit   = circuit.id;
@@ -314,11 +315,21 @@ function init() {
     save.weekendSetup     = 'balanced';
     save.qualiGrid        = null;
     save.qualiStrategy    = {};
-    // Générer l'événement pré-course paddock une seule fois par week-end
     save.weekendPaddockEvent = null;
-    if (typeof CareerEvents !== 'undefined') {
-      try { save.weekendPaddockEvent = CareerEvents.triggerPreRace(save) || null; } catch(e) { console.warn(e); }
+    delete save[evKey]; // forcer la régénération pour ce GP
+  }
+
+  // Générer l'événement paddock une seule fois par GP
+  if (!save[evKey]) {
+    try {
+      save.weekendPaddockEvent = (typeof CareerEvents !== 'undefined')
+        ? CareerEvents.triggerPreRace(save) || null
+        : null;
+    } catch(e) {
+      save.weekendPaddockEvent = null;
+      console.warn(e);
     }
+    save[evKey] = true;
     Save.save(save);
   }
 
