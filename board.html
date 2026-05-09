@@ -319,7 +319,7 @@ function renderObjectives() {
       icon: '🏁',
       label: `Courses avec points`,
       desc:  `Objectif : ${obj.minPointsRaces} courses avec au moins 1 point`,
-      detail: `${(save.raceResults||[]).filter(r=>(r.playerPoints||0)>0).length} courses avec points`,
+      detail: `${(save.raceResults||[]).filter(r=>(r.results||[]).filter(x=>x.teamId===save.playerTeamId).reduce((s,x)=>s+(x.points||0),0)>0).length} courses avec points`,
       ok:    eval_.details[2]?.ok,
     },
     {
