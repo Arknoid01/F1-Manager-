@@ -45,6 +45,17 @@ const Race = {
       const baseTeam = F1Data.teams.find(t => t.id === driver.teamId);
       if (!baseTeam) return;
       const team     = this.getEffectiveTeam(baseTeam);
+      // Appliquer le moral du pilote (uniquement équipe joueur)
+      try {
+        const _sv = Save.load();
+        if (_sv?.playerTeamId === driver.teamId && _sv?.morale?.[driver.id] !== undefined) {
+          const moral = _sv.morale[driver.id];
+          // moral 0-100 : 70 = neutre, +1 moral = +0.02 pace effectif
+          const moralDelta = Math.round((moral - 70) * 0.2);
+          driver.pace        = Math.max(1, Math.min(100, (driver.pace||75)        + moralDelta));
+          driver.consistency = Math.max(1, Math.min(100, (driver.consistency||75) + Math.round(moralDelta * 0.5)));
+        }
+      } catch(e) {}
       let strategy = Engine.generateStrategy(circuit, team.performance, weather, driver.trait, driverIndex + 1);
       if (playerStrategies && playerStrategies[driver.id]) {
         strategy = Engine.normalizeStrategy(playerStrategies[driver.id], circuit, weather);

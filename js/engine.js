@@ -121,6 +121,15 @@ const Engine = {
     if (orderMode === 'attack') lapTime -= 0.28;
     if (orderMode === 'save')   lapTime += 0.22;
 
+
+    // ── 9b. Setup week-end (équipe joueur uniquement) ────────
+    try {
+      const _svSetup = typeof Save !== 'undefined' ? Save.load() : null;
+      if (_svSetup?.weekendSetup && _svSetup?.playerTeamId === team?.id) {
+        if (_svSetup.weekendSetup === 'qualify') lapTime -= 0.08;
+        if (_svSetup.weekendSetup === 'race')    lapTime += 0.05;
+      }
+    } catch(e) {}
     // ── 10. Consistance — variabilité ─────────────────────
     // Consistent = très peu de variation, aggressive = plus variable
     let variability = 0.20;
@@ -155,6 +164,15 @@ const Engine = {
 
     // Consistent gère mieux sur le long terme
     if (driver.trait === 'consistent' && tyreState.age > 15) rate *= 0.92;
+
+    // Setup week-end affecte la dégradation (équipe joueur)
+    try {
+      const _svDeg = typeof Save !== 'undefined' ? Save.load() : null;
+      if (_svDeg?.weekendSetup && _svDeg?.playerTeamId === driver?.teamId) {
+        if (_svDeg.weekendSetup === 'qualify') rate *= 1.12; // pneus plus sollicités
+        if (_svDeg.weekendSetup === 'race')    rate *= 0.90; // meilleure gestion pneus
+      }
+    } catch(e) {}
 
     // Variabilité
     // Bonus sponsor pneus (Pirelli Data)
