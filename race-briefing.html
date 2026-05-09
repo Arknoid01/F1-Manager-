@@ -90,6 +90,7 @@
 <div class="wrap"><div id="content"></div></div>
 <script src="js/data.js"></script>
 <script src="js/save.js"></script>
+<script src="js/theme.js"></script>
 <script>
 const TP_QUOTES_RACE = [
   "Aujourd'hui on execute le plan. Pas d'improvisation, pas de panique. On fait confiance au travail de la semaine.",
@@ -173,7 +174,10 @@ function render(){
 
   document.getElementById('content').innerHTML = `
     <div class="hero">
-      <div class="hero-day">Dimanche · Race Day</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="hero-day" style="margin:0">Dimanche · Race Day</div>
+        <div style="width:60px;height:30px">${myTeam?.logo||''}</div>
+      </div>
       <div class="hero-title">Grand Prix de ${esc(circuit.name)}</div>
       <div class="hero-sub">Saison ${season} · GP ${gpNum}/${totalGP} · ${circuit.laps} tours · ${(circuit.laps*circuit.lapDistance).toFixed(0)}km total</div>
       <div class="hero-stats">

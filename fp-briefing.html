@@ -106,6 +106,7 @@
 
 <script src="js/data.js"></script>
 <script src="js/save.js"></script>
+<script src="js/theme.js"></script>
 <script src="js/events.js"></script>
 
 <script>
@@ -241,7 +242,10 @@ function render(){
     <!-- HERO -->
     <div class="hero">
       <div class="hero-day">Vendredi · Briefing EL</div>
-      <div class="hero-title">${esc(circuit.fullName||circuit.name)}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+        <div style="width:64px;height:32px;flex-shrink:0">${myTeam?.logo||''}</div>
+        <div class="hero-title" style="margin:0">${esc(myTeam?.name||'')}</div>
+      </div>
       <div class="hero-sub">Grand Prix de ${esc(circuit.name)} · Saison ${season} · ${circuit.laps} tours · ${circuit.lapDistance}km/tour</div>
       <div class="hero-flag">${cd.flag}</div>
     </div>
