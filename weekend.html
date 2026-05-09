@@ -427,6 +427,19 @@ function flowWeatherLabel() {
   return 'Sec';
 }
 
+
+function circuitTypeLabel(type) {
+  const labels = {
+    balanced: 'Équilibré',
+    power: 'Puissance moteur',
+    high_speed: 'Haute vitesse',
+    technical: 'Technique',
+    street: 'Urbain',
+    mixed: 'Mixte'
+  };
+  return labels[type] || 'Équilibré';
+}
+
 function circuitProfileLine() {
   const deg = circuit.tyreDegradation || 1;
   const ovt = circuit.overtakingDifficulty || 0.5;
@@ -450,7 +463,7 @@ function buildArrivalBriefing() {
     </div>
     <div class="flow-grid">
       <div class="flow-mini"><div class="flow-k">Météo week-end</div><div class="flow-v">${flowWeatherLabel()}</div><div class="flow-sub">Valeur issue de la météo générée pour ce GP.</div></div>
-      <div class="flow-mini"><div class="flow-k">Profil piste</div><div class="flow-v">${circuit.circuitType || 'balanced'}</div><div class="flow-sub">${circuitProfileLine()}</div></div>
+      <div class="flow-mini"><div class="flow-k">Profil piste</div><div class="flow-v">${circuitTypeLabel(circuit.circuitType)}</div><div class="flow-sub">${circuitProfileLine()}</div></div>
       <div class="flow-mini"><div class="flow-k">Tes pilotes</div><div class="flow-v">${myDrivers.length} engagés</div><div class="flow-sub">${driversLine}</div></div>
     </div>
     <div class="flow-cta"><button class="btn btn-gold" onclick="document.getElementById('fpConfig')?.scrollIntoView({behavior:'smooth'})">Préparer EL1</button></div>
