@@ -326,7 +326,7 @@ const CareerEvents = {
     const paddockNews = [
       { icon:'🎙️', title:'Ambiance paddock', text:`Le paddock de ${circName} bourdonne d'activité. Les mécaniciens ont travaillé toute la nuit, les motorhomes sont pleins. L'atmosphère est électrique avant ce GP.` },
       { icon:'☕', title:'Jeudi paddock', text:`${dName} a été aperçu détendu au motorhome ce matin, café à la main. "On est prêts" a-t-il glissé aux journalistes. Le reste de l'équipe partage ce calme apparent.` },
-      { icon:'🎧', title:'Briefing d'équipe', text:`Réunion stratégique de deux heures ce matin avec tous les ingénieurs. La stratégie de course a été affinée, les scénarios météo passés en revue. L'équipe est alignée.` },
+      { icon:'🎧', title:'Briefing équipe', text:`Réunion stratégique de deux heures ce matin avec tous les ingénieurs. La stratégie de course a été affinée, les scénarios météo passés en revue. L'équipe est alignée.` },
       { icon:'📺', title:'Médias', text:`${dName} enchaîne les interviews depuis ce matin. La presse veut savoir si ${teamName} peut surprendre ce week-end. La réponse reste mesurée mais confiante.` },
       { icon:'🤝', title:'Relations sponsor', text:`Le sponsor principal est présent ce week-end avec une délégation. Une bonne performance devant les caméras serait appréciée. Pas de pression supplémentaire... officiellement.` },
       { icon:'🔬', title:'Données simulateur', text:`Les données de simulateur de la semaine pointent vers une bonne corrélation avec la piste réelle. Les ingénieurs sont optimistes sur le setup de départ.` },
