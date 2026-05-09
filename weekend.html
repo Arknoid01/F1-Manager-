@@ -225,10 +225,15 @@ input[type=number],input[type=text]{background:var(--surface);color:var(--text);
 .flow-cta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 </style>
 <link rel="stylesheet" href="css/immersive-theme.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#07070d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="F1 Manager">
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span>Manager</span></div>
+  <div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span style="color:#ffffff !important">Manager</span></div>
   <a href="index.html" class="back-home">← Accueil</a>
   <div class="top-pills">
     <div class="pill pill-muted" id="seasonBadge">—</div>
@@ -793,8 +798,13 @@ function buildFPSummary() {
   `;
 }
 
+let _fpRunning = false;
 function runFP() {
-  if (save.weekendFPDone >= 3) { toast('Les 3 séances sont déjà terminées !', true); return; }
+  if (_fpRunning) return; // anti double-clic
+  _fpRunning = true;
+  setTimeout(() => _fpRunning = false, 2000);
+  save = Save.load(); // recharger le save
+  if (save.weekendFPDone >= 3) { toast('Les 3 séances sont déjà terminées !', true); _fpRunning=false; return; }
 
   const setup = document.getElementById('fp-setup')?.value || 'balanced';
   save.weekendSetup = setup;
@@ -1276,6 +1286,11 @@ function updateSetupHint(val) {
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',syncUnifiedTopbar); else syncUnifiedTopbar();
 })();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>

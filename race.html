@@ -193,12 +193,17 @@
     .stand-panel .pos.p1,.stand-panel .pos.p2,.stand-panel .pos.p3,.res-card .rpos.p1,.res-card .rpos.p2,.res-card .rpos.p3{min-height:0!important;height:auto!important;order:0!important}
     .res-card .res-row,.res-card .res-row.podium{display:grid!important;grid-template-columns:30px 24px 1fr 46px 56px!important;align-items:center!important;min-height:0!important;height:auto!important;padding:6px 0!important}
   </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#07070d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="F1 Manager">
 </head>
 <body>
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span>Manager</span></div>
+  <div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span style="color:#ffffff !important">Manager</span></div>
   <a href="index.html" class="nav-link">🏠 Équipe</a>
   <a href="race.html"  class="nav-link active">🏁 Course</a>
   <a href="standings.html" class="nav-link">🏆 Champ.</a>
@@ -1926,6 +1931,11 @@ function restoreDriverStates() {
 restoreDriverStates();
 
 initSel();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>

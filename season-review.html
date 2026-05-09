@@ -97,10 +97,15 @@
 /* Loader */
 .loading{text-align:center;padding:40px;color:var(--muted);font-family:var(--fh);font-size:14px}
 </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#07070d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="F1 Manager">
 </head>
 <body>
 <div class="topbar">
-  <span class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span>Manager</span></span>
+  <span class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span style="color:#ffffff !important">Manager</span></span>
   <div class="top-pills" id="topPills"></div>
 </div>
 
@@ -386,6 +391,11 @@ function launchNextSeason() {
 }
 
 render();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>

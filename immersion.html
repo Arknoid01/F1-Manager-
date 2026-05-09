@@ -37,9 +37,14 @@
 
 </style>
 <link rel="stylesheet" href="css/immersive-theme.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#07070d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="F1 Manager">
 </head>
 <body>
-<div class="topbar"><div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span>Manager</span></div><a class="nav-back" href="index.html">← Accueil</a><div class="top-pills"><div class="pill pill-muted" id="seasonBadge">Saison —</div><div class="pill pill-gold" id="repBadge">⭐ —</div></div></div>
+<div class="topbar"><div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span style="color:#ffffff !important">Manager</span></div><a class="nav-back" href="index.html">← Accueil</a><div class="top-pills"><div class="pill pill-muted" id="seasonBadge">Saison —</div><div class="pill pill-gold" id="repBadge">⭐ —</div></div></div>
 <div class="page"><section class="hero"><div class="hero-kicker">Centre narratif</div><div class="hero-title">Paddock & Saison</div><div class="hero-sub" id="heroSub">Réputation, moral, sponsors, interviews, historique et records de carrière.</div></section><div class="tab-bar"><button class="tab-btn active" onclick="showPane('overview',this)">🎙️ Vue paddock</button><button class="tab-btn" onclick="showPane('history',this)">📚 Historique</button><button class="tab-btn" onclick="showPane('records',this)">🏛️ Records</button><button class="tab-btn" onclick="showPane('academy',this)">🌱 Académie</button></div><main id="content"></main></div>
 <script src="js/data.js"></script><script src="js/save.js"></script>
 <script src="js/theme.js"></script><script src="js/career.js"></script><script src="js/immersion.js"></script>
@@ -199,6 +204,11 @@ function doRelease(juniorId, juniorName){
 }
 
 init();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
