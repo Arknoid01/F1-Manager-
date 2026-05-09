@@ -117,13 +117,13 @@
       </div>
       <div id="newSeasonSummary" style="font-family:var(--fh);font-size:13px;color:var(--muted);line-height:1.8"></div>
       <div style="margin-top:10px;display:flex;gap:8px">
-        <a href="weekend.html" class="btn btn-red">🏁 Weekend →</a>
+        <a href="fp-briefing.html" class="btn btn-red">🏁 Weekend →</a>
         <a href="drivers.html" class="btn btn-gold">👤 Pilotes</a>
       </div>
     </div>
 
     <!-- HERO PROCHAINE COURSE -->
-    <a href="weekend.html" class="race-hero" id="raceHero">
+    <a href="fp-briefing.html" class="race-hero" id="raceHero">
       <div class="rh-flag" id="raceFlag">🏁</div>
       <div class="rh-info">
         <div class="rh-label">Prochain Grand Prix</div>
@@ -314,7 +314,7 @@ function showDashboard() {
     document.getElementById('raceFlag').textContent=CIRCUIT_FLAGS[circuit?.id]||'🏁';
     document.getElementById('nextRaceName').textContent=circuit?.fullName||circuit?.name||'—';
     document.getElementById('nextRaceDetail').textContent=`Course ${(save.race||0)+1}/${totalRaces} · ${circuit?.laps} tours · ${circuit?.lapDistance}km`;
-    raceHero.setAttribute('href','weekend.html');
+    raceHero.setAttribute('href','fp-briefing.html');
     raceHero.onclick = null;
     const cta = raceHero.querySelector('.rh-cta');
     if (cta) cta.textContent = 'Weekend →';
@@ -339,7 +339,7 @@ function launchEndOfSeason() {
   if (!save || !save.playerTeamId) return;
   const totalRaces = F1Data.circuits.length || 23;
   if (!isSeasonComplete(save)) {
-    location.href = 'weekend.html';
+    location.href = 'fp-briefing.html';
     return;
   }
   // Répare les anciennes sauvegardes où la dernière course a été archivée

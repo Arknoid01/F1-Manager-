@@ -419,6 +419,9 @@ function renderPhases() {
 function goPhase(p) {
   if (p === 'quali' && save.weekendFPDone < 3) { toast('❌ Termine les 3 séances d\'essais libres d\'abord !', true); return; }
   if (p === 'race_briefing' && !save.weekendQualiDone) { toast('❌ Fais les qualifications d\'abord !', true); return; }
+  // Redirection vers les pages briefing
+  if (p === 'quali') { location.href = 'quali-briefing.html'; return; }
+  if (p === 'race_briefing') { location.href = 'race-briefing.html'; return; }
   phase = p;
   renderPhases();
   renderContent();
