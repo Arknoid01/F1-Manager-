@@ -109,7 +109,7 @@ function getTeamLogo(teamId, size=40) {
   const team = F1Data.teams.find(t => t.id === teamId);
   if (!team?.logo) return '<span style="font-family:var(--fh);font-size:12px;color:'+(team?.color||'#ccc')+'">'+(team?.shortName||teamId)+'</span>';
   const fallback = team.shortName||teamId;
-  return '<img src="'+team.logo+'" style="width:'+(size*2)+'px;height:'+size+'px;object-fit:contain" alt="'+fallback+'" onerror="this.outerHTML='<span style=\"font-family:var(--fh);font-size:12px;color:'+team.color+'\">'+''+fallback+'</span>'">';
+  return '<img src="'+team.logo+'" style="width:'+(size*2)+'px;height:'+size+'px;object-fit:contain" alt="'+fallback+'" onerror="this.style.display=\"none\"">';
 }
 
 // Auto-appliquer dès que le DOM est prêt
