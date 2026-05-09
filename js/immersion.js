@@ -276,33 +276,51 @@ const Immersion = {
     this.evolvePromotedJuniors(save);
   },
 
+  FP_PER_SEASON: 2,   // max de sessions EL par saison pour un junior
+
   juniorFP(save, juniorId, session='fp1'){
     this.ensure(save);
     const im = save.immersion;
     const j = im.juniorAcademy.find(x=>x.id===juniorId);
     if(!j || !j.promotable) return { ok:false, msg:'Ce junior n\'est pas encore promouvable.' };
     if(j.promoted) return { ok:false, msg:'Ce pilote est déjà titulaire.' };
-    j.fpSessions = (j.fpSessions||0) + 1;
-    const crash = Math.random() < 0.08;
-    const t = (Math.random()*1.2-0.6);
-    const timeStr = (t>=0?'+':'')+t.toFixed(3)+'s';
-    const gain = crash ? 0 : Math.ceil(Math.random()*2);
-    const repGain = crash ? -2 : (t<0 ? 5 : 2);
-    if(!crash && j.profile){
-      const stat = ['pace','consistency','wetSkill'][Math.floor(Math.random()*3)];
-      j.profile.stats[stat] = Math.min(j.potential||90,(j.profile.stats[stat]||65)+gain);
-      j.profile.ovr = Math.min(j.potential||90,(j.profile.ovr||65)+Math.ceil(gain/2));
+
+    // Limite : 2 sessions EL par saison
+    const currentSeason = save.season || 2025;
+    if((j.fpSeasonYear||0) !== currentSeason){
+      j.fpSeasonYear  = currentSeason;
+      j.fpSeasonCount = 0;
     }
+    if((j.fpSeasonCount||0) >= this.FP_PER_SEASON){
+      return { ok:false, msg:`Ce junior a déjà utilisé ses ${this.FP_PER_SEASON} sessions EL pour la saison ${currentSeason}. Attendez la prochaine saison.` };
+    }
+    j.fpSeasonCount = (j.fpSeasonCount||0) + 1;
+    j.fpSessions    = (j.fpSessions||0) + 1;  // total historique
+
+    // Résultat narratif — pas d'amélioration de stats (la progression vient des GP)
+    const crash   = Math.random() < 0.08;
+    const t       = (Math.random()*1.2-0.6);
+    const timeStr = (t>=0?'+':'')+t.toFixed(3)+'s';
+    const repGain = crash ? -2 : (t<0 ? 5 : 2);
     if(im.teamReputation) im.teamReputation.value = Math.max(0,Math.min(100,(im.teamReputation.value||50)+repGain));
-    const fn = `${j.firstName} ${j.name}`;
-    const lbl = { fp1:'EL1', fp2:'EL2', rookie:'Session rookie' }[session]||session.toUpperCase();
+
+    const fn       = `${j.firstName} ${j.name}`;
+    const lbl      = { fp1:'EL1', fp2:'EL2', rookie:'Session rookie' }[session]||session.toUpperCase();
+    const sessLeft = this.FP_PER_SEASON - j.fpSeasonCount;
     let title, text;
-    if(crash){ title=`${fn} accroche lors des ${lbl}`; text=`Une erreur de jeunesse. Voiture endommagée, pilote indemne. Expérience acquise.`; }
-    else if(t<-0.2){ title=`${fn} impressionne aux ${lbl}`; text=`${timeStr} vs leader. L'ingénieur de piste est enthousiaste.`; }
-    else { title=`${fn} — ${lbl} terminés`; text=`${timeStr} vs leader. Session correcte, données récupérées.`; }
+    if(crash){
+      title = `${fn} accroche lors des ${lbl}`;
+      text  = `Erreur de jeunesse. Voiture endommagée, pilote indemne. ${sessLeft > 0 ? `Il reste ${sessLeft} session${sessLeft>1?'s':''} EL cette saison.` : 'Quota EL de la saison épuisé.'}`;
+    } else if(t<-0.2){
+      title = `${fn} impressionne aux ${lbl}`;
+      text  = `${timeStr} vs leader. L'ingénieur de piste est enthousiaste. ${sessLeft > 0 ? `Il reste ${sessLeft} session${sessLeft>1?'s':''} EL cette saison.` : 'Quota EL de la saison épuisé.'}`;
+    } else {
+      title = `${fn} — ${lbl} terminés`;
+      text  = `${timeStr} vs leader. Session correcte, données récupérées. ${sessLeft > 0 ? `Il reste ${sessLeft} session${sessLeft>1?'s':''} EL cette saison.` : 'Quota EL de la saison épuisé.'}`;
+    }
     this.addNews(save, crash?'💥':'🏎️', title, text, 'junior');
     Save.save(save);
-    return { ok:true, crash, timeStr, gain, repGain, session:lbl };
+    return { ok:true, crash, timeStr, repGain, session:lbl, sessionsLeft:sessLeft };
   },
 
   promoteJunior(save, juniorId, replaceDriverId=null){
