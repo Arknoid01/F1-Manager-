@@ -119,9 +119,13 @@ const CareerEvents = {
     if (driverOk) score += 30;
 
     // Courses avec points
-    const racesWithPoints = (save.raceResults||[]).filter(r =>
-      (r.playerPoints||0) > 0
-    ).length;
+    const racesWithPoints = (save.raceResults||[]).filter(r => {
+      // playerPoints n'est pas stocké directement — on calcule depuis r.results
+      const playerPts = (r.results||[])
+        .filter(x => x.teamId === save.playerTeamId)
+        .reduce((s, x) => s + (x.points||0), 0);
+      return playerPts > 0;
+    }).length;
     const racesOk = racesWithPoints >= obj.minPointsRaces;
     details.push({ label:`${racesWithPoints}/${obj.minPointsRaces} courses avec points`, ok: racesOk });
     if (racesOk) score += 20;
