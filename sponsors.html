@@ -283,18 +283,10 @@ function renderReputation() {
 function renderIncome() {
   const total   = Sponsors.totalAnnualValue(save);
   const count   = (save.sponsors||[]).length;
-  const titleCount     = (save.sponsors||[]).filter(s=>s.type==='title').length;
-  const principalCount = (save.sponsors||[]).filter(s=>s.type==='principal').length;
-  const partnerCount   = (save.sponsors||[]).filter(s=>s.type==='partner').length;
   const expiring= (save.sponsors||[]).filter(s => (s.remainingSeasons||1) === 1).length;
 
   document.getElementById('totalIncome').textContent  = `${total} M€`;
-  document.getElementById('activeCount').innerHTML    = `
-    ${count} contrat${count>1?'s':''} · 
-    <span style="color:var(--gold)">Title ${titleCount}/1</span> · 
-    <span style="color:var(--blue)">Principal ${principalCount}/2</span> · 
-    <span style="color:var(--green)">Partner ${partnerCount}/4</span>
-  `;
+  document.getElementById('activeCount').innerHTML    = `${count} contrat${count>1?'s':''} / 6 max`; 
   document.getElementById('incomeBadge').textContent  = `💵 ${total} M€/an`;
   document.getElementById('expiryInfo').textContent   = expiring ? `⚠️ ${expiring} contrat${expiring>1?'s':''} expire${expiring>1?'nt':''} cette saison` : '';
   document.getElementById('cCount').textContent = count;

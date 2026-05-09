@@ -414,7 +414,7 @@ function renderNavTiles(team,drivers) {
     {href:'drivers.html',icon:'👤',lbl:'Pilotes',val:`${drivers.length}`,sub:drivers.map(d=>d.name).join(' · '),c:'var(--blue)'},
     {href:'staff.html',icon:'🧑‍🔧',lbl:'Staff',val:`${staffCount}/4`,sub:staffCount>0?`${staffCount} expert${staffCount>1?'s':''} en poste`:'Aucun staff recruté',c:'var(--purple)'},
     {href:'board.html',icon:'🏢',lbl:'Direction',val:`${save.boardPressure||0}%`,sub:'Pression du board',c:'var(--orange)'},
-    {href:'sponsors.html',icon:'🤝',lbl:'Sponsors',val:`${(save.sponsors||[]).length}/7`,sub:`${(save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0)}M€/an`,c:'var(--green)'},
+    {href:'sponsors.html',icon:'🤝',lbl:'Sponsors',val:`${(save.sponsors||[]).length}/6`,sub:`${(save.sponsors||[]).reduce((s,sp)=>s+(sp.value||0),0)}M€/an`,c:'var(--green)'},
     {href:'news.html',icon:'📰',lbl:'Actualités',val:`${(save.news||[]).length}`,sub:'événements récents',c:'var(--orange)'},
     {href:'immersion.html#overview',icon:'🎙️',lbl:'Paddock',val:`${save.immersion?.teamReputation?.value || save.reputation || 50}`,sub:'réputation · moral',c:'var(--purple)'},
     {href:'immersion.html#history',icon:'📚',lbl:'Historique',val:`${save.immersion?.gpHistory?.length || 0}`,sub:'GP archivés',c:'var(--gold)'},

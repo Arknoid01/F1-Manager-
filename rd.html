@@ -220,9 +220,9 @@ function init() {
     Save.save(save);
   }
 
-  // Restaurer l'allocation sauvegardée
+  // Restaurer l'allocation sauvegardée + rafraîchir la barre visuelle
   allocValue = save.rdAlloc ?? 70;
-  document.getElementById('allocSlider').value = allocValue;
+  syncAllocUI();
 
   // Initialiser carDev complet
   save.carDev = save.carDev || {};
@@ -395,12 +395,19 @@ function renderFreeze() {
 }
 
 // ── ALLOCATION ─────────────────────────────────────────────
-function updateAlloc(val) {
-  allocValue = parseInt(val);
+function syncAllocUI() {
+  allocValue = Math.max(0, Math.min(100, parseInt(allocValue, 10) || 70));
+  const slider = document.getElementById('allocSlider');
+  if (slider) slider.value = allocValue;
   document.getElementById('allocPctCurrent').textContent = allocValue + '%';
   document.getElementById('allocPctFuture').textContent  = (100 - allocValue) + '%';
   document.getElementById('sliderFillL').style.width = allocValue + '%';
   document.getElementById('sliderFillR').style.width = (100 - allocValue) + '%';
+}
+
+function updateAlloc(val) {
+  allocValue = parseInt(val, 10);
+  syncAllocUI();
   save.rdAlloc = allocValue;
   Save.save(save);
   renderAllocImpact();

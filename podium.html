@@ -39,7 +39,7 @@ function render(){
     <div class="stat"><span>Meilleur tour</span><b>${bestLap?esc(bestLap.driverName)+' · '+fmtTime(bestLap.bestLap):'—'}</b></div>
   </div></div>
   <div class="card"><div class="kicker">Votre équipe</div><div class="teamres">${playerRows}</div><div class="grid" style="margin-top:10px"><div class="stat"><span>Points GP</span><b>${gp.teamPoints||0}</b></div><div class="stat"><span>Gains</span><b>+${gp.reward||0}M€</b></div><div class="stat"><span>Tokens</span><b>+${gp.tokens||0}</b></div></div></div>
-  <div class="btns"><a class="btn sec" href="race.html">Revoir course</a><a class="btn" href="gp-journal.html">Voir le journal du GP</a></div>`;
+  <div class="btns"><a class="btn" href="gp-journal.html">Voir le journal du GP</a></div>`;
 }
 render();
 </script>

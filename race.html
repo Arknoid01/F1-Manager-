@@ -1137,11 +1137,11 @@ function renderStandings() {
     const pc = car.position<=3 ? `pos p${car.position}` : 'pos';
     row.innerHTML = `
       <div class="${pc}">${car.position}</div>
-      <div class="dnum">${car.driver.number}</div>
-      <div class="tbar" style="background:${teamColor}"></div>
+      <div class="dnum" style="color:${teamColor}">${car.driver.number}</div>
+      <div class="tbar" style="background:${teamColor};box-shadow:0 0 8px ${teamColor}"></div>
       <div style="flex:1;min-width:0">
-        <div class="dname">${isPlayer?'<span style="color:var(--gold);font-size:10px;vertical-align:middle;margin-right:2px">★</span>':''}${car.driver.name} ${badge}</div>
-        <div class="dteam-s">${shortName}</div>
+        <div class="dname" style="color:${teamColor}">${isPlayer?'<span style="color:var(--gold);font-size:10px;vertical-align:middle;margin-right:2px">★</span>':''}${car.driver.name} ${badge}</div>
+        <div class="dteam-s" style="color:${teamColor}">${shortName}</div>
       </div>
       <div class="tyre-cell">
         <div class="tyre-dot" style="background:${tyre.color}"></div>
