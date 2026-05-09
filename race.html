@@ -1218,90 +1218,253 @@ function initRaceBroadcast() {
   addEvents(messages);
 }
 
+// ── POOLS DE COMMENTAIRES VARIÉS ─────────────────────────
+const NarrativePool = {
+  pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; },
+
+  gainPos(name, pos, gainCount) {
+    const multi = gainCount >= 3;
+    const pool = multi ? [
+      `📻 ${name} remonte fort — P${pos} ! Quelle relance !`,
+      `📻 ${name} dévore le classement, P${pos} maintenant.`,
+      `📻 +${gainCount} places d'un coup pour ${name}. Belle opportunité saisie.`,
+    ] : [
+      `📻 ${name} P${pos}. Passage en douceur, bon feeling.`,
+      `📻 ${name} grappille une place — P${pos}. On continue.`,
+      `📻 ${name} grimpe à P${pos}. La stratégie paie.`,
+      `📻 ${name} profite du trafic : P${pos}. Bien joué.`,
+      `📻 ${name} à P${pos} — le rythme est là, on garde la pression.`,
+      `📻 Beau move de ${name} — P${pos} dans le viseur.`,
+    ];
+    return this.pick(pool);
+  },
+
+  losePos(name, pos) {
+    const pool = [
+      `📻 ${name} rétrograde à P${pos}. On analyse et on répond.`,
+      `📻 ${name} perd du terrain — P${pos}. On reste concentrés.`,
+      `📻 ${name} débordé, P${pos}. Fenêtre de pit à surveiller.`,
+      `📻 ${name} à P${pos}. Pneus ? Cherche le bon moment pour répondre.`,
+      `📻 ${name} cède une place — P${pos}. Pas de panique, course longue.`,
+      `📻 ${name} sous pression, P${pos}. On recalcule.`,
+    ];
+    return this.pick(pool);
+  },
+
+  tyreCritical(name, cond) {
+    const pool = [
+      `🎧 ${name} : pneus à <b>${cond}%</b>. C'est limite, confirme le pit.`,
+      `🎧 ${name} : gommes à <b>${cond}%</b>. On va perdre des dixièmes par tour. Box ?`,
+      `🎧 ${name} — <b>${cond}%</b> sur les pneus. On risque le flat-spot si on reste.`,
+      `🎧 Alerte pneus ${name} : <b>${cond}%</b>. La fenêtre se ferme.`,
+    ];
+    return this.pick(pool);
+  },
+
+  tyreWarning(name, cond) {
+    const pool = [
+      `🎧 ${name} : pneus à ${cond}%. On garde un œil.`,
+      `🎧 ${name} : dégradation visible — ${cond}% restant.`,
+      `🎧 ${name} — ${cond}% sur les gommes. Anticipe la fenêtre.`,
+      `🎧 ${name} : on commence à voir la dégradation, ${cond}%.`,
+    ];
+    return this.pick(pool);
+  },
+
+  attack(name, opp, delta) {
+    const pool = [
+      `📻 ${name} à ${delta} de ${opp}. Zone DRS accessible au prochain tour.`,
+      `📻 ${name} se rapproche de ${opp} — ${delta}. L'attaque se prépare.`,
+      `📻 ${name} colle à ${opp} : ${delta}. C'est maintenant ou jamais.`,
+      `📻 ${delta} entre ${name} et ${opp}. Le muret surveille le delta.`,
+      `📻 ${name} est dans la fenêtre DRS de ${opp}. On tente ?`,
+    ];
+    return this.pick(pool);
+  },
+
+  defend(name, opp, delta) {
+    const pool = [
+      `📻 ${opp} revient à ${delta} de ${name}. Défend les lignes de freinage.`,
+      `📻 ${name} sous pression — ${opp} à ${delta}. On ferme la porte.`,
+      `📻 ${opp} dans le DRS de ${name} ! ${delta}. Tiens bon.`,
+      `📻 ${name} : ${opp} dans ton rétro à ${delta}. Pas de cadeau.`,
+      `📻 ${opp} revient vite sur ${name} — ${delta}. Les pneus tiennent ?`,
+    ];
+    return this.pick(pool);
+  },
+
+  leaderUpdate(leaderName, gap, lap, total) {
+    const pct = lap / total;
+    if (pct < 0.3) {
+      return this.pick([
+        `🎙️ <b>${leaderName}</b> impose son rythme en tête, ${gap} sur P2.`,
+        `🎙️ Début de course : <b>${leaderName}</b> mène avec ${gap} d'avance.`,
+        `🎙️ <b>${leaderName}</b> contrôle pour l'instant — ${gap} sur le suivant.`,
+      ]);
+    } else if (pct < 0.7) {
+      return this.pick([
+        `🎙️ Mi-course : <b>${leaderName}</b> toujours en tête, ${gap}.`,
+        `🎙️ <b>${leaderName}</b> ne lâche rien — ${gap} sur P2.`,
+        `🎙️ Point classement : <b>${leaderName}</b> leader avec ${gap} de marge.`,
+        `🎙️ <b>${leaderName}</b> solide en tête. ${gap} sur son poursuivant.`,
+      ]);
+    } else {
+      return this.pick([
+        `🎙️ Fin de course : <b>${leaderName}</b> mène avec ${gap}. Ça se dessine.`,
+        `🎙️ <b>${leaderName}</b> sent la victoire — ${gap} à gérer.`,
+        `🎙️ Dernière partie : <b>${leaderName}</b> en tête, ${gap}. Suffit-il ?`,
+      ]);
+    }
+  },
+
+  safetyCarIn: [
+    `🎧 Safety Car ! On regarde la fenêtre pit — c'est quasi gratuit de box maintenant.`,
+    `🎧 SC déployée. Opportunité stratégique : tout le monde au stand ?`,
+    `🎧 Safety Car sur la piste. Attention aux pneus froids au restart.`,
+    `🎧 SC ! Le muret analyse : box maintenant ou couvrir au restart ?`,
+  ],
+  safetyCarOut: [
+    `🟢 Safety Car rentre ! Relance dans un tour — prépare le restart.`,
+    `🟢 Piste dégagée, relance imminente. Attention aux duels dans le premier virage.`,
+    `🟢 C'est reparti ! Le peloton est serré — tout est possible.`,
+    `🟢 Relance ! Les pneus sont froids, les premières secondes seront chaotiques.`,
+  ],
+  weatherChange: [
+    `🎧 La pluie arrive. Intermédiaires ou rester sec ? On surveille le timing.`,
+    `🎧 Météo changeante — recalcul de stratégie en cours.`,
+    `🎧 Piste qui s'humidifie. Le choix pneus va tout changer dans les prochains tours.`,
+    `🎧 Alerte météo. On chronomètre le delta inter/sec pour décider du bon moment.`,
+  ],
+  dnf: [
+    `🎙️ Abandon dans le peloton — ça redistribue les cartes au classement.`,
+    `🎙️ Une voiture s'arrête. Chaque place récupérée compte en championnat.`,
+    `🎙️ Abandon confirmé. Le muret recalcule les positions.`,
+  ],
+  pitUndercut: [
+    `Box cette tour ! On couvre l'undercut — fenêtre fermée après ça.`,
+    `Arrêt maintenant : on ne laisse pas l'undercut passer.`,
+    `On rentre ! L'undercut, c'est maintenant ou jamais.`,
+  ],
+  pitSafetyCar: [
+    `📻 Box box box ! Safety Car — arrêt quasi gratuit, on en profite.`,
+    `📻 SC sur la piste, on entre ! C'est le meilleur moment de la course pour pitter.`,
+    `📻 Pit stop SC ! On ressort avec des pneus neufs sans perdre de terrain.`,
+  ],
+  pitWeather: [
+    `📻 On rentre pour le changement de pneus — la piste évolue trop vite.`,
+    `📻 Box ! On s'adapte à la météo, intermédiaires prêts.`,
+    `📻 Pit stop météo. Le timing est clé — ni trop tôt ni trop tard.`,
+  ],
+  pitDead: [
+    `📻 Box box ! Les pneus sont morts, on sécurise la course.`,
+    `📻 On rentre — les gommes sont au bout, risque de crevaison.`,
+    `📻 Pit obligatoire ! Les pneus ne tiennent plus, on n'a pas le choix.`,
+  ],
+  pitPlanned: [
+    `🧠 Muret : arrêt planifié dans la fenêtre. Tout est prêt côté stand.`,
+    `🧠 On confirme l'arrêt — la fenêtre est bonne, les pneus chauds.`,
+    `🧠 Pit stop confirmé. L'équipe est prête, objectif arrêt propre.`,
+  ],
+  pitTeamOrder: [
+    `📻 Box sur consigne — le muret a décidé, on exécute.`,
+    `📻 Arrêt sur ordre d'équipe. Stratégie globale prioritaire.`,
+  ],
+};
+
 function buildRaceNarrative(res) {
   if (!Race.state) return [];
-  const lap = Race.state.currentLap;
+  const lap   = Race.state.currentLap;
   const total = Race.state.totalLaps;
   const standings = Race.getStandings();
-  const leader = standings[0];
-  const msgs = [];
+  const leader    = standings[0];
+  const msgs  = [];
   const pCars = getPlayerCars();
 
-  // Départ, mi-course, money time — uniquement selon les données réelles.
+  // Départ
   if (lap === 1 && RaceNarrative.once('start')) {
-    msgs.push(lapEvent(lap, 'broadcast', `🚦 Départ lancé ! <b>${driverLabel(leader?.driver)}</b> mène le Grand Prix.`));
-  }
-  if (lap === Math.ceil(total / 2) && RaceNarrative.once('halfway')) {
-    msgs.push(lapEvent(lap, 'broadcast', `📊 Mi-course : <b>${driverLabel(leader?.driver)}</b> leader, ${total - lap} tours restants.`));
-  }
-  if (lap === Math.max(1, total - 10) && RaceNarrative.once('last10')) {
-    msgs.push(lapEvent(lap, 'broadcast', `🔥 Derniers 10 tours : les écarts et les pneus deviennent décisifs.`));
+    msgs.push(lapEvent(lap, 'broadcast', NarrativePool.pick([
+      `🚦 Départ lancé ! <b>${driverLabel(leader?.driver)}</b> bondit en tête.`,
+      `🚦 Les feux s'éteignent — <b>${driverLabel(leader?.driver)}</b> mène au premier virage.`,
+      `🚦 C'est parti ! <b>${driverLabel(leader?.driver)}</b> prend la tête dès le départ.`,
+    ])));
   }
 
-  // Messages ingénieur pour les pilotes joueur : position, gap proche, pneus, pit.
+  // Mi-course
+  if (lap === Math.ceil(total / 2) && RaceNarrative.once('halfway')) {
+    msgs.push(lapEvent(lap, 'broadcast', NarrativePool.pick([
+      `📊 Mi-course. Les stratégies commencent à se dessiner.`,
+      `📊 La moitié du Grand Prix est passée — qui a le meilleur rythme de fin ?`,
+      `📊 ${total - lap} tours à tenir. La gestion pneus va tout décider.`,
+    ])));
+  }
+
+  // 10 derniers tours
+  if (lap === Math.max(1, total - 10) && RaceNarrative.once('last10')) {
+    msgs.push(lapEvent(lap, 'broadcast', NarrativePool.pick([
+      `🔥 10 tours restants. On joue le tout pour le tout.`,
+      `🔥 Derniers 10 tours — les pneus vont parler maintenant.`,
+      `🔥 On entre dans le money time. Chaque dixième compte.`,
+      `🔥 10 tours ! La course se décide maintenant.`,
+    ])));
+  }
+
+  // Messages pilotes joueur
   pCars.forEach(car => {
-    const name = car.driver.name;
-    const id = car.driver.id;
-    const cond = Math.round((car.tyre?.condition || 0) * 100);
+    const name    = car.driver.name;
+    const id      = car.driver.id;
+    const cond    = Math.round((car.tyre?.condition || 0) * 100);
     const lastPos = RaceNarrative.lastPlayerPos[id] || car.position;
-    if (car.position < lastPos) msgs.push(lapEvent(lap, 'radio', `📻 ${name} gagne une place : P${car.position}. Bon rythme.`));
-    if (car.position > lastPos) msgs.push(lapEvent(lap, 'radio', `📻 ${name} perd une position : P${car.position}. On reste calmes.`));
+    const gained  = lastPos - car.position;
+
+    if (car.position < lastPos) msgs.push(lapEvent(lap, 'radio', NarrativePool.gainPos(name, car.position, gained)));
+    if (car.position > lastPos) msgs.push(lapEvent(lap, 'radio', NarrativePool.losePos(name, car.position)));
     RaceNarrative.lastPlayerPos[id] = car.position;
 
     if (cond <= 25 && RaceNarrative.once(`tyre_crit_${id}_${Math.floor(lap/4)}`)) {
-      msgs.push(lapEvent(lap, 'engineer', `🎧 ${name} : pneus à <b>${cond}%</b>. Risque de perte de rythme, pense au pit stop.`));
+      msgs.push(lapEvent(lap, 'engineer', NarrativePool.tyreCritical(name, cond)));
     } else if (cond <= 45 && RaceNarrative.once(`tyre_warn_${id}_${Math.floor(lap/8)}`)) {
-      msgs.push(lapEvent(lap, 'engineer', `🎧 ${name} : pneus à ${cond}%. On commence à surveiller la dégradation.`));
+      msgs.push(lapEvent(lap, 'engineer', NarrativePool.tyreWarning(name, cond)));
     }
 
-    const ahead = standings.find(x => x.position === car.position - 1 && x.status !== 'dnf');
+    const ahead  = standings.find(x => x.position === car.position - 1 && x.status !== 'dnf');
     const behind = standings.find(x => x.position === car.position + 1 && x.status !== 'dnf');
     if (ahead && car.gap !== null && ahead.gap !== null) {
-      const deltaAhead = car.gap - ahead.gap;
-      if (deltaAhead > 0 && deltaAhead < 1.2 && RaceNarrative.once(`attack_${id}_${Math.floor(lap/3)}`)) {
-        msgs.push(lapEvent(lap, 'radio', `📻 ${name} est à ${deltaAhead.toFixed(1)}s de ${ahead.driver.name}. DRS/attaque possible.`));
-      }
+      const d = car.gap - ahead.gap;
+      if (d > 0 && d < 1.2 && RaceNarrative.once(`attack_${id}_${Math.floor(lap/3)}`))
+        msgs.push(lapEvent(lap, 'radio', NarrativePool.attack(name, ahead.driver.name, d.toFixed(1)+'s')));
     }
     if (behind && car.gap !== null && behind.gap !== null) {
-      const deltaBehind = behind.gap - car.gap;
-      if (deltaBehind > 0 && deltaBehind < 1.0 && RaceNarrative.once(`defend_${id}_${Math.floor(lap/3)}`)) {
-        msgs.push(lapEvent(lap, 'radio', `📻 ${name} sous pression : ${behind.driver.name} revient à ${deltaBehind.toFixed(1)}s.`));
-      }
+      const d = behind.gap - car.gap;
+      if (d > 0 && d < 1.0 && RaceNarrative.once(`defend_${id}_${Math.floor(lap/3)}`))
+        msgs.push(lapEvent(lap, 'radio', NarrativePool.defend(name, behind.driver.name, d.toFixed(1)+'s')));
     }
   });
 
-  // Transformer certains événements existants en commentaires plus vivants, sans inventer.
+  // Événements course
   (res?.events || []).forEach(ev => {
     if (ev.type === 'pit') {
-      const reason = ev.reason || '';
-      const driverName = (ev.message || '').replace(/^🔧\s*/, '').split(' — ')[0] || 'Pilote';
-      const radioKey = `pit_reason_${reason}_${ev.driverId || driverName}_${lap}`;
-      if (reason === 'undercut' && RaceNarrative.once(radioKey)) {
-        msgs.push(lapEvent(lap, 'radio', `📻 ${driverName} box cette tour : on couvre l’undercut.`));
-      } else if (reason === 'safety_car_opportunity' && RaceNarrative.once(radioKey)) {
-        msgs.push(lapEvent(lap, 'radio', `📻 ${driverName} box maintenant : Safety Car, arrêt moins coûteux.`));
-      } else if (reason === 'weather_change' && RaceNarrative.once(radioKey)) {
-        msgs.push(lapEvent(lap, 'radio', `📻 ${driverName} box : on passe le pneu adapté à la piste.`));
-      } else if (reason === 'tyre_dead' && RaceNarrative.once(radioKey)) {
-        msgs.push(lapEvent(lap, 'radio', `📻 ${driverName} box : pneus critiques, on sécurise la course.`));
-      } else if (reason === 'team_order' && RaceNarrative.once(radioKey)) {
-        msgs.push(lapEvent(lap, 'radio', `📻 ${driverName} box cette tour, consigne du muret.`));
-      } else if (reason === 'planned' && RaceNarrative.once(`pit_window_${ev.driverId || driverName}_${lap}`)) {
-        msgs.push(lapEvent(lap, 'strategy', `🧠 Muret : ${driverName}, arrêt planifié confirmé.`));
-      }
+      const reason     = ev.reason || '';
+      const driverName = (ev.message || '').replace(/^\uD83D\uDD27\s*/, '').split(' — ')[0] || 'Pilote';
+      const radioKey   = `pit_reason_${reason}_${ev.driverId || driverName}_${lap}`;
+      if      (reason === 'undercut'               && RaceNarrative.once(radioKey)) msgs.push(lapEvent(lap, 'radio',    `📻 ${driverName} — ${NarrativePool.pick(NarrativePool.pitUndercut)}`));
+      else if (reason === 'safety_car_opportunity' && RaceNarrative.once(radioKey)) msgs.push(lapEvent(lap, 'radio',    NarrativePool.pick(NarrativePool.pitSafetyCar)));
+      else if (reason === 'weather_change'         && RaceNarrative.once(radioKey)) msgs.push(lapEvent(lap, 'radio',    NarrativePool.pick(NarrativePool.pitWeather)));
+      else if (reason === 'tyre_dead'              && RaceNarrative.once(radioKey)) msgs.push(lapEvent(lap, 'radio',    NarrativePool.pick(NarrativePool.pitDead)));
+      else if (reason === 'team_order'             && RaceNarrative.once(radioKey)) msgs.push(lapEvent(lap, 'radio',    NarrativePool.pick(NarrativePool.pitTeamOrder)));
+      else if (reason === 'planned'                && RaceNarrative.once(`pit_window_${ev.driverId||driverName}_${lap}`)) msgs.push(lapEvent(lap, 'strategy', NarrativePool.pick(NarrativePool.pitPlanned)));
     }
-    if (ev.type === 'safety_car') msgs.push(lapEvent(lap, 'engineer', `🎧 Safety Car : attention aux pneus froids et aux arrêts opportunistes.`));
-    if (ev.type === 'safety_car_end') msgs.push(lapEvent(lap, 'broadcast', `🟢 Relance imminente : le peloton est regroupé.`));
-    if (ev.type === 'weather') msgs.push(lapEvent(lap, 'engineer', `🎧 Météo : on recalcule la fenêtre pneus avec l'humidité piste.`));
-    if (ev.type === 'dnf') msgs.push(lapEvent(lap, 'broadcast', `🎙️ Abandon confirmé, cela peut bouleverser la stratégie.`));
+    if (ev.type === 'safety_car')     msgs.push(lapEvent(lap, 'engineer', NarrativePool.pick(NarrativePool.safetyCarIn)));
+    if (ev.type === 'safety_car_end') msgs.push(lapEvent(lap, 'broadcast', NarrativePool.pick(NarrativePool.safetyCarOut)));
+    if (ev.type === 'weather')        msgs.push(lapEvent(lap, 'engineer', NarrativePool.pick(NarrativePool.weatherChange)));
+    if (ev.type === 'dnf')            msgs.push(lapEvent(lap, 'broadcast', NarrativePool.pick(NarrativePool.dnf)));
   });
 
-  // Commentaire général toutes les 4 boucles minimum, basé sur le vrai classement.
+  // Point leader toutes les 4 boucles
   if (lap - RaceNarrative.lastGeneralLap >= 4 && leader) {
     RaceNarrative.lastGeneralLap = lap;
-    const p2 = standings[1];
+    const p2      = standings[1];
     const leadGap = p2 && p2.gap !== null ? p2.gap.toFixed(1) + 's' : '—';
-    msgs.push(lapEvent(lap, 'broadcast', `🎙️ Point course : <b>${driverLabel(leader.driver)}</b> mène avec ${leadGap} d'avance.`));
+    msgs.push(lapEvent(lap, 'broadcast', NarrativePool.leaderUpdate(driverLabel(leader.driver), leadGap, lap, total)));
   }
 
   return msgs;
