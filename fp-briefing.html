@@ -278,7 +278,7 @@ function render(){
       <div class="section-title">🏎️ Vos pilotes</div>
       <div class="drivers-grid">
         ${myDrivers.map(d=>{
-          const moral = save.morale?.[d.id] ?? 70;
+          const moral = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
           const contract = save.contracts?.[d.id];
           const yearsLeft = contract?.years ?? '—';
           return `<div class="driver-card">

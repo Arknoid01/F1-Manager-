@@ -246,7 +246,7 @@ function render(){
       <div class="section-title">&#128295; Voiture &amp; Pilotes — Dimanche</div>
       <div class="stakes-card">
         ${myDrivers.map(d => {
-          const moral   = save.morale?.[d.id] ?? 70;
+          const moral   = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
           const effect  = save.driverEffects?.[d.id];
           const effPos  = effect && (effect.pace||0)+(effect.consistency||0) > 0;
           const moralCol= moral>=70?'var(--green)':moral>=40?'var(--gold)':'var(--accent)';
