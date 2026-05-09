@@ -672,6 +672,7 @@ function buildRiskyConceptCard(key, domain, dev) {
 }
 
 function launchRiskyConcept(domainKey) {
+  save = Save.load(); // Recharger le save pour éviter les données périmées
   const cfg      = F1Data.riskyConceptCost || { budget:20, tokens:3 };
   const outcomes = F1Data.riskyConceptOutcomes;
   const domain   = F1Data.rdTree[domainKey];
