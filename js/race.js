@@ -194,7 +194,10 @@ const Race = {
         const closeToPlan = Number.isFinite(nextPlannedPit) && Math.abs(nextPlannedPit - lap) <= 1;
 
         if (pitDecision.reason === 'undercut') {
-          pitDecision = { pit: false };
+          // Réactiver l'undercut pour le joueur, mais uniquement
+          // dans une vraie fenêtre stratégique proche.
+          const undercutAllowed = closeToPlan || Math.abs((nextPlannedPit || lap) - lap) <= 2;
+          if (!undercutAllowed) pitDecision = { pit: false };
         } else if (pitDecision.reason === 'safety_car_opportunity' && !closeToPlan) {
           pitDecision = { pit: false };
         } else if (pitDecision.reason === 'tyre_dead') {
