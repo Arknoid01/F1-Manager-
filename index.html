@@ -87,7 +87,7 @@
 <body>
 
 <div class="topbar">
-  <div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span>Manager</span></div>
+  <div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span style="color:#ffffff !important">Manager</span></div>
   <div class="top-pills">
     <div class="pill pill-muted" id="seasonBadge">—</div>
     <div class="pill pill-gold" id="budgetBadge">—</div>
@@ -331,7 +331,14 @@ function showDashboard() {
   // Logo équipe dans le race-hero
   const logoEl = document.getElementById('teamLogoHero');
   if(logoEl && team?.logo) {
-    logoEl.innerHTML = '<img src="'+team.logo+'" style="width:48px;height:24px;object-fit:contain" alt="">';
+    const fallback = team.shortName || '';
+    const img = document.createElement('img');
+    img.src = team.logo;
+    img.style.cssText = 'width:70px;height:40px;object-fit:contain';
+    img.alt = fallback;
+    img.onerror = function(){ this.style.display='none'; };
+    logoEl.innerHTML = '';
+    logoEl.appendChild(img);
     logoEl.style.display = 'flex';
   }
 
