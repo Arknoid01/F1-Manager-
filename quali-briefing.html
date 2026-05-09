@@ -100,6 +100,10 @@ function render(){
     <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">Saison ${season}</span>
     <span style="font-family:var(--fh);font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px">GP ${gpNum}</span>`;
 
+  // Debug — voir la structure des résultats EL
+  console.log('[QualiB] fpResults:', JSON.stringify(fpResults.slice(0,2)));
+  console.log('[QualiB] myDrivers ids:', myDrivers.map(d=>d.id));
+
   const elCards = myDrivers.map(d=>{
     const dRes = fpResults.filter(r=>(r.driverId||r.driver?.id||r.driver)===d.id);
     const best = dRes.length ? Math.min(...dRes.map(r=>r.bestLap||999)) : null;
