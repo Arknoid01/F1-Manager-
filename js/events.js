@@ -334,6 +334,14 @@ const CareerEvents = {
       { icon:'📺', title:'Médias', text:`${dName} enchaîne les interviews depuis ce matin. La presse veut savoir si ${teamName} peut surprendre ce week-end. La réponse reste mesurée mais confiante.` },
       { icon:'🤝', title:'Relations sponsor', text:`Le sponsor principal est présent ce week-end avec une délégation. Une bonne performance devant les caméras serait appréciée. Pas de pression supplémentaire... officiellement.` },
       { icon:'🔬', title:'Données simulateur', text:`Les données de simulateur de la semaine pointent vers une bonne corrélation avec la piste réelle. Les ingénieurs sont optimistes sur le setup de départ.` },
+      { icon:'🔧', title:'Nuit de travail', text:`Les mécaniciens de ${teamName} ont travaillé jusqu'à 3h du matin pour affiner les réglages. Le muret est satisfait du résultat. La voiture est prête.` },
+      { icon:'📊', title:'Analyse télémétrie', text:`L'ingénieur de course de ${dName} a passé la soirée sur les données des rivaux. Quelques failles ont été identifiées. Le plan de course est ajusté en conséquence.` },
+      { icon:'🍕', title:'Cohésion d'équipe', text:`Dîner d'équipe hier soir pour souder le groupe avant le week-end. ${teamName} mise sur l'esprit collectif pour performer ce GP.` },
+      { icon:'💬', title:'Conférence de presse', text:`${dName} était en forme en conférence de presse ce jeudi. Détendu, précis, confiant. Les journalistes ont noté une sérénité inhabituelle.` },
+      { icon:'🏋️', title:'Préparation physique', text:`${dName} a commencé sa journée par une séance de sport à 7h. La condition physique est un facteur clé sur ce circuit exigeant.` },
+      { icon:'🎯', title:'Debriefing EL', text:`Deux heures de debriefing après les essais libres. Les ingénieurs ont identifié le setup optimal. La voiture devrait être plus compétitive en qualif.` },
+      { icon:'📡', title:'Ingénieur en chef', text:`L'ingénieur en chef de ${teamName} est confiant sur la stratégie de base. Deux scénarios sont prêts selon l'évolution de la météo dimanche.` },
+      { icon:'🧪', title:'Nouveaux composants', text:`${teamName} a apporté quelques nouveautés techniques ce week-end. L'impact sur la performance sera évalué au fil des sessions.` },
     ];
 
     const supporterNews = [
@@ -341,6 +349,11 @@ const CareerEvents = {
       { icon:'🎌', title:'Ambiance tribunes', text:`Les drapeaux flottent dans les tribunes de ${circName}. Les fans locaux dominent, mais on aperçoit quelques bannières pour ${teamName} dans les virages. Le public sera chaud.` },
       { icon:'📸', title:'Fan du jour', text:`Un groupe de supporters de ${teamName} s'est installé au virage le plus photographié du circuit dès l'aube. Leur banderole devrait passer à la télé.` },
       { icon:'🛍️', title:'Fan zone', text:`La fan zone de ${circName} est prise d'assaut. Les files d'attente pour les autographes s'allongent. ${dName} a signé une centaine de casquettes avant de regagner le garage.` },
+      { icon:'✈️', title:'Supporters déplacés', text:`Des fans de ${teamName} venus de toute l'Europe ont fait le voyage jusqu'à ${circName}. Certains campent depuis la veille. La passion dépasse les frontières.` },
+      { icon:'🎺', title:'Ambiance électrique', text:`Le circuit de ${circName} vibre déjà ce jeudi. Les supporters font de ce GP une véritable fête du sport automobile.` },
+      { icon:'📱', title:'Buzz réseaux sociaux', text:`Les photos du paddock de ${circName} tournent en boucle sur les réseaux. ${teamName} est au centre de l'attention ce week-end.` },
+      { icon:'👶', title:'La relève', text:`De jeunes fans en t-shirt ${teamName} attendent ${dName} à la sortie du paddock depuis l'aube. La passion se transmet de génération en génération.` },
+      { icon:'🌍', title:'Grand Prix mondial', text:`Des supporters de 47 nationalités différentes ont fait le déplacement à ${circName} ce week-end. La F1 c'est vraiment une passion mondiale.` },
     ];
 
     const circuitNews = [
@@ -364,6 +377,12 @@ const CareerEvents = {
       { icon:'🍽️', title:'Gastronomie locale', text:`Le paddock a ses bonnes adresses. Plusieurs mécaniciens de ${teamName} ont découvert un restaurant local qui fait fureur cette semaine. Le moral est bon.` },
       { icon:'🌅', title:'Jeudi matin', text:`Lever du soleil sur ${circName}. Les premiers camions sont arrivés lundi. Depuis, le village paddock a poussé comme une ville éphémère. Dans 5 jours, il n'en restera rien.` },
       { icon:'🚁', title:'Vue aérienne', text:`Les images aériennes du circuit circulent sur les réseaux. Les gradins se remplissent, les motorhomes brillent au soleil. ${circName} est prêt à accueillir le monde.` },
+      { icon:'🌙', title:'Nuit dans le paddock', text:`Le paddock ne dort jamais vraiment. À minuit, des mécaniciens travaillent encore sous les lumières des garages. C'est ça aussi, la Formule 1.` },
+      { icon:'🎬', title:'Caméras partout', text:`Les équipes de tournage sont partout dans le paddock de ${circName}. Chaque sourire, chaque tension — tout est filmé pour la postérité.` },
+      { icon:'🚗', title:'Logistique monstre', text:`23 camions, des milliers de pièces, des centaines de personnes — tout ça pour quelques centaines de kilomètres de course. La F1 c'est une organisation colossale.` },
+      { icon:'🏨', title:'Vie d'hôtel', text:`Les pilotes et le staff enchaînent les hôtels depuis des semaines. ${dName} avoue que son sac est perpétuellement à moitié défait. C'est le prix du rêve.` },
+      { icon:'🌤️', title:'Météo du week-end', text:`La météo de ${circName} est capricieuse. Les ingénieurs ont préparé deux setup différents selon l'évolution des conditions. L'adaptabilité sera clé.` },
+      { icon:'🔋', title:'Simulateur de nuit', text:`${dName} a passé deux heures au simulateur hier soir pour peaufiner ses repères. Chaque dixième gagné virtuellement peut se retrouver en vrai.` },
     ];
 
     // Mélanger tous les pools et piocher
