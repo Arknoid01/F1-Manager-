@@ -25,17 +25,12 @@ const Immersion = {
   },
 
   defaultJuniors(save){
-    const seed = Number(save?.season || 2025);
-    const names = [
-      ['Léo','Martins','🇫🇷'],['Noah','Keller','🇩🇪'],['Mateo','Rossi','🇮🇹'],
-      ['Ethan','Brooks','🇬🇧'],['Hugo','Sato','🇯🇵'],['Alex','Moreau','🇫🇷']
-    ];
-    return names.map((n,i)=>({
-      id:'jr_'+(seed+i), firstName:n[0], name:n[1], flag:n[2], age:17+(i%3),
-      potential:72+((seed+i*7)%19), racecraft:58+((seed+i*5)%25),
-      focus:55+((seed+i*3)%30), cost:2+i, progress:8+((seed+i*11)%40),
-      note:['Très rapide en qualif','Excellent sous la pluie','Calme sous pression','Agressif en duel','Protège bien ses pneus','Gros potentiel marketing'][i]
-    }));
+    // Génération aléatoire à chaque nouvelle partie — 3 juniors de départ
+    const juniors = [];
+    for(let i = 0; i < 3; i++){
+      juniors.push(this.generateNewJunior(save, i));
+    }
+    return juniors;
   },
 
   driverName(r){ return r?.driverName || [r?.driver?.firstName, r?.driver?.name].filter(Boolean).join(' ') || 'Pilote'; },
@@ -418,12 +413,12 @@ const Immersion = {
     return report;
   },
 
-  generateNewJunior(save){
+  generateNewJunior(save, idx){
     const first = ['Léo','Noah','Mateo','Ethan','Hugo','Alex','Oscar','Luca','Sacha','Ilyes','Tom','Milan','Nico','Enzo','Rafael'];
     const last  = ['Martins','Keller','Rossi','Brooks','Sato','Moreau','Costa','Dubois','Weber','Tanaka','Schmidt','Pereira','Haddad','King','Bernard'];
     const flags = ['🇫🇷','🇩🇪','🇮🇹','🇬🇧','🇯🇵','🇪🇸','🇧🇷','🇳🇱','🇧🇪','🇨🇭'];
     const i = Math.floor(Math.random()*first.length);
-    const id = `jr_${save.season||2025}_${Date.now()}_${Math.floor(Math.random()*999)}`;
+    const id = `jr_${save.season||2025}_${Date.now()}_${Math.floor(Math.random()*999)}_${idx??0}`;
     return {
       id, firstName:first[i], name:last[Math.floor(Math.random()*last.length)], flag:flags[Math.floor(Math.random()*flags.length)],
       age:16+Math.floor(Math.random()*3), potential:70+Math.floor(Math.random()*20),
