@@ -48,12 +48,17 @@ const Race = {
       // Appliquer le moral du pilote (uniquement équipe joueur)
       try {
         const _sv = Save.load();
-        if (_sv?.playerTeamId === driver.teamId && _sv?.morale?.[driver.id] !== undefined) {
-          const moral = _sv.morale[driver.id];
-          // moral 0-100 : 70 = neutre, +1 moral = +0.02 pace effectif
+        if (_sv?.playerTeamId === driver.teamId) {
+          // Le moral est stocké dans save.immersion.driverMorale[id].value
+          const driverKey = driver.id || driver.name;
+          const moralObj  = _sv?.immersion?.driverMorale?.[driverKey];
+          const moral     = moralObj?.value ?? 70;
+          // moral 0-100 : 70 = neutre, chaque point au-dessus = +0.2 pace
           const moralDelta = Math.round((moral - 70) * 0.2);
-          driver.pace        = Math.max(1, Math.min(100, (driver.pace||75)        + moralDelta));
-          driver.consistency = Math.max(1, Math.min(100, (driver.consistency||75) + Math.round(moralDelta * 0.5)));
+          if (moralDelta !== 0) {
+            driver.pace        = Math.max(1, Math.min(100, (driver.pace||75)        + moralDelta));
+            driver.consistency = Math.max(1, Math.min(100, (driver.consistency||75) + Math.round(moralDelta * 0.5)));
+          }
         }
       } catch(e) {}
       let strategy = Engine.generateStrategy(circuit, team.performance, weather, driver.trait, driverIndex + 1);
