@@ -124,6 +124,7 @@
 
     <!-- HERO PROCHAINE COURSE -->
     <a href="fp-briefing.html" class="race-hero" id="raceHero">
+      <div id="teamLogoHero" style="display:none;align-items:center;flex-shrink:0"></div>
       <div class="rh-flag" id="raceFlag">🏁</div>
       <div class="rh-info">
         <div class="rh-label">Prochain Grand Prix</div>
@@ -253,7 +254,7 @@ function showTeamSelection() {
   F1Data.teams.forEach(team=>{
     const card=document.createElement('div');
     card.className='team-card';
-    card.innerHTML=`<div class="tc-name" style="color:${team.color}">${team.shortName}</div><div style="font-family:var(--fh);font-size:11px;color:var(--muted)">${team.name}</div><div class="tc-perf">Perf. ${team.performance}</div><div class="tc-budget">${team.budget}M€</div>`;
+    card.innerHTML=`${team.logo?`<img src="${team.logo}" style="width:48px;height:24px;object-fit:contain;margin-bottom:4px" alt="">`:''}<div class="tc-name" style="color:${team.color}">${team.shortName}</div><div style="font-family:var(--fh);font-size:11px;color:var(--muted)">${team.name}</div><div class="tc-perf">Perf. ${team.performance}</div><div class="tc-budget">${team.budget}M€</div>`;
     card.onclick=()=>selectTeam(team.id,card);
     grid.appendChild(card);
   });
@@ -325,6 +326,13 @@ function showDashboard() {
     document.getElementById('newSeasonBanner').style.display='block';
     document.getElementById('newSeasonTitle').textContent=`🏆 Nouvelle saison ${save.season} !`;
     document.getElementById('newSeasonSummary').textContent=save._newSeasonBanner;
+  }
+
+  // Logo équipe dans le race-hero
+  const logoEl = document.getElementById('teamLogoHero');
+  if(logoEl && team?.logo) {
+    logoEl.innerHTML = '<img src="'+team.logo+'" style="width:48px;height:24px;object-fit:contain" alt="">';
+    logoEl.style.display = 'flex';
   }
 
   renderDrivers(drivers,team);

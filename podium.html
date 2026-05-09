@@ -23,7 +23,12 @@
 function fmtTime(sec){ if(!Number.isFinite(sec)) return '—'; const m=Math.floor(sec/60), s=sec-m*60; return `${m}:${s.toFixed(3).padStart(6,'0')}`; }
 function esc(s){ return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 function getSummary(){ const save=Save.load(); return {save, gp:save?.lastGpSummary}; }
-function step(r, cls){ if(!r) return `<div class="step ${cls}"><div class="pos">—</div><div class="name">Aucun</div></div>`; return `<div class="step ${cls}"><div class="pos">P${r.position}</div><div class="name" style="color:${esc(r.teamColor)}">${esc(r.driverName)}</div><div class="team">${esc(r.teamName)}</div><div class="pts">${r.points||0} pts</div></div>`; }
+function step(r, cls){
+  if(!r) return `<div class="step ${cls}"><div class="pos">—</div><div class="name">Aucun</div></div>`;
+  const team = typeof F1Data !== 'undefined' ? F1Data.teams.find(t=>t.name===r.teamName||t.shortName===r.teamName) : null;
+  const logoHtml = team?.logo ? `<img src="${team.logo}" style="width:40px;height:20px;object-fit:contain;margin-bottom:6px" alt="">` : '';
+  return `<div class="step ${cls}">${cls==='p1'?logoHtml:''}<div class="pos">P${r.position}</div><div class="name" style="color:${esc(r.teamColor)}">${esc(r.driverName)}</div><div class="team">${esc(r.teamName)}</div><div class="pts">${r.points||0} pts</div></div>`;
+}
 // ── POOLS INTERVIEWS ────────────────────────────────────
 const INTERVIEWS = {
   win: [

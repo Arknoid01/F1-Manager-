@@ -82,7 +82,8 @@ if (!entity) {
   const t = entity;
   const drivers = F1Data.drivers.filter(d=>String(d.teamId)===String(t.id) && !d.retired);
   const shownBudget = String(t.id)===String(save.playerTeamId) ? (save.budget ?? t.budget) : t.budget;
-  root.innerHTML = hero('🏢', t.name, `${fmt(t.shortName)} · Budget ${fmt(shownBudget)}M€`, fmt(t.performance), t.color)
+  const logoHtml = t.logo ? `<img src="${t.logo}" style="width:60px;height:30px;object-fit:contain;margin-bottom:6px" alt="">` : '🏢';
+  root.innerHTML = hero(logoHtml, t.name, `${fmt(t.shortName)} · Budget ${fmt(shownBudget)}M€`, fmt(t.performance), t.color)
     + `<div class="grid"><div class="panel"><div class="ph"><div class="dot"></div>Performance voiture</div><div class="content">${stats([
       {label:'Perf.',value:fmt(t.performance),color:t.color},{label:'Aéro',value:fmt(t.aero),color:'#2979ff'},{label:'Châssis',value:fmt(t.chassis),color:'#e10600'},{label:'Moteur',value:fmt(t.engine),color:'#ff9944'},{label:'Fiabilité',value:fmt(t.reliability),color:'#00e676'},{label:'Budget',value:fmt(shownBudget)+'M',color:'#ffd700'}
     ])}</div></div><div class="panel"><div class="ph"><div class="dot"></div>Pilotes</div><div class="content">${drivers.length?drivers.map(d=>line(Profiles.linkDriver(d), `N° ${fmt(d.number)} · ${driverScore(d)}`)).join(''):'<div class="desc">Aucun pilote actif.</div>'}</div></div></div>` + immersiveTeamPanel(t);

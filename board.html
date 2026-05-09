@@ -170,6 +170,7 @@
   <div class="logo">F1<span>Manager</span></div>
   <a href="index.html" class="back-home">← Accueil</a>
   <div class="top-pills">
+    <div id="teamLogoBadge" style="display:none;margin-right:4px"></div>
     <div class="pill pill-muted" id="seasonBadge">—</div>
     <div class="pill pill-gold" id="budgetBadge">—</div>
   </div>
@@ -372,6 +373,14 @@ function renderBoardStats() {
     { val: avgDriverScore,            lbl:'Score pilotes', color:'#ff8800', max:100 },
     { val: save.tokens||0,            lbl:'Tokens R&D',   color:'#aa44ff', max:20  },
   ];
+
+  // Logo équipe dans la topbar
+  const logoDiv = document.getElementById('teamLogoBadge');
+  if(logoDiv && team?.logo) {
+    logoDiv.innerHTML = '<img src="'+team.logo+'" style="width:36px;height:18px;object-fit:contain" alt="">';
+    logoDiv.style.display = 'flex';
+    logoDiv.style.alignItems = 'center';
+  }
 
   document.getElementById('boardStats').innerHTML = stats.map(s => `
     <div class="stat-card">

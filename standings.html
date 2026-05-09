@@ -150,7 +150,7 @@ function render() {
 
   const teamRows = [...F1Data.teams].sort((a,b)=>pts(save.teamStandings,b.id)-pts(save.teamStandings,a.id));
   document.getElementById('teamsTable').innerHTML = '<div class="row header"><div>Pos</div><div>Équipe</div><div style="text-align:right">Pts</div></div>' + teamRows.map((t,i)=>
-    `<div class="row"><div class="pos">${i+1}</div><div><div class="name" style="color:${t?.color || '#fff'}">${Profiles.linkTeam(t)}</div><div class="team">${t.shortName}</div></div><div class="pts">${pts(save.teamStandings,t.id)}</div></div>`
+    `<div class="row"><div class="pos">${i+1}</div><div style="display:flex;align-items:center;gap:8px">${t.logo?`<img src="${t.logo}" style="width:32px;height:16px;object-fit:contain;flex-shrink:0" alt="">`:''}<div><div class="name" style="color:${t?.color || '#fff'}">${Profiles.linkTeam(t)}</div><div class="team">${t.shortName}</div></div></div><div class="pts">${pts(save.teamStandings,t.id)}</div></div>`
   ).join('');
 
   const currentRaceIndex = Number(save.race) || 0;
