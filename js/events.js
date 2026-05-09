@@ -171,14 +171,18 @@ const CareerEvents = {
     const raceKey = `${save.season}-${save.race}`;
     if (save[this.KEY_LAST_PRE] === raceKey) return null;
     save[this.KEY_LAST_PRE] = raceKey;
-    if (Math.random() > 0.55) return null;
-
     const drivers = this.teamDrivers(save);
     if (!drivers.length) return null;
     const d = this.rand(drivers);
 
     const circuit = F1Data.circuits[(save.race||0) % F1Data.circuits.length];
     const circName = circuit?.name || 'ce circuit';
+    const circId   = circuit?.id || '';
+
+    // 45% événement gameplay, 55% news ambiance/immersion (jamais silencieux)
+    if (Math.random() > 0.45) {
+      return this.triggerAmbianceNews(save, d, circuit, circId, circName);
+    }
 
     const events = [
       // Blessures / Forme physique
@@ -305,6 +309,65 @@ const CareerEvents = {
     ev.effect();
     this.log(save, { phase:'pre', icon:ev.icon||'📰', category:ev.category||'general', title:ev.title, text:ev.text });
     return ev;
+  },
+
+  // ── NEWS AMBIANCE / IMMERSION (pas d'effet gameplay) ────────
+  triggerAmbianceNews(save, d, circuit, circId, circName) {
+    const teamName  = F1Data.teams.find(t=>t.id===save.playerTeamId)?.name || 'votre équipe';
+    const dName     = `${d.firstName} ${d.name}`;
+    const weather   = save.weekendWeather || 'dry';
+    const isWet     = weather !== 'dry';
+    const isStreet  = circuit?.circuitType === 'street';
+    const isSpeed   = circuit?.circuitType === 'power';
+    const isTech    = circuit?.circuitType === 'technical';
+
+    // Pools par thème
+    const paddockNews = [
+      { icon:'🎙️', title:'Ambiance paddock', text:`Le paddock de ${circName} bourdonne d'activité. Les mécaniciens ont travaillé toute la nuit, les motorhomes sont pleins. L'atmosphère est électrique avant ce GP.` },
+      { icon:'☕', title:'Jeudi paddock', text:`${dName} a été aperçu détendu au motorhome ce matin, café à la main. "On est prêts" a-t-il glissé aux journalistes. Le reste de l'équipe partage ce calme apparent.` },
+      { icon:'🎧', title:'Briefing d'équipe', text:`Réunion stratégique de deux heures ce matin avec tous les ingénieurs. La stratégie de course a été affinée, les scénarios météo passés en revue. L'équipe est alignée.` },
+      { icon:'📺', title:'Médias', text:`${dName} enchaîne les interviews depuis ce matin. La presse veut savoir si ${teamName} peut surprendre ce week-end. La réponse reste mesurée mais confiante.` },
+      { icon:'🤝', title:'Relations sponsor', text:`Le sponsor principal est présent ce week-end avec une délégation. Une bonne performance devant les caméras serait appréciée. Pas de pression supplémentaire... officiellement.` },
+      { icon:'🔬', title:'Données simulateur', text:`Les données de simulateur de la semaine pointent vers une bonne corrélation avec la piste réelle. Les ingénieurs sont optimistes sur le setup de départ.` },
+    ];
+
+    const supporterNews = [
+      { icon:'🏟️', title:'Les fans sont là', text:`Les tribunes se remplissent déjà pour les essais libres. Des supporters de ${teamName} ont fait des centaines de kilomètres pour être là. Leur énergie se ressent jusqu'au garage.` },
+      { icon:'🎌', title:'Ambiance tribunes', text:`Les drapeaux flottent dans les tribunes de ${circName}. Les fans locaux dominent, mais on aperçoit quelques bannières pour ${teamName} dans les virages. Le public sera chaud.` },
+      { icon:'📸', title:'Fan du jour', text:`Un groupe de supporters de ${teamName} s'est installé au virage le plus photographié du circuit dès l'aube. Leur banderole devrait passer à la télé.` },
+      { icon:'🛍️', title:'Fan zone', text:`La fan zone de ${circName} est prise d'assaut. Les files d'attente pour les autographes s'allongent. ${dName} a signé une centaine de casquettes avant de regagner le garage.` },
+    ];
+
+    const circuitNews = [
+      { icon:'🗺️', title:`Circuit de ${circName}`, text:isStreet
+          ? `Les rues de ${circName} ont été homologuées hier soir. Les glissières neuves brillent sous les projecteurs. Chaque centimètre de bitume a été inspecté avant l'ouverture de la piste.`
+          : isSpeed
+          ? `${circName}, temple de la vitesse pure. Les équipes ont opté pour les réglages les plus effacés possibles. La bataille moteur sera décisive ce week-end.`
+          : isTech
+          ? `${circName} met à l'épreuve l'équilibre de la voiture dans toutes ses dimensions. Setup polyvalent ou spécialisé ? Les ingénieurs ont tranché, on verra si c'était le bon choix.`
+          : `${circName} offre plusieurs configurations stratégiques. L'undercut fonctionne bien ici historiquement — les fenêtres de pit seront cruciales.`
+      },
+      { icon:'📏', title:'Reconnaissance circuit', text:`${dName} a effectué le tour de reconnaissance à vélo ce matin avec l'ingénieur de piste. Quelques bosses nouvelles ont été notées dans le secteur 2. Les notes ont été actualisées.` },
+      { icon:'🌡️', title:'Conditions piste', text:isWet
+          ? `La piste est humide et le séchage sera long. Les équipes débattent déjà du bon moment pour basculer sur pneus slicks. La météo sera le facteur numéro un ce week-end.`
+          : `La piste est propre et la température idéale pour les pneus. Le grip devrait être excellent dès les premières minutes des essais libres.`
+      },
+    ];
+
+    const anecdotes = [
+      { icon:'🏁', title:'Histoire du circuit', text:`${circName} a une histoire chargée. Victoires mémorables, retournements de situation — ce circuit a tout vu. Chaque génération de pilote y a laissé sa marque.` },
+      { icon:'🍽️', title:'Gastronomie locale', text:`Le paddock a ses bonnes adresses. Plusieurs mécaniciens de ${teamName} ont découvert un restaurant local qui fait fureur cette semaine. Le moral est bon.` },
+      { icon:'🌅', title:'Jeudi matin', text:`Lever du soleil sur ${circName}. Les premiers camions sont arrivés lundi. Depuis, le village paddock a poussé comme une ville éphémère. Dans 5 jours, il n'en restera rien.` },
+      { icon:'🚁', title:'Vue aérienne', text:`Les images aériennes du circuit circulent sur les réseaux. Les gradins se remplissent, les motorhomes brillent au soleil. ${circName} est prêt à accueillir le monde.` },
+    ];
+
+    // Mélanger tous les pools et piocher
+    const all = [...paddockNews, ...supporterNews, ...circuitNews, ...anecdotes];
+    const ev  = this.rand(all);
+
+    this.log(save, { phase:'pre', icon:ev.icon, category:'ambiance', title:ev.title, text:ev.text });
+    // Pas d'appel à ev.effect() — c'est purement narratif
+    return { title:ev.title, text:ev.text, icon:ev.icon, category:'ambiance' };
   },
 
   // ── ÉVÉNEMENTS POST-COURSE ────────────────────────────────
