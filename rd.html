@@ -593,7 +593,7 @@ function buildUpgradeCard(upg, dev, _frozen, isNextYear) {
   const aboveCap = currentLevel >= 85;
   const effectiveCost   = aboveCap && !isNextYear ? upg.cost   * 2 : upg.cost;
   const effectiveTokens = aboveCap && !isNextYear ? upg.tokens * 2 : upg.tokens;
-  const canAfford = (save.budget || 0) >= effectiveCost;
+  const canAfford = Math.round((save.budget || 0) * 10) / 10 >= effectiveCost;
   const hasTokens = (save.tokens  || 0) >= effectiveTokens;
 
   let status = 'available';
@@ -762,7 +762,7 @@ function buyUpgrade(domainKey, upgradeId, isNextYear) {
   const buyAboveCap = buyLevel >= 85 && !isNextYear;
   const buyCost   = buyAboveCap ? upg.cost   * 2 : upg.cost;
   const buyTokens = buyAboveCap ? upg.tokens * 2 : upg.tokens;
-  if ((save.budget||0) < buyCost)   { toast('❌ Budget R&D insuffisant !' + (buyAboveCap?' (coût ×2 car ≥85 pts)':''), true); return; }
+  if (Math.round((save.budget||0) * 10) / 10 < buyCost) { toast('❌ Budget R&D insuffisant !' + (buyAboveCap?' (coût ×2 car ≥85 pts)':''), true); return; }
   if ((save.tokens||0) < buyTokens) { toast('❌ Pas assez de tokens !'  + (buyAboveCap?' (coût ×2 car ≥85 pts)':''), true); return; }
   if (!isNextYear && dev.done.includes(upgradeId)) { toast('Déjà acheté !', true); return; }
   if (!isNextYear && dev.pending?.some(p => p.upgradeId === upgradeId)) { toast('Déjà commandé !', true); return; }
