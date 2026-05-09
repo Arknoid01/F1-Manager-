@@ -349,8 +349,6 @@ function launchEndOfSeason() {
   Save.save(save);
   // Rediriger vers la page bilan de fin de saison
   location.href = 'season-review.html';
-    showToast('Erreur fin de saison : ' + err.message, true);
-  }
 }
 
 function renderDrivers(drivers,team) {
