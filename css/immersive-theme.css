@@ -286,8 +286,9 @@ h1, h2, h3, .title, .section-title, .kicker {
 }
 
 /* ── 14. Logo unifié — F1(accent) + Manager(texte) ─────────── */
-.logo { color: var(--accent) !important; }
-.logo span { color: var(--text) !important; }
+.logo { color: var(--accent) !important; display: flex !important; align-items: center !important; }
+.logo span { color: #ffffff !important; }
+.logo img { flex-shrink: 0; }
 
 /* ── 15. Grilles de tuiles ──────────────────────────────────── */
 /* Par défaut : 2 colonnes */
