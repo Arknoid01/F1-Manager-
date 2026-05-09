@@ -346,30 +346,8 @@ function launchEndOfSeason() {
   // sans que save.race atteigne exactement le nombre de GP.
   save.race = Math.max(Number(save.race)||0, totalRaces);
   Save.save(save);
-  if (typeof Career === 'undefined' || typeof Career.endOfSeason !== 'function') {
-    showToast('Fin de saison indisponible : module Career non chargé.', true);
-    return;
-  }
-  const ok = confirm(`Clôturer la saison ${save.season || 2025} ?
-
-Cela applique les primes, la R&D intersaison, les retraites, les transferts et la revue de l'académie.`);
-  if (!ok) return;
-  try {
-    const report = Career.endOfSeason(save) || {};
-    save = Save.load() || save;
-    const academyTxt = report.academy?.released
-      ? ` Académie : ${report.academy.released.firstName} ${report.academy.released.name} libéré, ${report.academy.newJunior?.firstName || 'un nouveau talent'} rejoint le centre.`
-      : '';
-    save._newSeasonBanner = `Prime de fin de saison appliquée. ${report.retired?.length || 0} retraite(s), ${report.newTalents?.length || 0} nouveau(x) talent(s).${academyTxt}`;
-    save._bannerDismissed = false;
-    Save.save(save);
-    restoreDriverStates(save);
-    if (typeof Career.restoreTeamStates === 'function') Career.restoreTeamStates(save);
-    migrateSave(save);
-    showDashboard();
-    showToast(`🏆 Saison ${save.season} lancée !`);
-  } catch (err) {
-    console.error('end season error:', err);
+  // Rediriger vers la page bilan de fin de saison
+  location.href = 'season-review.html';
     showToast('Erreur fin de saison : ' + err.message, true);
   }
 }
