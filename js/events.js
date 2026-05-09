@@ -169,7 +169,8 @@ const CareerEvents = {
   triggerPreRace(save) {
     this.ensure(save);
     const raceKey = `${save.season}-${save.race}`;
-    if (save[this.KEY_LAST_PRE] === raceKey) return null;
+    // On laisse weekend.html gérer le "une seule fois par GP" via sa propre clé
+    // On garde juste la clé pour la compatibilité avec d'autres appelants
     save[this.KEY_LAST_PRE] = raceKey;
     const drivers = this.teamDrivers(save);
     if (!drivers.length) return null;
