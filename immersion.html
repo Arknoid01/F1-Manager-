@@ -103,28 +103,26 @@ function renderJuniorCard(j){
   const badgeTxt = isPromoted ? '✅ F1' : isPromotable ? '⭐ Promouvable' : (j.stage==='reserve'?'🔵 Réserve':'⏳ Formation');
   const cardCls  = isPromoted ? 'promoted' : isPromotable ? 'promotable' : '';
 
-  // Compteur sessions EL saison courante
+  // Corps dépliable — masqué par défaut, toggle au clic sur le header
   let actionsHtml = '';
-  if(isPromotable){
+  if(!isPromoted){
     const currentSeason = save?.season || 2025;
     const sameYear      = (j.fpSeasonYear||0) === currentSeason;
     const usedSessions  = sameYear ? (j.fpSeasonCount||0) : 0;
     const maxSessions   = (typeof Immersion !== 'undefined' && Immersion.FP_PER_SEASON) ? Immersion.FP_PER_SEASON : 2;
-    const sessLeft      = Math.max(0, maxSessions - usedSessions);
-    const sessLabel     = `${usedSessions}/${maxSessions} EL utilisée${usedSessions!==1?'s':''} cette saison`;
+    const sessLabel     = isPromotable ? `🏎️ ${usedSessions}/${maxSessions} EL utilisée${usedSessions!==1?'s':''} cette saison · Sessions depuis la page <strong>Week-end</strong>.` : '';
 
-    actionsHtml = `<div class="jr-body">
-      <div style="font-family:var(--fh);font-size:11px;color:var(--muted);margin-bottom:8px">
-        🏎️ ${sessLabel} · Les sessions EL se font depuis la page <strong>Week-end</strong>.
-      </div>
+    actionsHtml = `<div class="jr-body" id="jrbody_${j.id}" style="display:none">
+      ${sessLabel ? `<div style="font-family:var(--fh);font-size:11px;color:var(--muted);margin-bottom:8px">${sessLabel}</div>` : ''}
       <div class="jr-actions">
-        <button class="btn btn-red" onclick="doPromote('${j.id}')">🏁 Promouvoir en F1</button>
+        ${isPromotable ? `<button class="btn btn-red" onclick="doPromote('${j.id}')">🏁 Promouvoir en F1</button>` : ''}
+        <button class="btn btn-sec" style="border-color:#3a0000;color:#ff6666" onclick="doRelease('${j.id}','${esc(j.firstName)} ${esc(j.name)}')">🚪 Libérer</button>
       </div>
     </div>`;
   }
 
   return `<div class="jr-card ${cardCls}" id="jrcard_${j.id}">
-    <div class="jr-header">
+    <div class="jr-header" onclick="toggleJr('${j.id}')" style="cursor:pointer">
       <div class="jr-flag">${j.flag}</div>
       <div class="jr-main">
         <div class="jr-name">${esc(j.firstName)} ${esc(j.name)}</div>
@@ -155,10 +153,8 @@ function renderAcademy(im){
 }
 
 function toggleJr(id){
-  const card=document.getElementById('jrcard_'+id);
-  if(!card) return;
-  const body=card.querySelector('.jr-body');
-  if(body) body.style.display=body.style.display==='none'?'block':'none';
+  const body = document.getElementById('jrbody_'+id);
+  if(body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
 }
 
 // doFP supprimé — les sessions EL se lancent depuis la page Weekend
@@ -183,6 +179,23 @@ function doPromote(juniorId){
   alert(result.msg + (result.replaced ? `\n${result.replaced.firstName} ${result.replaced.name} devient agent libre.` : '') + '\n\nContrat rookie généré : 2 ans, 1 à 3M€/an.');
 }
 
+
+function doRelease(juniorId, juniorName){
+  if(!confirm(`Libérer ${juniorName} de l'académie ?\n\nIl deviendra agent libre et pourra être recruté par n'importe quelle équipe. Cette action est irréversible.`)) return;
+  const im = save.immersion;
+  im.juniorAcademy = im.juniorAcademy.filter(j => j.id !== juniorId);
+  // Ajouter une news paddock
+  Immersion.addNews(save, '🚪', 'Académie — Départ', `${juniorName} quitte votre centre de formation. Il est désormais agent libre sur le marché des transferts.`, 'junior');
+  Save.save(save);
+  save = Save.load();
+  Immersion.ensure(save);
+  document.getElementById('academyContent').innerHTML = renderAcademy(save.immersion);
+  const notif = document.createElement('div');
+  notif.style.cssText='position:fixed;bottom:20px;right:16px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid #ff4444;border-radius:6px;padding:10px 14px;font-family:var(--fh);font-size:13px;z-index:200;max-width:280px';
+  notif.textContent=`🚪 ${juniorName} a quitté l'académie.`;
+  document.body.appendChild(notif);
+  setTimeout(()=>notif.remove(), 3000);
+}
 
 init();
 </script>
