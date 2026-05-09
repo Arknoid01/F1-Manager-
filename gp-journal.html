@@ -98,32 +98,49 @@ function render(){
     `${winner?.driverName||'Le leader'} bondit en tête. Le peloton s'étire sur ${gp.totalLaps||'plusieurs'} tours.`,
     `Départ explosif. ${winner?.driverName||'Le leader'} prend les commandes, le reste du peloton se repositionne.`,
     `${winner?.driverName||'Le leader'} gère parfaitement l'envol. Les premières secondes dessinent déjà la hiérarchie.`,
+    `Premier virage sans incident majeur. ${winner?.driverName||'Le leader'} s'échappe, le peloton se trie derrière.`,
+    `${winner?.driverName||'Le leader'} parfait au départ. La course commence exactement comme prévu pour le leader.`,
+    `Bagarre immédiate derrière ${winner?.driverName||'le leader'}. Les premières positions se jouent dans les premiers virages.`,
   ])));
   lines.push(e('Moment clé', keyMoment(gp, results)));
   if(gp.safetyCarLaps > 0) lines.push(e('Neutralisation', pick([
     `La Safety Car intervient pendant ${gp.safetyCarLaps} tour(s). Le muret doit réagir vite.`,
     `Neutralisation sur ${gp.safetyCarLaps} tour(s) — une opportunité stratégique que peu ont su saisir.`,
     `${gp.safetyCarLaps} tour(s) derrière la Safety Car. Le timing des pit stops est devenu crucial.`,
+    `Safety Car ! ${gp.safetyCarLaps} tour(s) de neutralisation qui rebattent les cartes. Qui en profite ?`,
+    `Le peloton se regroupe derrière la Safety Car. ${gp.safetyCarLaps} tour(s) qui changent tout.`,
+    `Neutralisation inattendue. ${gp.safetyCarLaps} tour(s) qui offrent une fenêtre stratégique en or.`,
   ])));
   if(pitCount > 0) lines.push(e('Stratégie', pick([
     `${pitCount} arrêt(s) dans le peloton. Les fenêtres de pit ont pesé sur le résultat final.`,
     `${pitCount} pit stops enregistrés. Certains ont joué l'undercut, d'autres ont tenu jusqu'au bout.`,
     `La stratégie a parlé fort aujourd'hui — ${pitCount} arrêts recensés, chacun avec ses conséquences.`,
+    `${pitCount} pit stops dans la course. La gestion des pneus a été le facteur décisif.`,
+    `Les stands ont joué un rôle clé. ${pitCount} arrêts qui ont redessiné le classement au fil des tours.`,
+    `Course à stratégie. ${pitCount} arrêts enregistrés — certains brillants, d'autres qui ont coûté des positions.`,
   ])));
   if(dnf.length) lines.push(e('Incidents', pick([
     `${dnf.length} abandon(s) : ${dnf.slice(0,4).map(r=>r.driverName).join(', ')}${dnf.length>4?'…':''}. La course ne fait pas de cadeau.`,
     `${dnf.slice(0,3).map(r=>r.driverName).join(', ')} parmi les abandons. ${dnf.length} voiture(s) ne verront pas le drapeau à damier.`,
+    `${dnf.length} voiture(s) au tapis. La course a été cruelle pour certaines équipes aujourd'hui.`,
+    `Journée noire pour ${dnf.slice(0,2).map(r=>r.driverName).join(' et ')}. Les abandons rebattent les cartes du championnat.`,
   ])));
   if(best) {
     const teamLine = best.position <= 3 ? pick([
       `${best.driverName} monte sur le podium — P${best.position} ! Le garage explose de joie. ${gp.teamPoints||0} points au compteur.`,
       `P${best.position} pour ${best.driverName} ! Un résultat qui pèse lourd dans le championnat. Total : ${gp.teamPoints||0} pts.`,
+      `${best.driverName} sur le podium ! P${best.position} et ${gp.teamPoints||0} points précieux pour le championnat.`,
+      `Incroyable travail de ${best.driverName}. P${best.position} et un podium qui récompense toute l'équipe.`,
     ]) : best.points > 0 ? pick([
       `${best.driverName} termine P${best.position} — dans les points. ${gp.teamPoints||0} unités récupérées.`,
       `P${best.position} pour ${best.driverName}. Pas spectaculaire, mais ces ${gp.teamPoints||0} points comptent en fin de saison.`,
+      `${best.driverName} arrache P${best.position}. ${gp.teamPoints||0} points qui peuvent changer la saison.`,
+      `Course solide de ${best.driverName}. P${best.position} et ${gp.teamPoints||0} points bien mérités.`,
     ]) : pick([
       `${best.driverName} termine P${best.position} hors des points. Le week-end n'a pas souri à l'équipe.`,
       `P${best.position} — une course difficile. L'analyse permettra de rebondir au prochain GP.`,
+      `Pas de points aujourd'hui pour ${best.driverName}. P${best.position} et une équipe qui repart travailler.`,
+      `Week-end difficile. ${best.driverName} termine P${best.position}. On repart avec les leçons du circuit.`,
     ]);
     lines.push(e('Votre équipe', teamLine));
   }

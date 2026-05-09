@@ -99,12 +99,25 @@
 <script>
 const TP_QUOTES_RACE = [
   "Aujourd'hui on execute le plan. Pas d'improvisation, pas de panique. On fait confiance au travail de la semaine.",
-  "La voiture est prete. Les pilotes sont prets. Il ne reste plus qu'a libacher les chevaux.",
+  "La voiture est prete. Les pilotes sont prets. Il ne reste plus qu'a liberer les chevaux.",
   "On a fait nos devoirs. Maintenant c'est au circuit de parler. Concentrez-vous, chaque detail compte.",
   "Ce week-end a ete propre. Si on reproduit ca en course, les points sont la.",
   "Les adversaires savent qu'on est la. Aujourd'hui on leur rappelle pourquoi ils nous surveillent.",
-  "57 tours. Chaque decision peut changer le resultat. Gardez la tete froide et executez le plan.",
+  "Chaque decision peut changer le resultat. Gardez la tete froide et executez le plan.",
   "On ne vient pas ici pour faire de la figuration. Objectif : maximum de points.",
+  "Cette equipe a travaille dur toute la semaine. Maintenant c'est l'heure de recolter.",
+  "Je veux voir de la concentration, de la precision et de l'audace. On est capables de tout.",
+  "La course appartient a ceux qui restent calmes quand tout s'accelere. Soyez ces gens-la.",
+  "On a prepare tous les scenarios. Quelle que soit la meteo, quelle que soit la safety car — on est prets.",
+  "Chaque tour compte. Chaque freinage, chaque relance. Rien n'est anodin en Grand Prix.",
+  "On a vu les donnees. La voiture est la. Maintenant c'est a vous de jouer.",
+  "Pas de pression. Juste du travail bien fait. C'est tout ce qu'on vous demande.",
+  "Les grands GP se gagnent avec la tete autant qu'avec les pieds. Soyez intelligents.",
+  "Aujourd'hui chaque point compte pour le championnat. On ne laisse rien sur la table.",
+  "Le muret sera avec vous a chaque tour. On prend les decisions ensemble.",
+  "On a battu des equipes plus fortes que nous sur le papier. Aujourd'hui on le refait.",
+  "Execution parfaite, voila l'objectif. On connait le plan, on sait ce qu'on a a faire.",
+  "Les meilleurs GP sont ceux ou l'equipe pense plus vite que les adversaires. Soyons cette equipe.",
 ];
 const BATTLES = [
   { title:"La fenetre undercut", text:"Si un rival direct passe au stand avant nous, on doit reagir dans le tour. Mieux vaut couvrir et perdre un peu de temps que de se faire deborder.", badge:"bc-strategic", label:"Strategique" },
@@ -112,6 +125,13 @@ const BATTLES = [
   { title:"La bataille de milieu de peloton", text:"Les positions 6 a 10 distribuent des points precieux. Un pilote agressif dans cette zone peut faire la difference en championnat.", badge:"bc-championship", label:"Championnat" },
   { title:"Le choix de pneus en cas de pluie", text:"Si la pluie arrive, le timing du passage aux intermediaires peut valoir 5 ou 6 positions. Ne pas attendre trop longtemps.", badge:"bc-strategic", label:"Strategique" },
   { title:"L'aggressivite au depart", text:"Les 3 premiers virages redistribuent souvent 4 ou 5 positions. Notre pilote doit se battre pour defendre ou attaquer selon la grille.", badge:"bc-ontrack", label:"En piste" },
+  { title:"La gestion des pneus en fin de course", text:"Les 10 derniers tours, la degradation devient critique. Un pilote qui a menage ses gommes peut attaquer quand les autres subissent.", badge:"bc-strategic", label:"Strategique" },
+  { title:"L'overcut surprise", text:"Rester plus longtemps en piste que les adversaires peut payer si le rythme reste bon. L'overcut peut capter une position si le timing est parfait.", badge:"bc-strategic", label:"Strategique" },
+  { title:"La defense en fin de relance", text:"Les derniers tours d'un long relais, les pneus sont morts. Defendre une position devient un art — proteger la trajectoire interieure est vital.", badge:"bc-ontrack", label:"En piste" },
+  { title:"L'opportunisme sur Safety Car", text:"Tous les SC ne sont pas previsibles. L'equipe qui reagit le plus vite au radio gagne parfois 3 ou 4 places sans effort.", badge:"bc-strategic", label:"Strategique" },
+  { title:"La bataille avec le coequipier", text:"Si les deux voitures sont proches, le muret doit gerer les ordres d'equipe avec finesse. Pas question de se ganer pour les adversaires.", badge:"bc-championship", label:"Championnat" },
+  { title:"Le premier virage", text:"Les accrochages au virage 1 detruisent des courses entieremen. Etre propre et positionne au bon endroit vaut mieux que l'heroisme dangereux.", badge:"bc-ontrack", label:"En piste" },
+  { title:"Les points bonus meilleur tour", text:"Si on est en position de marquer, le tour le plus rapide en fin de course vaut un point supplementaire. Un stop pour des pneus frais peut en valoir la peine.", badge:"bc-championship", label:"Championnat" },
 ];
 const WEATHER_ICONS = { dry:'☀️', light_rain:'🌦️', heavy_rain:'🌧️', overcast:'☁️' };
 const WEATHER_LABELS = { dry:'Conditions seches — piste ideale', light_rain:'Bruine — strateges de pneus tendus', heavy_rain:'Pluie forte — course chaotique probable', overcast:'Couvert — pluie possible en fin de course' };

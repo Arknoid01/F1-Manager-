@@ -1234,6 +1234,9 @@ const NarrativePool = {
       `📻 ${name} remonte fort — P${pos} ! Quelle relance !`,
       `📻 ${name} dévore le classement, P${pos} maintenant.`,
       `📻 +${gainCount} places d'un coup pour ${name}. Belle opportunité saisie.`,
+      `📻 ${name} explose dans le peloton ! P${pos} en quelques tours seulement.`,
+      `📻 Magistral ! ${name} remonte ${gainCount} positions pour pointer à P${pos}.`,
+      `📻 ${name} sur les chapeaux de roues — P${pos}. La voiture est en feu.`,
     ] : [
       `📻 ${name} P${pos}. Passage en douceur, bon feeling.`,
       `📻 ${name} grappille une place — P${pos}. On continue.`,
@@ -1241,6 +1244,15 @@ const NarrativePool = {
       `📻 ${name} profite du trafic : P${pos}. Bien joué.`,
       `📻 ${name} à P${pos} — le rythme est là, on garde la pression.`,
       `📻 Beau move de ${name} — P${pos} dans le viseur.`,
+      `📻 ${name} passe proprement — P${pos}. Freinage parfait.`,
+      `📻 ${name} monte à P${pos}. La voiture répond bien.`,
+      `📻 P${pos} pour ${name}. On reste concentrés, la course est longue.`,
+      `📻 ${name} à P${pos}. L'undercut a fonctionné, continue comme ça.`,
+      `📻 Belle gestion de ${name} — P${pos}, on garde le cap.`,
+      `📻 ${name} grignote une place : P${pos}. Le rythme est bon.`,
+      `📻 Bien joué ${name} — P${pos}. On surveille le suivant.`,
+      `📻 ${name} profite d'une erreur adverse — P${pos}. Bonne opportunité.`,
+      `📻 P${pos} pour ${name}. L'équipe valide le dépassement depuis le muret.`,
     ];
     return this.pick(pool);
   },
@@ -1253,6 +1265,15 @@ const NarrativePool = {
       `📻 ${name} à P${pos}. Pneus ? Cherche le bon moment pour répondre.`,
       `📻 ${name} cède une place — P${pos}. Pas de panique, course longue.`,
       `📻 ${name} sous pression, P${pos}. On recalcule.`,
+      `📻 P${pos} pour ${name}. On ne panique pas — il reste des tours.`,
+      `📻 ${name} laisse passer — P${pos}. Les pneus sont en cause, on surveille.`,
+      `📻 ${name} recule à P${pos}. Timing de pit à revoir.`,
+      `📻 ${name} perd une position — P${pos}. On prépare la réponse.`,
+      `📻 Dépassé, ${name} tombe à P${pos}. La gestion pneus est clé maintenant.`,
+      `📻 ${name} à P${pos}. Le muret étudie les options pour regagner cette place.`,
+      `📻 P${pos} pour ${name}. Moment difficile mais pas insurmontable.`,
+      `📻 ${name} recule d'une position — P${pos}. On ne baisse pas les bras.`,
+      `📻 ${name} cède du terrain, P${pos}. La course n'est pas terminée.`,
     ];
     return this.pick(pool);
   },
@@ -1263,6 +1284,12 @@ const NarrativePool = {
       `🎧 ${name} : gommes à <b>${cond}%</b>. On va perdre des dixièmes par tour. Box ?`,
       `🎧 ${name} — <b>${cond}%</b> sur les pneus. On risque le flat-spot si on reste.`,
       `🎧 Alerte pneus ${name} : <b>${cond}%</b>. La fenêtre se ferme.`,
+      `🎧 ${name} : <b>${cond}%</b> de gomme. C'est critique — box dans ce tour.`,
+      `🎧 ${name} prépare-toi — <b>${cond}%</b> sur les pneus. On ne peut plus attendre.`,
+      `🎧 ${name} : la dégradation s'accélère, <b>${cond}%</b>. On perd du rythme à chaque tour.`,
+      `🎧 Box imminent pour ${name} — <b>${cond}%</b>. Les données confirment qu'on est au bout.`,
+      `🎧 ${name} : attention aux cloquages à <b>${cond}%</b>. Le muret demande le box.`,
+      `🎧 ${name} : <b>${cond}%</b> de vie pneu. On sécurise maintenant.`,
     ];
     return this.pick(pool);
   },
@@ -1273,6 +1300,13 @@ const NarrativePool = {
       `🎧 ${name} : dégradation visible — ${cond}% restant.`,
       `🎧 ${name} — ${cond}% sur les gommes. Anticipe la fenêtre.`,
       `🎧 ${name} : on commence à voir la dégradation, ${cond}%.`,
+      `🎧 ${name} : ${cond}% de pneu. Surveille le delta par rapport au tour précédent.`,
+      `🎧 ${name} : les gommes travaillent fort — ${cond}% restant. Ajuste si besoin.`,
+      `🎧 ${name} : ${cond}% de vie. On anticipe la fenêtre de pit dans les prochains tours.`,
+      `🎧 ${name} : attention dégradation thermique — ${cond}%. Gère tes freinages.`,
+      `🎧 ${name} à ${cond}% sur les pneus. Pas d'alarme mais on surveille de près.`,
+      `🎧 ${name} : ${cond}% de gomme. Reste dans la fenêtre de température.`,
+      `🎧 ${name} : premier signe de graining — ${cond}%. Fais attention à la trajectoire.`,
     ];
     return this.pick(pool);
   },
@@ -1284,6 +1318,13 @@ const NarrativePool = {
       `📻 ${name} colle à ${opp} : ${delta}. C'est maintenant ou jamais.`,
       `📻 ${delta} entre ${name} et ${opp}. Le muret surveille le delta.`,
       `📻 ${name} est dans la fenêtre DRS de ${opp}. On tente ?`,
+      `📻 ${name} revient fort sur ${opp} — ${delta}. La place est dans le viseur.`,
+      `📻 ${delta} seulement pour ${name} derrière ${opp}. Le DRS va tout changer.`,
+      `📻 ${name} dans les roues de ${opp} — ${delta}. L'opportunité approche.`,
+      `📻 Attaque imminente de ${name} sur ${opp}. ${delta} de marge pour l'adversaire.`,
+      `📻 ${name} est là — ${delta} de ${opp}. On surveille la ligne droite.`,
+      `📻 Le muret donne le feu vert à ${name}. ${delta} sur ${opp} — c'est jouable.`,
+      `📻 ${name} chasse ${opp} — ${delta}. Choisis bien ton point de freinage.`,
     ];
     return this.pick(pool);
   },
@@ -1295,6 +1336,13 @@ const NarrativePool = {
       `📻 ${opp} dans le DRS de ${name} ! ${delta}. Tiens bon.`,
       `📻 ${name} : ${opp} dans ton rétro à ${delta}. Pas de cadeau.`,
       `📻 ${opp} revient vite sur ${name} — ${delta}. Les pneus tiennent ?`,
+      `📻 ${name} : défends ta position ! ${opp} à ${delta} et il a le DRS.`,
+      `📻 Attention ${name} — ${opp} revient à ${delta}. Protège les freinage.`,
+      `📻 ${opp} est là, ${delta} de ${name}. Couvre l'intérieur dans le prochain virage.`,
+      `📻 ${name} : ${opp} souffle dans le casque — ${delta}. On reste concentrés.`,
+      `📻 Défense capitale pour ${name}. ${opp} à ${delta} — pas question de céder.`,
+      `📻 ${name} : garde ton style de conduite. ${opp} à ${delta} mais tu contrôles.`,
+      `📻 ${opp} attaque — ${delta} sur ${name}. Défends proprement, pas de pénalité.`,
     ];
     return this.pick(pool);
   },
@@ -1328,23 +1376,49 @@ const NarrativePool = {
     `🎧 SC déployée. Opportunité stratégique : tout le monde au stand ?`,
     `🎧 Safety Car sur la piste. Attention aux pneus froids au restart.`,
     `🎧 SC ! Le muret analyse : box maintenant ou couvrir au restart ?`,
+    `🎧 Safety Car ! C'est le moment ou jamais pour un arrêt gratuit.`,
+    `🎧 SC sur la piste — le muret calcule. On a 2 tours pour décider.`,
+    `🎧 Neutralisation ! Les pneus vont refroidir — attention à la relance.`,
+    `🎧 Safety Car déployée. Tout se remet à zéro — soyez prêts au restart.`,
+    `🎧 SC ! Opportunité en or pour pit sans perte de temps. On analyse.`,
+    `🎧 La Safety Car regroupe le peloton. Le muret est en pleine réflexion.`,
+    `🎧 SC sur la piste. Le classement va se redistribuer selon les pit stops.`,
+    `🎧 Neutralisation ! Les adversaires vont box — on doit décider maintenant.`,
   ],
   safetyCarOut: [
     `🟢 Safety Car rentre ! Relance dans un tour — prépare le restart.`,
     `🟢 Piste dégagée, relance imminente. Attention aux duels dans le premier virage.`,
     `🟢 C'est reparti ! Le peloton est serré — tout est possible.`,
     `🟢 Relance ! Les pneus sont froids, les premières secondes seront chaotiques.`,
+    `🟢 SC rentre — la course reprend ! Explosif dans le premier secteur.`,
+    `🟢 Relance imminente. Tout le monde à fond dès l'extinction des feux de SC.`,
+    `🟢 Piste libre ! Les pneus froids vont créer du chaos — reste vigilant.`,
+    `🟢 C'est reparti ! Le peloton compact offre des opportunités de dépassement.`,
+    `🟢 Safety Car aux stands. Le spectacle reprend — accroche-toi !`,
+    `🟢 Relance dans un tour. Position de freinage va décider des places.`,
   ],
   weatherChange: [
     `🎧 La pluie arrive. Intermédiaires ou rester sec ? On surveille le timing.`,
     `🎧 Météo changeante — recalcul de stratégie en cours.`,
     `🎧 Piste qui s'humidifie. Le choix pneus va tout changer dans les prochains tours.`,
     `🎧 Alerte météo. On chronomètre le delta inter/sec pour décider du bon moment.`,
+    `🎧 La pluie pointe son nez. On surveille le niveau de précipitations avant de décider.`,
+    `🎧 Piste mixte. Ni tout sec ni tout mouillé — le timing est crucial.`,
+    `🎧 La météo bascule ! Prépare-toi au changement de pneus au prochain tour possible.`,
+    `🎧 Précipitations en hausse. Le muret calcule le delta inter vs slick.`,
+    `🎧 Alerte pluie ! C'est la loterie des pneus — qui va box en premier ?`,
+    `🎧 Piste qui évolue vite. On ne peut pas attendre trop longtemps pour décider.`,
   ],
   dnf: [
     `🎙️ Abandon dans le peloton — ça redistribue les cartes au classement.`,
     `🎙️ Une voiture s'arrête. Chaque place récupérée compte en championnat.`,
     `🎙️ Abandon confirmé. Le muret recalcule les positions.`,
+    `🎙️ Une voiture hors course. Le classement se redistribue.`,
+    `🎙️ Abandon ! Mauvaise journée pour cette équipe — bonne nouvelle pour les autres.`,
+    `🎙️ Retrait en course. Les places libérées font avancer tout le monde.`,
+    `🎙️ Voiture abandonnée. La course ne pardonne pas.`,
+    `🎙️ Encore un abandon. La F1 peut être cruelle.`,
+    `🎙️ Une équipe de moins dans la bagarre. Le muret met à jour le classement.`,
   ],
   pitUndercut: [
     `Box cette tour ! On couvre l'undercut — fenêtre fermée après ça.`,
@@ -1392,6 +1466,10 @@ function buildRaceNarrative(res) {
       `🚦 Départ lancé ! <b>${driverLabel(leader?.driver)}</b> bondit en tête.`,
       `🚦 Les feux s'éteignent — <b>${driverLabel(leader?.driver)}</b> mène au premier virage.`,
       `🚦 C'est parti ! <b>${driverLabel(leader?.driver)}</b> prend la tête dès le départ.`,
+      `🚦 Extinction des feux, c'est lancé ! <b>${driverLabel(leader?.driver)}</b> garde le commandement.`,
+      `🚦 Le Grand Prix est lancé ! Bagarre immédiate derrière <b>${driverLabel(leader?.driver)}</b>.`,
+      `🚦 Départ propre pour <b>${driverLabel(leader?.driver)}</b> qui s'impose en tête dès le départ.`,
+      `🚦 Les moteurs rugissent — <b>${driverLabel(leader?.driver)}</b> sort parfaitement de la ligne.`,
     ])));
   }
 
@@ -1401,6 +1479,11 @@ function buildRaceNarrative(res) {
       `📊 Mi-course. Les stratégies commencent à se dessiner.`,
       `📊 La moitié du Grand Prix est passée — qui a le meilleur rythme de fin ?`,
       `📊 ${total - lap} tours à tenir. La gestion pneus va tout décider.`,
+      `📊 Mi-distance. Les écarts se creusent, les pneus parlent.`,
+      `📊 On est à la moitié — les murets recalculent les fenêtres de pit.`,
+      `📊 ${total - lap} tours restants. La vraie course commence maintenant.`,
+      `📊 Mi-course passée. Qui a gardé le meilleur gomme pour la fin ?`,
+      `📊 La course entre dans sa deuxième partie. Tout peut encore basculer.`,
     ])));
   }
 
@@ -1411,6 +1494,11 @@ function buildRaceNarrative(res) {
       `🔥 Derniers 10 tours — les pneus vont parler maintenant.`,
       `🔥 On entre dans le money time. Chaque dixième compte.`,
       `🔥 10 tours ! La course se décide maintenant.`,
+      `🔥 Plus que 10 tours. Qui tient ses pneus jusqu'au bout ?`,
+      `🔥 Les 10 derniers tours — le moment de tout donner.`,
+      `🔥 Compte à rebours lancé. 10 tours pour écrire l'histoire.`,
+      `🔥 On entre dans la zone rouge. Chaque position va se payer cash.`,
+      `🔥 Dernière ligne droite de la course. Les décisions stratégiques sont prises.`,
     ])));
   }
 
