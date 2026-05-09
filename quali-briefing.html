@@ -101,7 +101,7 @@ function render(){
     <span style="font-family:var(--fh);font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px">GP ${gpNum}</span>`;
 
   const elCards = myDrivers.map(d=>{
-    const dRes = fpResults.filter(r=>(r.driverId||r.driver?.id)===d.id);
+    const dRes = fpResults.filter(r=>(r.driverId||r.driver?.id||r.driver)===d.id);
     const best = dRes.length ? Math.min(...dRes.map(r=>r.bestLap||999)) : null;
     const avgPos = dRes.length ? Math.round(dRes.reduce((s,r)=>s+(r.position||20),0)/dRes.length) : null;
     return `<div class="el-card">
