@@ -243,7 +243,7 @@ function render(){
     <div class="hero">
       <div class="hero-day">Vendredi · Briefing EL</div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
-        <div style="width:64px;height:32px;flex-shrink:0">${myTeam?.logo||''}</div>
+        <div style="width:64px;height:32px;flex-shrink:0">${myTeam?.logo ? '<img src=\"'+myTeam.logo+'\" style=\"width:100%;height:100%;object-fit:contain\" alt=\"\">' : ''}</div>
         <div class="hero-title" style="margin:0">${esc(myTeam?.name||'')}</div>
       </div>
       <div class="hero-sub">Grand Prix de ${esc(circuit.name)} · Saison ${season} · ${circuit.laps} tours · ${circuit.lapDistance}km/tour</div>

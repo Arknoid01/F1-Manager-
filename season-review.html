@@ -240,7 +240,7 @@ function render() {
     <div class="hero">
       <div class="hero-season">Saison ${season} — Bilan final</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px">
-        <div style="width:70px;height:35px">${myTeam?.logo||''}</div>
+        <div style="width:70px;height:35px">${myTeam?.logo ? '<img src=\"'+myTeam.logo+'\" style=\"width:100%;height:100%;object-fit:contain\" alt=\"\">' : ''}</div>
         <div class="hero-title" style="margin:0">${esc(myTeam?.name||'Votre équipe')}</div>
       </div>
       <div class="hero-pos" style="color:${posColor(myPos)}">${myPos}</div>
