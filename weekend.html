@@ -569,10 +569,61 @@ function buildFPSection() {
   return el;
 }
 
+function getAvailableJuniors() {
+  // Retourne les juniors promouvables qui ont encore des sessions EL disponibles cette saison
+  const im = save?.immersion;
+  if (!im || !Array.isArray(im.juniorAcademy)) return [];
+  const maxFP = (typeof Immersion !== 'undefined' && Immersion.FP_PER_SEASON) ? Immersion.FP_PER_SEASON : 2;
+  const currentSeason = save.season || 2025;
+  return im.juniorAcademy.filter(j => {
+    if (!j.promotable || j.promoted) return false;
+    const sameYear   = (j.fpSeasonYear||0) === currentSeason;
+    const usedSess   = sameYear ? (j.fpSeasonCount||0) : 0;
+    return true; // on les montre tous, avec leur quota restant
+  });
+}
+
 function buildFPConfig() {
   const compounds = Object.keys(F1Data.tyres);
+  const juniors   = getAvailableJuniors();
+  const maxFP     = (typeof Immersion !== 'undefined' && Immersion.FP_PER_SEASON) ? Immersion.FP_PER_SEASON : 2;
+  const currentSeason = save.season || 2025;
 
-  return myDrivers.map(driver => `
+  // Construire les options junior pour le select
+  const juniorOptions = juniors.map(j => {
+    const sameYear  = (j.fpSeasonYear||0) === currentSeason;
+    const usedSess  = sameYear ? (j.fpSeasonCount||0) : 0;
+    const sessLeft  = Math.max(0, maxFP - usedSess);
+    const disabled  = sessLeft <= 0 ? 'disabled' : '';
+    const label     = `${j.flag} ${j.firstName} ${j.name} · Potentiel ${j.potential} · ${sessLeft}/${maxFP} EL restante${sessLeft!==1?'s':''}`;
+    return `<option value="${j.id}" ${disabled}>${label}</option>`;
+  }).join('');
+
+  const juniorBlock = juniors.length ? `
+    <div style="margin-bottom:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px">
+      <div style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--gold);margin-bottom:8px">🌱 JUNIOR EN ESSAIS LIBRES (max ${maxFP}/saison)</div>
+      <div style="font-family:var(--fh);font-size:11px;color:var(--muted);margin-bottom:8px">
+        Sélectionne un junior promouvable pour qu'il conduise à la place d'un de tes titulaires lors de cette session.
+      </div>
+      <div class="select-row" style="margin-bottom:6px">
+        <span class="lbl">Junior</span>
+        <select class="sel" id="fp-junior-select">
+          <option value="">— Aucun (titulaires uniquement) —</option>
+          ${juniorOptions}
+        </select>
+      </div>
+      <div id="fp-junior-replace-row" style="display:none">
+        <div class="select-row">
+          <span class="lbl">Remplace</span>
+          <select class="sel" id="fp-junior-replace">
+            ${myDrivers.map(d => `<option value="${d.id}">${d.firstName} ${d.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  return juniorBlock + myDrivers.map(driver => `
     <div class="fp-card" id="fp-card-${driver.id}">
       <div class="fp-title">${driver.firstName} ${driver.name}</div>
       <div class="fp-driver">${F1Data.teams.find(t=>t.id===driver.teamId)?.name || '—'}</div>
@@ -607,6 +658,14 @@ function buildFPConfig() {
     </div>
   `;
 }
+
+// Afficher/cacher le select "remplacer par" selon si un junior est choisi
+document.addEventListener('change', function(e){
+  if(e.target && e.target.id === 'fp-junior-select'){
+    const row = document.getElementById('fp-junior-replace-row');
+    if(row) row.style.display = e.target.value ? 'block' : 'none';
+  }
+});
 
 function buildFPResults(results) {
   return results.map(r => {
@@ -658,7 +717,36 @@ function runFP() {
 
   const sessionResults = [];
 
+  // Vérifier si un junior est sélectionné pour cette session
+  const juniorId      = document.getElementById('fp-junior-select')?.value || '';
+  const replaceId     = document.getElementById('fp-junior-replace')?.value || '';
+  let juniorResult    = null;
+
+  if(juniorId && replaceId){
+    // Lancer la session junior via Immersion (limite 2/saison vérifiée là-bas)
+    const sessionName = ['fp1','fp2','fp3'][save.weekendFPDone] || 'fp1';
+    juniorResult = (typeof Immersion !== 'undefined') ? Immersion.juniorFP(save, juniorId, sessionName) : null;
+    if(juniorResult && !juniorResult.ok){
+      toast(`⚠️ ${juniorResult.msg}`, true);
+      return;
+    }
+    if(juniorResult?.ok){
+      // Afficher une notification de résultat junior
+      const notif = document.createElement('div');
+      notif.style.cssText='position:fixed;bottom:60px;right:16px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:10px 14px;font-family:var(--fh);font-size:13px;z-index:200;max-width:300px';
+      const crash = juniorResult.crash;
+      notif.textContent = crash
+        ? `💥 Junior — Crash en piste ! Quota restant : ${juniorResult.sessionsLeft}/saison`
+        : `🌱 Junior — ${juniorResult.timeStr} vs leader · ${juniorResult.sessionsLeft} session${juniorResult.sessionsLeft!==1?'s':''} EL restante${juniorResult.sessionsLeft!==1?'s':''}`;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 4000);
+    }
+  }
+
+  // Sessions des titulaires (ou du titulaire non remplacé)
   myDrivers.forEach(driver => {
+    // Si ce pilote est remplacé par le junior, on saute sa session normale
+    if(juniorId && replaceId === driver.id) return;
     const compound = document.getElementById(`fp-compound-${driver.id}`)?.value || 'MEDIUM';
     const program  = document.getElementById(`fp-program-${driver.id}`)?.value  || 'quali_sim';
     const result   = Weekend.simulateFP(save, circuit, driver, compound, program, setup);
@@ -670,7 +758,10 @@ function runFP() {
   save.weekendFPDone    = (save.weekendFPDone || 0) + 1;
   Save.save(save);
 
-  toast(`✅ Séance EL${save.weekendFPDone} terminée !`);
+  const sessionLabel = juniorId && replaceId && juniorResult?.ok
+    ? `✅ Séance EL${save.weekendFPDone} terminée avec junior en piste !`
+    : `✅ Séance EL${save.weekendFPDone} terminée !`;
+  toast(sessionLabel);
 
   renderPhases();
   renderContent();

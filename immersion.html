@@ -97,59 +97,43 @@ function traitInfo(id){
   return (Immersion.JUNIOR_TRAITS||[]).find(t=>t.id===id)||{label:id,icon:'•',bonus:0};
 }
 function renderJuniorCard(j){
-  const isPromoted = j.promoted;
+  const isPromoted   = j.promoted;
   const isPromotable = j.promotable && !isPromoted;
-  const hasProfile = !!j.profile;
   const badgeCls = isPromoted ? 'f1' : isPromotable ? 'promotable' : (j.stage==='reserve'?'reserve':'');
   const badgeTxt = isPromoted ? '✅ F1' : isPromotable ? '⭐ Promouvable' : (j.stage==='reserve'?'🔵 Réserve':'⏳ Formation');
-  const cardCls = isPromoted ? 'promoted' : isPromotable ? 'promotable' : '';
+  const cardCls  = isPromoted ? 'promoted' : isPromotable ? 'promotable' : '';
 
-  let bodyHtml = '';
-  if(hasProfile && (isPromotable||isPromoted)){
-    const p = j.profile;
-    const stats = p.stats||{};
-    const statRows = [
-      ['PACE',stats.pace||'—'],['RÉGUL.',stats.consistency||'—'],
-      ['PLUIE',stats.wetSkill||'—'],['DÉPAS.',stats.overtaking||'—'],
-    ];
-    const traitHtml = (p.traits||[]).map(tid=>{
-      const t=traitInfo(tid);
-      const cls=t.bonus<0?'neg':'pos';
-      return `<span class="jr-trait ${cls}">${t.icon} ${esc(t.label)}</span>`;
-    }).join('');
-    const statsHtml = statRows.map(([l,v])=>`<div class="jr-stat"><div class="jr-stat-lbl">${l}</div><div class="jr-stat-val">${v}</div></div>`).join('');
+  // Compteur sessions EL saison courante
+  let actionsHtml = '';
+  if(isPromotable){
+    const currentSeason = save?.season || 2025;
+    const sameYear      = (j.fpSeasonYear||0) === currentSeason;
+    const usedSessions  = sameYear ? (j.fpSeasonCount||0) : 0;
+    const maxSessions   = (typeof Immersion !== 'undefined' && Immersion.FP_PER_SEASON) ? Immersion.FP_PER_SEASON : 2;
+    const sessLeft      = Math.max(0, maxSessions - usedSessions);
+    const sessLabel     = `${usedSessions}/${maxSessions} EL utilisée${usedSessions!==1?'s':''} cette saison`;
 
-    let actionsHtml = '';
-    if(isPromotable && !isPromoted){
-      const fps = j.fpSessions||0;
-      actionsHtml = `
-        <div class="jr-actions">
-          <button class="btn btn-sec" onclick="doFP('${j.id}','fp1')">🏎️ EL1 (${fps} session${fps!==1?'s':''})</button>
-          ${fps>=1?`<button class="btn btn-sec" onclick="doFP('${j.id}','fp2')">🏎️ EL2</button>`:''}
-          ${fps>=2?`<button class="btn btn-sec" onclick="doFP('${j.id}','rookie')">🌟 Rookie</button>`:''}
-          ${fps>=1?`<button class="btn btn-red" onclick="doPromote('${j.id}')">🏁 Promouvoir en F1</button>`:''}
-        </div>`;
-    }
-
-    bodyHtml = `<div class="jr-body">
-      <div class="jr-profile">${statsHtml}</div>
-      <div class="jr-traits">${traitHtml}</div>
-      ${actionsHtml}
+    actionsHtml = `<div class="jr-body">
+      <div style="font-family:var(--fh);font-size:11px;color:var(--muted);margin-bottom:8px">
+        🏎️ ${sessLabel} · Les sessions EL se font depuis la page <strong>Week-end</strong>.
+      </div>
+      <div class="jr-actions">
+        <button class="btn btn-red" onclick="doPromote('${j.id}')">🏁 Promouvoir en F1</button>
+      </div>
     </div>`;
   }
 
   return `<div class="jr-card ${cardCls}" id="jrcard_${j.id}">
-    <div class="jr-header" onclick="toggleJr('${j.id}')">
+    <div class="jr-header">
       <div class="jr-flag">${j.flag}</div>
       <div class="jr-main">
         <div class="jr-name">${esc(j.firstName)} ${esc(j.name)}</div>
         <div class="jr-meta">${j.age} ans · Potentiel ${j.potential} · ${esc(j.note||'')}</div>
       </div>
-      ${hasProfile?`<div class="jr-ovr">${j.profile.ovr}</div>`:''}
       <span class="jr-badge ${badgeCls}">${badgeTxt}</span>
     </div>
     <div class="jr-progress">${bar(isPromoted?100:j.progress, isPromotable||isPromoted?'green':'gold')}</div>
-    ${bodyHtml}
+    ${actionsHtml}
   </div>`;
 }
 
@@ -177,23 +161,7 @@ function toggleJr(id){
   if(body) body.style.display=body.style.display==='none'?'block':'none';
 }
 
-function doFP(juniorId, session){
-  const result = Immersion.juniorFP(save, juniorId, session);
-  if(!result.ok){ alert(result.msg); return; }
-  const msg = result.crash
-    ? `💥 Crash ! Expérience gagnée malgré tout.`
-    : `✅ Session terminée — ${result.timeStr} vs leader. Gains : +${result.gain} stats.`;
-  // Rafraîchir la section académie
-  save = Save.load();
-  Immersion.ensure(save);
-  document.getElementById('academyContent').innerHTML = renderAcademy(save.immersion);
-  // Notification
-  const notif = document.createElement('div');
-  notif.style.cssText='position:fixed;bottom:20px;right:16px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:10px 14px;font-family:var(--fh);font-size:13px;z-index:200;max-width:280px';
-  notif.textContent=msg;
-  document.body.appendChild(notif);
-  setTimeout(()=>notif.remove(),3500);
-}
+// doFP supprimé — les sessions EL se lancent depuis la page Weekend
 
 function doPromote(juniorId){
   const current = F1Data.drivers.filter(d=>d.teamId===save.playerTeamId && !d.retired);
