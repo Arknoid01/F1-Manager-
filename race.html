@@ -927,7 +927,7 @@ function initSel() {
 function startRace() {
   try {
   const cid = document.getElementById('circSel').value;
-  try { const s = Save.load(); if (s && typeof CareerEvents !== 'undefined') { const ev = CareerEvents.triggerPreRace(s); Save.save(s); if (ev) alert('Événement avant-course : '+ev.title+'\n'+ev.text); } } catch(e) { console.warn(e); }
+  // Événement pré-course géré sur weekend.html — supprimé ici
   if (!cid) { alert('Choisis un circuit !'); return; }
 
   console.log('[1] Telem');

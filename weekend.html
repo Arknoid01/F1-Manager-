@@ -78,6 +78,11 @@
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:6px;padding:10px 18px;font-family:var(--fh);font-size:13px;z-index:500;transition:transform .3s;white-space:nowrap}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.error{border-left-color:var(--accent)}
+.paddock-event{background:linear-gradient(135deg,#12000e,#0a0a14);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.paddock-event-kicker{font-family:var(--fh);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.paddock-event-title{font-family:var(--fh);font-weight:900;font-size:16px;margin-bottom:5px}
+.paddock-event-text{font-family:var(--fb);font-size:13px;color:#ccc;line-height:1.5}
+.paddock-event-effect{font-family:var(--fh);font-size:11px;margin-top:8px;padding:5px 8px;background:rgba(255,255,255,.05);border-radius:4px;border:1px solid var(--border)}
 
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
@@ -302,13 +307,18 @@ function init() {
 
   // Générer météo weekend si pas encore fait
   if (!save.weekendWeather || save.weekendCircuit !== circuit.id) {
-    save.weekendWeather  = Weekend.generateWeekendWeather(circuit);
-    save.weekendCircuit  = circuit.id;
-    save.weekendFPDone   = 0;  // nombre de séances EL faites
-    save.weekendQualiDone= false;
-    save.weekendSetup    = 'balanced';
-    save.qualiGrid       = null;
-    save.qualiStrategy   = {};
+    save.weekendWeather   = Weekend.generateWeekendWeather(circuit);
+    save.weekendCircuit   = circuit.id;
+    save.weekendFPDone    = 0;
+    save.weekendQualiDone = false;
+    save.weekendSetup     = 'balanced';
+    save.qualiGrid        = null;
+    save.qualiStrategy    = {};
+    // Générer l'événement pré-course paddock une seule fois par week-end
+    save.weekendPaddockEvent = null;
+    if (typeof CareerEvents !== 'undefined') {
+      try { save.weekendPaddockEvent = CareerEvents.triggerPreRace(save) || null; } catch(e) { console.warn(e); }
+    }
     Save.save(save);
   }
 
@@ -326,6 +336,45 @@ function init() {
 
   renderPhases();
   renderContent();
+}
+
+// ══════════════════════════════════════════════════════════
+//  CARTE ÉVÉNEMENT PADDOCK PRÉ-COURSE
+// ══════════════════════════════════════════════════════════
+function buildPaddockEventCard() {
+  const ev = save.weekendPaddockEvent;
+  if (!ev || !ev.title) return null;
+
+  // Couleur bordure selon catégorie
+  const positiveCategories = ['performance','financial','technical'];
+  const negativeCategories = ['medical','regulatory','mercato'];
+  const cat = ev.category || '';
+  const borderColor = positiveCategories.includes(cat) ? 'var(--green)' : negativeCategories.includes(cat) ? '#ff4444' : 'var(--gold)';
+  const icon = ev.icon || '📰';
+
+  // Label d'impact selon catégorie
+  const catLabels = {
+    medical:'Impact pilote', performance:'Boost performance', financial:'Impact budget',
+    technical:'Impact technique', regulatory:'Décision FIA', mercato:'Situation contrats',
+    competitor:'Rival en forme', board:'Signal direction', general:'Info paddock',
+  };
+  const catLabel = catLabels[cat] || 'Événement paddock';
+  const sign = positiveCategories.includes(cat) ? '▲' : negativeCategories.includes(cat) ? '▼' : '●';
+  const col  = positiveCategories.includes(cat) ? 'var(--green)' : negativeCategories.includes(cat) ? '#ff6666' : 'var(--muted)';
+
+  const el = document.createElement('div');
+  el.className = 'panel';
+  el.innerHTML = `
+    <div class="ph"><div class="dot" style="background:${borderColor}"></div>📰 Nouvelles du paddock</div>
+    <div class="content">
+      <div class="paddock-event" style="border-left-color:${borderColor}">
+        <div class="paddock-event-kicker">${icon} Avant le Grand Prix · ${circuit.name}</div>
+        <div class="paddock-event-title">${ev.title}</div>
+        <div class="paddock-event-text">${ev.text}</div>
+        <div class="paddock-event-effect" style="color:${col}">${sign} ${catLabel}</div>
+      </div>
+    </div>`;
+  return el;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -367,7 +416,11 @@ function renderContent() {
 
   // Flow immersif : uniquement des cartes de transition qui lisent les vraies données sauvegardées.
   // Elles ne modifient pas la simulation et ne décident jamais des résultats.
-  if (phase === 'fp' && (save.weekendFPDone || 0) === 0) content.appendChild(buildArrivalBriefing());
+  if (phase === 'fp' && (save.weekendFPDone || 0) === 0) {
+    content.appendChild(buildArrivalBriefing());
+    const pevCard = buildPaddockEventCard();
+    if (pevCard) content.appendChild(pevCard);
+  }
   if (phase === 'fp' && (save.weekendFPDone || 0) > 0) content.appendChild(buildFPDebriefCard());
   if (phase === 'quali') content.appendChild(buildPreQualiStoryCard());
   if (phase === 'race_briefing') content.appendChild(buildQualiStoryCard());
