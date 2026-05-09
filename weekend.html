@@ -720,13 +720,22 @@ function buildFPConfig() {
     </div>
   `).join('') + `
     <div style="margin-top:10px">
-      <div class="select-row" style="margin-bottom:8px">
+      <div class="select-row" style="margin-bottom:6px">
         <span class="lbl">Setup global</span>
-        <select class="sel" id="fp-setup">
+        <select class="sel" id="fp-setup" onchange="updateSetupHint(this.value)">
           ${Weekend.SETUP_OPTIONS.map(s =>
             `<option value="${s.id}" ${s.id===save.weekendSetup?'selected':''}>${s.label} — ${s.desc}</option>`
           ).join('')}
         </select>
+      </div>
+      <div id="setup-hint" style="font-family:var(--fh);font-size:11px;padding:6px 10px;border-radius:5px;margin-bottom:10px;${save.weekendSetup==='quali_mode'?'background:rgba(245,200,66,.08);color:var(--gold);border:1px solid rgba(245,200,66,.15)':save.weekendSetup==='race_mode'?'background:rgba(0,217,126,.08);color:var(--green);border:1px solid rgba(0,217,126,.15)':'background:var(--surface2);color:var(--muted);border:1px solid var(--border)'}">
+        ${({
+          balanced:   '⚖️ Neutre — aucun bonus ni malus en course.',
+          low_drag:   '💨 +vitesse ligne droite, -grip en virage. Circuits rapides (Monza, Baku).',
+          high_df:    '🔄 +grip en virage, -vitesse max. Circuits techniques (Monaco, Suzuka).',
+          quali_mode: '⚡ -0.08s/tour en course MAIS +12% dégradation pneus. Stratégie 1 arrêt risquée.',
+          race_mode:  '🏁 +0.05s/tour MAIS -10% dégradation. Idéal pour stratégie 2 arrêts ou pluie.',
+        })[save.weekendSetup] || '⚖️ Neutre — aucun bonus ni malus.'}
       </div>
       <button class="btn btn-red" onclick="runFP()">🚦 Lancer la séance</button>
     </div>
@@ -1233,6 +1242,24 @@ function toast(msg, isError=false) {
 }
 
 init();
+
+function updateSetupHint(val) {
+  const hints = {
+    balanced:   '⚖️ Neutre — aucun bonus ni malus en course.',
+    low_drag:   '💨 +vitesse ligne droite, -grip en virage. Circuits rapides (Monza, Baku).',
+    high_df:    '🔄 +grip en virage, -vitesse max. Circuits techniques (Monaco, Suzuka).',
+    quali_mode: '⚡ -0.08s/tour en course MAIS +12% dégradation pneus. Stratégie 1 arrêt risquée.',
+    race_mode:  '🏁 +0.05s/tour MAIS -10% dégradation. Idéal pour stratégie 2 arrêts ou pluie.',
+  };
+  const colors = {
+    quali_mode: 'background:rgba(245,200,66,.08);color:var(--gold);border:1px solid rgba(245,200,66,.15)',
+    race_mode:  'background:rgba(0,217,126,.08);color:var(--green);border:1px solid rgba(0,217,126,.15)',
+  };
+  const el = document.getElementById('setup-hint');
+  if (!el) return;
+  el.textContent = hints[val] || hints.balanced;
+  el.style.cssText = `font-family:var(--fh);font-size:11px;padding:6px 10px;border-radius:5px;margin-bottom:10px;${colors[val]||'background:var(--surface2);color:var(--muted);border:1px solid var(--border)'}`;
+}
 </script>
 
 <script>

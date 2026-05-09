@@ -267,10 +267,13 @@ function setFilter(cat) {
 }
 
 function renderNews() {
-  const news = (save.news||[]).filter(n => {
-    if (activeFilter === 'all') return true;
-    return (n.category||n.phase||'general') === activeFilter;
-  });
+  const news = (save.news||[])
+    .filter(n => {
+      if (activeFilter === 'all') return true;
+      return (n.category||n.phase||'general') === activeFilter;
+    })
+    .slice()
+    .reverse(); // Plus récent en premier
 
   document.getElementById('newsCount').textContent = `${news.length} article${news.length!==1?'s':''}`;
 
