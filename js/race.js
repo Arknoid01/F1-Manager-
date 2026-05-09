@@ -126,7 +126,7 @@ const Race = {
     if (typeof currentHumidity !== 'undefined') {
       const prevWeather = s.weather;
       if      (currentHumidity > 70) s.weather = 'heavy_rain';
-      else if (currentHumidity > 30) s.weather = 'light_rain';
+      else if (currentHumidity >= 30) s.weather = 'light_rain';
       else                            s.weather = 'dry';
 
       if (prevWeather !== s.weather) {
@@ -209,13 +209,13 @@ const Race = {
 
         let nextCompound = car.requestedCompound || car.strategy.compounds[car.currentCompoundIndex];
 
-        // Choix du pneu selon l'humidité réelle — immédiat et précis
-        if (!car.requestedCompound) {
+        // Choix du pneu météo seulement lors d'un vrai changement météo.
+        // Les arrêts planifiés gardent le composé demandé dans la stratégie (ex: Medium → Hard).
+        if (!car.requestedCompound && pitDecision.reason === 'weather_change') {
           const hum = typeof currentHumidity !== 'undefined' ? currentHumidity : 0;
-          if      (hum >= 70)  nextCompound = 'WET';
-          else if (hum >= 30)  nextCompound = 'INTER';
-          else if (hum >= 10)  nextCompound = 'INTER'; // piste encore humide
-          else                 nextCompound = 'MEDIUM'; // piste sèche
+          if      (hum >= 70) nextCompound = 'WET';
+          else if (hum >= 30) nextCompound = 'INTER';
+          else                nextCompound = 'MEDIUM';
         }
 
         car.pitStops.push({

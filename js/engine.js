@@ -189,8 +189,8 @@ const Engine = {
       const hum = currentHumidity;
       const compound = tyreState.compound;
 
-      // Piste sèche → pneus pluie = changer immédiatement
-      if (hum < 25 && ['INTER','WET'].includes(compound)) {
+      // Piste qui sèche → quitter les pneus pluie dès que les slicks redeviennent meilleurs
+      if (hum < 30 && ['INTER','WET'].includes(compound)) {
         return { pit: true, reason: 'weather_change' };
       }
       // Pluie légère → slicks = changer immédiatement
@@ -202,7 +202,7 @@ const Engine = {
         return { pit: true, reason: 'weather_change' };
       }
       // Pluie légère qui diminue → WET = changer vers INTER
-      if (hum >= 25 && hum < 50 && compound === 'WET') {
+      if (hum >= 30 && hum < 50 && compound === 'WET') {
         return { pit: true, reason: 'weather_change' };
       }
     } else {

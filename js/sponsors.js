@@ -837,11 +837,14 @@ const Sponsors = {
     if (sp.type === 'title' && titleCount >= 1) {
       return { ok:false, reason:'Déjà un title sponsor actif !' };
     }
+    if ((save.sponsors||[]).length >= 6) {
+      return { ok:false, reason:'Maximum 6 sponsors atteint !' };
+    }
     if (sp.type === 'principal' && principalCount >= 2) {
       return { ok:false, reason:'Maximum 2 principal sponsors atteint !' };
     }
-    if (sp.type === 'partner' && partnerCount >= 4) {
-      return { ok:false, reason:'Maximum 4 technical partners atteint !' };
+    if (sp.type === 'partner' && partnerCount >= 3) {
+      return { ok:false, reason:'Maximum 3 technical partners atteint !' };
     }
 
     // Vérifier exclusivité
