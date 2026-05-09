@@ -321,16 +321,23 @@ function init() {
 
   // Générer l'événement paddock une seule fois par GP
   if (!save[evKey]) {
+    console.log('[PaddockEvent] Génération pour', evKey);
     try {
-      save.weekendPaddockEvent = (typeof CareerEvents !== 'undefined')
-        ? CareerEvents.triggerPreRace(save) || null
-        : null;
+      if (typeof CareerEvents === 'undefined') {
+        console.warn('[PaddockEvent] CareerEvents non défini !');
+        save.weekendPaddockEvent = null;
+      } else {
+        save.weekendPaddockEvent = CareerEvents.triggerPreRace(save) || null;
+        console.log('[PaddockEvent] Résultat:', save.weekendPaddockEvent);
+      }
     } catch(e) {
       save.weekendPaddockEvent = null;
-      console.warn(e);
+      console.error('[PaddockEvent] Erreur:', e);
     }
     save[evKey] = true;
     Save.save(save);
+  } else {
+    console.log('[PaddockEvent] Déjà généré pour', evKey, '→', save.weekendPaddockEvent?.title || 'null');
   }
 
   // Restaurer état weekend
