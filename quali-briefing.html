@@ -156,6 +156,31 @@ function render(){
       </div>
     </div>`:''}
 
+    <!-- EFFETS PILOTES ACTIFS -->
+    ${myDrivers.some(d=>save.driverEffects?.[d.id]) ? `
+    <div class="section">
+      <div class="section-title">&#9889; Effets actifs ce week-end</div>
+      ${myDrivers.filter(d=>save.driverEffects?.[d.id]).map(d=>{
+        const e = save.driverEffects[d.id];
+        const pos = (e.pace||0)+(e.consistency||0) > 0;
+        const col = pos ? 'var(--green)' : 'var(--accent)';
+        return '<div class="anecdote" style="border-left:3px solid '+col+';margin-bottom:6px"><strong style="color:'+col+'">'+(pos?'&#128170;':'&#129291;')+' '+esc(d.firstName)+' '+esc(d.name)+'</strong> &mdash; '+esc(e.label||'Effet actif')+' &middot; Pace '+(e.pace>=0?'+':'')+(e.pace||0)+'</div>';
+      }).join('')}
+    </div>` : ''}
+
+    <!-- MORAL PILOTES -->
+    <div class="section">
+      <div class="section-title">&#128149; Moral de l'equipe</div>
+      <div class="track-analysis">
+        ${myDrivers.map(d => {
+          const moral = save.morale?.[d.id] ?? 70;
+          const col   = moral>=70?'var(--green)':moral>=40?'var(--gold)':'var(--accent)';
+          const lbl   = moral>=70?'En forme':''+moral>=40?'Correct':'Bas';
+          return '<div class="ta-row"><span>'+esc(d.firstName)+' '+esc(d.name)+'</span><div style="display:flex;align-items:center;gap:8px"><div class="bar-wrap"><div class="bar-fill" style="width:'+moral+'%;background:'+col+'"></div></div><b style="color:'+col+'">'+moral+'</b></div></div>';
+        }).join('')}
+      </div>
+    </div>
+
     <div class="section">
       <div class="section-title">&#128161; ${esc(circuit.name)} en qualifications</div>
       <div class="anecdote">${anecdote}</div>

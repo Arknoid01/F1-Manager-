@@ -241,6 +241,30 @@ function render(){
       `).join('')}
     </div>
 
+    <!-- ÉTAT VOITURE + MORAL -->
+    <div class="section">
+      <div class="section-title">&#128295; Voiture &amp; Pilotes — Dimanche</div>
+      <div class="stakes-card">
+        ${myDrivers.map(d => {
+          const moral   = save.morale?.[d.id] ?? 70;
+          const effect  = save.driverEffects?.[d.id];
+          const effPos  = effect && (effect.pace||0)+(effect.consistency||0) > 0;
+          const moralCol= moral>=70?'var(--green)':moral>=40?'var(--gold)':'var(--accent)';
+          return '<div class="stake-row"><div class="stake-icon">'+(d.flag||'&#127937;')+'</div><div class="stake-text"><strong>'+esc(d.firstName)+' '+esc(d.name)+'</strong> &middot; OVR '+( d.ovr||d.pace||75)+' &middot; Moral <span style="color:'+moralCol+'">'+moral+'/100</span>'+(effect?' &middot; <span style="color:'+(effPos?'var(--green)':'var(--accent)')+'">'+esc(effect.label||'Effet actif')+'</span>':'')+'</div></div>';
+        }).join('')}
+        ${['aero','chassis','engine','reliability'].map(stat => {
+          const base  = F1Data.teams.find(t=>t.id===save.playerTeamId)?.[stat]||70;
+          const level = save.carDev?.[stat]?.level||base;
+          const delta = level-base;
+          const col   = delta>0?'var(--green)':delta<0?'var(--accent)':'var(--muted)';
+          const lbl   = {aero:'Aéro',chassis:'Châssis',engine:'Moteur',reliability:'Fiabilité'}[stat];
+          return '<div class="stake-row"><div class="stake-icon">&#9881;&#65039;</div><div class="stake-text"><strong>'+lbl+'</strong> &middot; '+level+' <span style="color:'+col+'">'+(delta>=0?'+':'')+delta+'</span></div></div>';
+        }).join('')}
+        <div class="stake-row"><div class="stake-icon">&#9881;&#65039;</div><div class="stake-text"><strong>Setup</strong> &middot; ${{qualify:'&#9889; Qualifications',race:'&#127937; Course',balanced:'&#9878;&#65039; Equilibre'}[save.weekendSetup||'balanced']}</div></div>
+        <div class="stake-row"><div class="stake-icon">&#128176;</div><div class="stake-text"><strong>Budget restant</strong> &middot; ${Math.round((save.budget||0)*10)/10}M€</div></div>
+      </div>
+    </div>
+
     <div class="section">
       <div class="section-title">&#127917; Team Principal</div>
       <div class="tp-quote">

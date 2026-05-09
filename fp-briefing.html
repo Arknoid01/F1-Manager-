@@ -294,6 +294,30 @@ function render(){
       </div>
     </div>
 
+    <!-- VOITURE -->
+    <div class="section">
+      <div class="section-title">🔧 État de la voiture</div>
+      <div class="history-card">
+        ${['aero','chassis','engine','reliability'].map(stat => {
+          const base  = myTeam?.[stat] || 70;
+          const level = save.carDev?.[stat]?.level || base;
+          const delta = level - base;
+          const col   = delta>0?'var(--green)':delta<0?'var(--accent)':'var(--muted)';
+          const label = {aero:'Aérodynamique',chassis:'Châssis',engine:'Moteur',reliability:'Fiabilité'}[stat];
+          const bar   = Math.round((level/100)*100);
+          return `<div class="hc-stat">
+            <span>${label}</span>
+            <b style="color:${col}">${level} ${delta!==0?`<span style="font-size:10px">(${delta>0?'+':''}${delta})</span>`:''}</b>
+          </div>`;
+        }).join('')}
+        <div class="hc-stat"><span>Setup semaine</span>
+          <b style="color:${save.weekendSetup==='qualify'?'var(--gold)':save.weekendSetup==='race'?'var(--green)':'var(--muted)'}">${
+            {qualify:'⚡ Qualifications',race:'🏁 Course',balanced:'⚖️ Équilibré'}[save.weekendSetup]||'⚖️ Équilibré'
+          }</b>
+        </div>
+      </div>
+    </div>
+
     <!-- HISTORIQUE CIRCUIT -->
     <div class="section">
       <div class="section-title">📈 Historique sur ce circuit</div>
@@ -335,7 +359,7 @@ function render(){
       `).join('')}
     </div>
 
-    <!-- CLASSEMENT CONSTRUCTEURS -->
+    <!-- CLASSEMENTS -->
     <div class="section">
       <div class="section-title">🏆 Championnat constructeurs</div>
       <div class="history-card" style="padding:8px 14px">
@@ -350,6 +374,46 @@ function render(){
         </table>
       </div>
     </div>
+
+    <div class="section">
+      <div class="section-title">🏎️ Championnat pilotes (Top 8)</div>
+      <div class="history-card" style="padding:8px 14px">
+        <table class="standings-table">
+          ${getDriverStandings(save).map((d,i)=>`
+            <tr class="${d.teamId===save.playerTeamId?'me':''}">
+              <td class="pos">${i+1}</td>
+              <td>${esc(d.name)}</td>
+              <td class="pts">${d.pts}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>
+    </div>
+
+    <!-- ÉVÉNEMENT PADDOCK -->
+    ${save.weekendPaddockEvent ? `
+    <div class="section">
+      <div class="section-title">📰 Nouvelle du paddock</div>
+      <div class="anecdote" style="border-left:3px solid ${['performance','financial'].includes(save.weekendPaddockEvent.category)?'var(--green)':['medical','regulatory'].includes(save.weekendPaddockEvent.category)?'var(--accent)':'var(--gold)'}">
+        <strong>${save.weekendPaddockEvent.icon||'📰'} ${esc(save.weekendPaddockEvent.title)} — </strong>${esc(save.weekendPaddockEvent.text)}
+      </div>
+    </div>` : ''}
+
+    <!-- EFFETS PILOTES ACTIFS -->
+    ${myDrivers.some(d=>save.driverEffects?.[d.id]) ? `
+    <div class="section">
+      <div class="section-title">⚡ Effets actifs sur les pilotes</div>
+      ${myDrivers.filter(d=>save.driverEffects?.[d.id]).map(d=>{
+        const e = save.driverEffects[d.id];
+        const pos = (e.pace||0)+(e.consistency||0) > 0;
+        const col = pos ? 'var(--green)' : 'var(--accent)';
+        return `<div class="anecdote" style="border-left:3px solid ${col};margin-bottom:6px">
+          <strong style="color:${col}">${pos?'💪':'🤕'} ${esc(d.firstName)} ${esc(d.name)}</strong> — ${esc(e.label||'Effet actif')}
+          · Pace ${e.pace>=0?'+':''}${e.pace||0} · Régularité ${e.consistency>=0?'+':''}${e.consistency||0}
+          · ${e.races||1} course${(e.races||1)>1?'s':''} restante${(e.races||1)>1?'s':''}
+        </div>`;
+      }).join('')}
+    </div>` : ''}
 
     <!-- ANECDOTE -->
     <div class="section">
