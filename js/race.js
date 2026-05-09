@@ -185,16 +185,37 @@ const Race = {
         car.tyre, lap, s.totalLaps, car.strategy, someoneJustPitted, s.weather, s.safetyCar.active
       );
 
-      // Pour le joueur : respecter strictement le nombre d'arrêts prévu
-      // sauf urgence absolue (pneus < 8%) ou changement météo
-      if (isPlayerCar && pitsDone >= maxPits && pitDecision.pit) {
-        if (pitDecision.reason !== 'weather_change' && car.tyre.condition > 0.08) {
-          pitDecision = { pit: false }; // bloquer le pit non prévu
+      // Pour le joueur : respecter strictement la stratégie choisie en course sèche.
+      // Les arrêts opportunistes sont limités pour éviter que le moteur transforme
+      // une stratégie MEDIUM -> HARD en arrêts anticipés non désirés.
+      if (isPlayerCar && pitDecision.pit) {
+        const remainingPitLaps = Array.isArray(car.strategy?.pitLaps) ? car.strategy.pitLaps : [];
+        const nextPlannedPit = remainingPitLaps.find(pl => pl >= lap - 1);
+        const closeToPlan = Number.isFinite(nextPlannedPit) && Math.abs(nextPlannedPit - lap) <= 1;
+
+        if (pitDecision.reason === 'undercut') {
+          pitDecision = { pit: false };
+        } else if (pitDecision.reason === 'safety_car_opportunity' && !closeToPlan) {
+          pitDecision = { pit: false };
+        } else if (pitDecision.reason === 'tyre_dead') {
+          // Ne pas casser la stratégie pour une usure simplement basse :
+          // on force seulement si le pneu est vraiment critique, ou si le pit prévu
+          // arrive quasiment maintenant.
+          const criticalTyre = car.tyre.condition < 0.06;
+          if (!criticalTyre && !closeToPlan) pitDecision = { pit: false };
+        } else {
+          const allowedReasons = ['planned','safety_car_opportunity','weather_change','team_order'];
+          if (!allowedReasons.includes(pitDecision.reason)) pitDecision = { pit: false };
+        }
+
+        if (pitDecision.pit && pitsDone >= maxPits && pitDecision.reason !== 'weather_change' && car.tyre.condition > 0.06) {
+          pitDecision = { pit: false };
         }
       }
 
       if (car.forcePit) pitDecision = { pit: true, reason: 'team_order' };
-      if (car.autoPitSafetyCar && s.safetyCar.active && !pitDecision.pit && car.strategy?.pitLaps?.some(pl => Math.abs(pl - lap) <= 4)) {
+      const scWindow = isPlayerCar ? 1 : 3;
+      if (car.autoPitSafetyCar && s.safetyCar.active && !pitDecision.pit && car.strategy?.pitLaps?.some(pl => Math.abs(pl - lap) <= scWindow)) {
         pitDecision = { pit: true, reason: 'safety_car_opportunity' };
       }
 
@@ -202,20 +223,36 @@ const Race = {
         car.pitThisLap = true;
         someoneJustPitted = true;
 
-        car.currentCompoundIndex = Math.min(
-          car.currentCompoundIndex + 1,
-          car.strategy.compounds.length - 1
-        );
+        const isWeatherPit = pitDecision.reason === 'weather_change';
+        const isStrategicPit = !isWeatherPit;
 
-        let nextCompound = car.requestedCompound || car.strategy.compounds[car.currentCompoundIndex];
+        // Les arrêts météo ne consomment plus l'étape de stratégie sèche.
+        // Exemple : stratégie MEDIUM -> HARD, pluie entre-temps : MEDIUM -> WET -> INTER,
+        // puis retour au plan sec sans sauter l'étape HARD.
+        let targetStrategyIndex = car.currentCompoundIndex;
+        if (isStrategicPit) {
+          targetStrategyIndex = Math.min(car.currentCompoundIndex + 1, car.strategy.compounds.length - 1);
+          car.currentCompoundIndex = targetStrategyIndex;
+        }
 
-        // Choix du pneu météo seulement lors d'un vrai changement météo.
-        // Les arrêts planifiés gardent le composé demandé dans la stratégie (ex: Medium → Hard).
-        if (!car.requestedCompound && pitDecision.reason === 'weather_change') {
+        let nextCompound = car.requestedCompound || car.strategy.compounds[targetStrategyIndex];
+
+        // Pneu météo prioritaire uniquement quand les conditions l'imposent vraiment.
+        // Sinon, on respecte le composé prévu par la stratégie.
+        if (!car.requestedCompound) {
           const hum = typeof currentHumidity !== 'undefined' ? currentHumidity : 0;
-          if      (hum >= 70) nextCompound = 'WET';
-          else if (hum >= 30) nextCompound = 'INTER';
-          else                nextCompound = 'MEDIUM';
+          if (hum >= 70) {
+            nextCompound = 'WET';
+          } else if (hum >= 32) {
+            nextCompound = 'INTER';
+          } else if (isWeatherPit && ['INTER','WET'].includes(car.tyre.compound)) {
+            // Retour au sec : reprendre le prochain pneu prévu par la stratégie.
+            const nextPlannedLap = car.strategy?.pitLaps?.find(pl => pl >= lap - 2);
+            if (nextPlannedLap && lap >= nextPlannedLap - 2) {
+              car.currentCompoundIndex = Math.min(car.currentCompoundIndex + 1, car.strategy.compounds.length - 1);
+            }
+            nextCompound = car.strategy.compounds[car.currentCompoundIndex] || 'MEDIUM';
+          }
         }
 
         car.pitStops.push({
@@ -285,10 +322,24 @@ const Race = {
           car.strategy.pitLaps = car.strategy.pitLaps.filter(pl => pl > lap + 5);
         }
 
+        const pitReasonMessages = {
+          planned: 'arrêt planifié selon la stratégie',
+          undercut: 'on couvre l’undercut d’un rival',
+          safety_car_opportunity: 'opportunité sous Safety Car : perte de temps réduite',
+          weather_change: 'changement météo : pneu adapté aux conditions',
+          tyre_dead: 'pneus critiques : arrêt de sécurité',
+          team_order: 'consigne du muret : arrêt demandé',
+        };
+        const pitReasonText = pitReasonMessages[pitDecision.reason] || 'ajustement stratégique';
+
         lapEvents.push({
           lap,
           type:    'pit',
-          message: `🔧 ${car.driver.name} — Pit stop → ${F1Data.tyres[nextCompound].name}${pitDecision.reason === 'safety_car_opportunity' ? ' sous Safety Car' : ''}`,
+          reason:  pitDecision.reason,
+          driverId: car.driver.id,
+          teamId:   car.driver.teamId,
+          compound: nextCompound,
+          message: `🔧 ${car.driver.name} — Pit stop → ${F1Data.tyres[nextCompound].name} (${pitReasonText})`,
         });
       }
 

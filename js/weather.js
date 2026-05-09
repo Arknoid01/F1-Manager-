@@ -134,9 +134,10 @@ const Weather = {
     const isInter  = compound === 'INTER';
     const isWet    = compound === 'WET';
 
-    // Urgence absolue : slick sur piste très mouillée
-    if (isSlick && humidity > 60) return { pit: true, compound: 'INTER', reason: 'emergency' };
-    if (isSlick && humidity > 80) return { pit: true, compound: 'WET',   reason: 'emergency' };
+    // Urgence absolue : slick sur piste très mouillée.
+    // Important : tester le WET avant l'INTER, sinon une piste à 80%+ repasse en INTER.
+    if (isSlick && humidity >= 70) return { pit: true, compound: 'WET',   reason: 'emergency' };
+    if (isSlick && humidity > 30)  return { pit: true, compound: 'INTER', reason: 'emergency' };
 
     // Séchage : inter sur piste qui sèche
     if (isInter && humidity < 25) {

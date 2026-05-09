@@ -67,7 +67,7 @@ const F1Data = {
     // Racing Bulls — Lawson + Hadjar (après swap Tsunoda→Red Bull)
     { id:'racingbulls', name:'Racing Bulls',    shortName:'RCB', color:'#6692FF', accentColor:'#FFD700', budget:88, performance:72, reliability:77, aero:71, chassis:73, engine:85, isPlayer:false },
     // Cadillac — 11ème équipe 2026, Pérez + Bottas
-    { id:'cadillac',    name:'Cadillac',        shortName:'CAD', color:'#1A1A1A', accentColor:'#FFFFFF', budget:115, performance:55, reliability:65, aero:54, chassis:56, engine:82, isPlayer:false },
+    { id:'cadillac',    name:'Cadillac',        shortName:'CAD', color:'#6F6F78', accentColor:'#FFFFFF', budget:115, performance:55, reliability:65, aero:54, chassis:56, engine:82, isPlayer:false },
   ],
 
   // ── PILOTES 2025-2026 ────────────────────────────────────

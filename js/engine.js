@@ -183,26 +183,28 @@ const Engine = {
   shouldPit(tyreState, lap, totalLaps, strategy, someoneJustPitted=false, weather='dry', safetyCarActive=false) {
     if (tyreState.condition < 0.12) return { pit: true, reason: 'tyre_dead' };
 
-    // Changement météo — réaction immédiate basée sur l'humidité réelle
-    // Pas besoin d'attendre le prochain tour pour détecter le bon pneu
+    // Changement météo — réaction basée sur l'humidité réelle.
+    // Important : on utilise des seuils avec marge pour éviter que la météo
+    // écrase trop souvent la stratégie programmée.
     if (typeof currentHumidity !== 'undefined') {
       const hum = currentHumidity;
       const compound = tyreState.compound;
+      const isSlick = ['SOFT','MEDIUM','HARD'].includes(compound);
 
-      // Piste qui sèche → quitter les pneus pluie dès que les slicks redeviennent meilleurs
-      if (hum < 30 && ['INTER','WET'].includes(compound)) {
+      // Piste vraiment sèche : quitter INTER/WET seulement quand les slicks sont clairement viables.
+      if (hum < 25 && ['INTER','WET'].includes(compound)) {
         return { pit: true, reason: 'weather_change' };
       }
-      // Pluie légère → slicks = changer immédiatement
-      if (hum >= 30 && hum < 70 && ['SOFT','MEDIUM','HARD'].includes(compound)) {
+      // Piste humide : un slick devient dangereux, donc arrêt météo prioritaire.
+      if (hum >= 32 && hum < 70 && isSlick) {
         return { pit: true, reason: 'weather_change' };
       }
-      // Pluie forte → inter = changer immédiatement
-      if (hum >= 70 && compound === 'INTER') {
+      // Forte pluie : passer en WET si on n'y est pas déjà.
+      if (hum >= 70 && compound !== 'WET') {
         return { pit: true, reason: 'weather_change' };
       }
-      // Pluie légère qui diminue → WET = changer vers INTER
-      if (hum >= 30 && hum < 50 && compound === 'WET') {
+      // La pluie baisse : WET -> INTER seulement quand le niveau est clairement sous la zone WET.
+      if (hum >= 30 && hum < 55 && compound === 'WET') {
         return { pit: true, reason: 'weather_change' };
       }
     } else {
