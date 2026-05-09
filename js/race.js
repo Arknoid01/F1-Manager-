@@ -216,6 +216,20 @@ const Race = {
         }
       }
 
+      // Sécurité douce IA : si une IA rate son arrêt prévu, on la ramène
+      // dans une stratégie normale avant que les pneus soient complètement morts.
+      // Ça évite les arrêts de sécurité tardifs causés par une fenêtre stratégique manquée.
+      if (!isPlayerCar && !pitDecision.pit && pitsDone < maxPits) {
+        const nextPlannedPit = Array.isArray(car.strategy?.pitLaps) ? car.strategy.pitLaps[pitsDone] : null;
+        const missedPlannedWindow = Number.isFinite(nextPlannedPit) && lap >= nextPlannedPit + 2;
+        const wornButNotDead = car.tyre.condition > 0.12 && car.tyre.condition <= 0.40;
+        const enoughLapsLeft = lap < s.totalLaps - 4;
+        const dryOrSlickPhase = (typeof currentHumidity === 'undefined') || currentHumidity < 32 || ['SOFT','MEDIUM','HARD'].includes(car.tyre.compound);
+        if (missedPlannedWindow && wornButNotDead && enoughLapsLeft && dryOrSlickPhase) {
+          pitDecision = { pit: true, reason: 'delayed_strategy' };
+        }
+      }
+
       if (car.forcePit) pitDecision = { pit: true, reason: 'team_order' };
       const scWindow = isPlayerCar ? 1 : 3;
       if (car.autoPitSafetyCar && s.safetyCar.active && !pitDecision.pit && car.strategy?.pitLaps?.some(pl => Math.abs(pl - lap) <= scWindow)) {
