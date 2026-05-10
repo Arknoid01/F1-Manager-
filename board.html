@@ -328,47 +328,60 @@ function renderPressure() {
 }
 
 function renderObjectives() {
-  const obj  = save.boardObjectives || getCareerEventsSafe().generateObjectives(save);
-  const eval_= getCareerEventsSafe().evaluateObjectives(save);
+  const ce   = getCareerEventsSafe();
+  const obj  = save.boardObjectives || ce.generateObjectives(save);
+  const eval_= ce.evaluateObjectives(save);
   const list = document.getElementById('objectivesList');
 
   document.getElementById('objScore').textContent = `Score : ${eval_.score}/100`;
+
+  const seasonFinished = !!eval_.seasonFinished;
+  const racesDone = Number(eval_.racesDone || 0);
+  const currentBudgetTarget = Number.isFinite(Number(obj.budgetSurplus)) ? Number(obj.budgetSurplus) : (eval_.budgetTarget || 50);
+
+  function objectiveStatus(ok, finalOnly=false) {
+    // Les objectifs de classement ne doivent pas être affichés "ratés" au milieu de la saison.
+    if (ok === true) return true;
+    if (finalOnly && !seasonFinished) return null;
+    if (!seasonFinished && ok === false) return null;
+    return ok;
+  }
 
   const items = [
     {
       icon: '🏗️',
       label: `Championnat constructeurs`,
       desc:  `Objectif : P${obj.constructorPos} ou mieux`,
-      detail: eval_.constPos ? `Actuellement P${eval_.constPos}` : 'Pas encore de données',
-      ok:    eval_.details[0]?.ok,
+      detail: eval_.constPos ? `Actuellement P${eval_.constPos}` : 'Pas encore de données cette saison',
+      ok:    objectiveStatus(eval_.details[0]?.ok, true),
     },
     {
       icon: '👤',
       label: `Championnat pilotes`,
       desc:  `Objectif : Avoir un pilote dans le top ${obj.driverPos}`,
-      detail: eval_.driverPos ? `Meilleur pilote P${eval_.driverPos}` : 'Pas encore de données',
-      ok:    eval_.details[1]?.ok,
+      detail: eval_.driverPos ? `Meilleur pilote P${eval_.driverPos}` : 'Pas encore de données cette saison',
+      ok:    objectiveStatus(eval_.details[1]?.ok, true),
     },
     {
       icon: '🏁',
       label: `Courses avec points`,
       desc:  `Objectif : ${obj.minPointsRaces} courses avec au moins 1 point`,
-      detail: `${(save.raceResults||[]).filter(r=>(r.results||[]).filter(x=>x.teamId===save.playerTeamId).reduce((s,x)=>s+(x.points||0),0)>0).length} courses avec points`,
-      ok:    eval_.details[2]?.ok,
+      detail: `${eval_.racesWithPoints || 0} / ${obj.minPointsRaces} courses avec points${racesDone ? ` · ${racesDone} GP disputé${racesDone>1?'s':''}` : ''}`,
+      ok:    objectiveStatus(eval_.details[2]?.ok, false),
     },
     {
       icon: '💰',
       label: `Santé financière`,
-      desc:  `Maintenir un budget supérieur à 50M€`,
+      desc:  `Maintenir un budget supérieur à ${currentBudgetTarget}M€`,
       detail: `Budget actuel : ${Math.round((save.budget||0)*10)/10}M€`,
-      ok:    eval_.details[3]?.ok,
+      ok:    objectiveStatus(eval_.details[3]?.ok, false),
     },
     {
       icon: '⭐',
       label: `Réputation équipe`,
       desc:  `Maintenir une réputation supérieure à 40`,
       detail: `Réputation : ${save.reputation||50}/100`,
-      ok:    (save.reputation||50) >= 40,
+      ok:    objectiveStatus((save.reputation||50) >= 40, false),
     },
   ];
 
