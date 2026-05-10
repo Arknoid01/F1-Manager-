@@ -199,7 +199,7 @@ const Engine = {
 
   // ── DÉCISION PIT STOP ─────────────────────────────────────
   shouldPit(tyreState, lap, totalLaps, strategy, someoneJustPitted=false, weather='dry', safetyCarActive=false) {
-    if (tyreState.condition < 0.12) return { pit: true, reason: 'tyre_dead' };
+    if (tyreState.condition < 0.22) return { pit: true, reason: 'tyre_dead' };
 
     // Changement météo — réaction basée sur l'humidité réelle.
     // Important : on utilise des seuils avec marge pour éviter que la météo
