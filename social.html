@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700&family=Barlow:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#07070d">
+<link rel="stylesheet" href="css/immersive-theme.css?v=20260508f">
+<title>Social — F1 Manager</title>
+<style>
+*{box-sizing:border-box}
+.wrap{max-width:680px;margin:0 auto;padding:0 14px 40px}
+
+/* Cartes pilote */
+.driver-social{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;position:relative;overflow:hidden}
+.driver-social::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.ds-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ds-flag{font-size:24px}
+.ds-info{flex:1}
+.ds-name{font-family:var(--fh);font-weight:900;font-size:17px}
+.ds-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.ds-number{font-family:var(--fh);font-weight:900;font-size:28px;color:var(--border)}
+
+/* Jauges */
+.gauges{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.gauge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center}
+.gauge .g-val{font-family:var(--fh);font-weight:900;font-size:20px}
+.gauge .g-lbl{font-family:var(--fh);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px}
+.gauge .g-bar{height:4px;border-radius:2px;margin-top:4px;overflow:hidden;background:rgba(255,255,255,.08)}
+.gauge .g-fill{height:100%;border-radius:2px;transition:width .4s}
+
+/* Messages en attente */
+.pending-badge{position:absolute;top:14px;right:14px;background:var(--accent);color:#fff;font-family:var(--fh);font-size:10px;font-weight:900;padding:3px 8px;border-radius:10px}
+
+/* Événements de discussion */
+.discussion-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.dc-trigger{font-family:var(--fh);font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:6px}
+.dc-text{font-size:13px;color:#ddd;line-height:1.5;margin-bottom:10px}
+.dc-choices{display:flex;flex-direction:column;gap:6px}
+.dc-choice{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;cursor:pointer;font-family:var(--fh);font-size:12px;display:flex;justify-content:space-between;align-items:center;transition:all .15s}
+.dc-choice:active{opacity:.7}
+.dc-choice .cc-text{flex:1}
+.dc-choice .cc-effect{font-size:10px;color:var(--muted);flex-shrink:0;margin-left:8px}
+.dc-choice.positive{border-color:rgba(0,217,126,.3)}
+.dc-choice.negative{border-color:rgba(232,0,61,.3)}
+.dc-choice.neutral{border-color:rgba(245,200,66,.2)}
+
+/* Historique */
+.history-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.history-item:last-child{border:none}
+.hi-icon{font-size:16px;flex-shrink:0;margin-top:2px}
+.hi-text{font-size:12px;color:var(--muted);line-height:1.4}
+.hi-date{font-family:var(--fh);font-size:10px;color:rgba(255,255,255,.2);margin-top:2px}
+
+/* Toast */
+.toast-social{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:10px 16px;font-family:var(--fh);font-size:13px;z-index:300;white-space:nowrap;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast-social.show{opacity:1}
+
+/* Section titre */
+.section{margin:14px 0}
+.section-title{font-family:var(--fh);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Atmosphère équipe */
+.team-atmo{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+.ta-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-family:var(--fh);font-size:13px}
+.ta-row:last-child{border:none}
+.ta-row span{color:var(--muted);font-size:11px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span style="color:#ffffff !important">Manager</span></span>
+  <a href="index.html" class="nav-back">← Accueil</a>
+  <div class="top-pills" id="topPills"></div>
+</div>
+
+<div class="wrap">
+  <div id="content"></div>
+</div>
+
+<div class="toast-social" id="toastSocial"></div>
+
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script src="js/theme.js"></script>
+<script>
+let save = Save.load();
+
+// ── SYSTÈME DE DISCUSSION ─────────────────────────────────
+
+// Générateur d'événements de discussion selon le contexte
+function generateSocialEvents(save) {
+  const events = [];
+  const drivers = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
+  const lastGP  = save.lastGpSummary;
+  const race    = save.race || 0;
+
+  drivers.forEach(d => {
+    const moral      = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
+    const contract   = save.contracts?.[d.id];
+    const yearsLeft  = contract?.years ?? 2;
+    const driverPts  = save.driverStandings?.[d.id] || 0;
+    const key        = `social_${d.id}`;
+
+    // Déjà un event en attente pour ce pilote ?
+    const existing = (save.socialEvents||[]).find(e => e.driverId === d.id && !e.resolved);
+    if (existing) return;
+
+    // DNF récent
+    const lastResult = lastGP?.playerResults?.find(r => r.driverId === d.id || r.driverName?.includes(d.name));
+    if (lastResult?.status === 'dnf' && !save[`social_dnf_${d.id}_${race}`]) {
+      events.push({
+        id: `dnf_${d.id}_${race}`,
+        driverId: d.id,
+        type: 'dnf',
+        trigger: `Abandon au dernier GP`,
+        text: `${d.firstName} ${d.name} est dans le garage, visiblement frustré. L'abandon du dernier Grand Prix pèse lourd. En tant que Team Principal, comment gérez-vous la situation ?`,
+        choices: [
+          { text: "C'était mécanique, pas ta faute. On va régler ça.", effect: { moral: +8, confiance: +5, loyalty: +3 }, label: '😤 Soutien', type: 'positive' },
+          { text: "Analysons ensemble les données pour comprendre.", effect: { moral: +3, confiance: +3, data: +1 }, label: '📊 Analyse', type: 'neutral' },
+          { text: "Ces abandons coûtent cher à l'équipe. Sois plus prudent.", effect: { moral: -8, confiance: -5, pace: +2 }, label: '😤 Pression', type: 'negative' },
+        ]
+      });
+      save[`social_dnf_${d.id}_${race}`] = true;
+    }
+
+    // Moral très bas
+    else if (moral < 40 && !save[`social_moral_${d.id}_${race}`]) {
+      events.push({
+        id: `moralLow_${d.id}_${race}`,
+        driverId: d.id,
+        type: 'moral',
+        trigger: `Moral en baisse`,
+        text: `${d.firstName} ${d.name} semble distant ces derniers jours. Ses réponses en conférence de presse sont laconiques, ses tours de chauffe moins engagés. Il faudrait lui parler.`,
+        choices: [
+          { text: "Je crois en toi. Tu es essentiel à ce projet.", effect: { moral: +12, confiance: +6, loyalty: +4 }, label: '💪 Encouragement', type: 'positive' },
+          { text: "Qu'est-ce qui ne va pas ? Parle-moi.", effect: { moral: +6, confiance: +8 }, label: '🤝 Écoute', type: 'neutral' },
+          { text: "Les résultats doivent s'améliorer rapidement.", effect: { moral: -5, confiance: -3, pace: +3 }, label: '📋 Exigence', type: 'negative' },
+        ]
+      });
+      save[`social_moral_${d.id}_${race}`] = true;
+    }
+
+    // Contrat qui expire
+    else if (yearsLeft <= 1 && !save[`social_contract_${d.id}`]) {
+      events.push({
+        id: `contract_${d.id}`,
+        driverId: d.id,
+        type: 'contract',
+        trigger: `Contrat en fin de vie`,
+        text: `${d.firstName} ${d.name} n'a plus qu'un an de contrat. Son agent a discrètement contacté deux équipes rivales. Il attend un signal de votre part.`,
+        choices: [
+          { text: "On te prolonge. Tu es l'avenir de cette équipe.", effect: { moral: +10, confiance: +10, loyalty: +8, contractSignal: true }, label: '✅ Prolongation', type: 'positive' },
+          { text: "On y travaille. Laisse-moi un peu de temps.", effect: { moral: +2, confiance: +2 }, label: '⏳ Patience', type: 'neutral' },
+          { text: "On verra ça en fin de saison selon les résultats.", effect: { moral: -6, confiance: -8, loyalty: -5 }, label: '❄️ Froid', type: 'negative' },
+        ]
+      });
+      save[`social_contract_${d.id}`] = true;
+    }
+
+    // Bonne performance — félicitations
+    else if (lastResult?.position <= 5 && lastResult?.position && !save[`social_good_${d.id}_${race}`]) {
+      events.push({
+        id: `good_${d.id}_${race}`,
+        driverId: d.id,
+        type: 'performance',
+        trigger: `Belle performance`,
+        text: `${d.firstName} ${d.name} rayonne après son P${lastResult.position} au dernier GP. C'est le moment d'entretenir cette dynamique positive.`,
+        choices: [
+          { text: "Excellent travail. C'est ça qu'on attend de toi.", effect: { moral: +8, confiance: +5, loyalty: +3 }, label: '🏆 Félicitations', type: 'positive' },
+          { text: "Bonne course. Maintenant on vise encore plus haut.", effect: { moral: +4, confiance: +3, pace: +2 }, label: '🎯 Ambition', type: 'neutral' },
+          { text: "C'est bien mais les adversaires s'adaptent.", effect: { moral: -2, confiance: +1, pace: +3 }, label: '📊 Réaliste', type: 'negative' },
+        ]
+      });
+      save[`social_good_${d.id}_${race}`] = true;
+    }
+
+    // Mi-saison — point général
+    else if (race === Math.floor(F1Data.circuits.length / 2) && !save[`social_midseason_${d.id}`]) {
+      events.push({
+        id: `midseason_${d.id}`,
+        driverId: d.id,
+        type: 'midseason',
+        trigger: `Point de mi-saison`,
+        text: `Mi-saison. ${d.firstName} ${d.name} a ${driverPts} points au championnat. C'est le bon moment pour une conversation de fond sur la seconde partie de saison.`,
+        choices: [
+          { text: "Tu es exactement où on voulait que tu sois.", effect: { moral: +6, confiance: +6, loyalty: +3 }, label: '✅ Satisfaction', type: 'positive' },
+          { text: "Objectif : doubler les points en seconde partie.", effect: { moral: +2, confiance: +2, pace: +2 }, label: '🎯 Objectif', type: 'neutral' },
+          { text: "On attendait mieux. Il faut hausser le niveau.", effect: { moral: -8, confiance: -5, pace: +4 }, label: '😤 Déception', type: 'negative' },
+        ]
+      });
+      save[`social_midseason_${d.id}`] = true;
+    }
+  });
+
+  return events;
+}
+
+function applyChoice(event, choice) {
+  const e = choice.effect;
+  const d = F1Data.drivers.find(x => x.id === event.driverId);
+  const dName = d ? `${d.firstName} ${d.name}` : 'Pilote';
+
+  // Moral
+  if (e.moral) {
+    if (!save.immersion) save.immersion = {};
+    if (!save.immersion.driverMorale) save.immersion.driverMorale = {};
+    if (!save.immersion.driverMorale[event.driverId]) save.immersion.driverMorale[event.driverId] = { value: 70 };
+    const cur = save.immersion.driverMorale[event.driverId].value || 70;
+    save.immersion.driverMorale[event.driverId].value = Math.max(0, Math.min(100, cur + e.moral));
+  }
+
+  // Confiance
+  if (!save.driverConfidence) save.driverConfidence = {};
+  if (e.confiance) {
+    const cur = save.driverConfidence[event.driverId] || 50;
+    save.driverConfidence[event.driverId] = Math.max(0, Math.min(100, cur + e.confiance));
+  }
+
+  // Loyauté
+  if (!save.driverLoyalty) save.driverLoyalty = {};
+  if (e.loyalty) {
+    const cur = save.driverLoyalty[event.driverId] || 50;
+    save.driverLoyalty[event.driverId] = Math.max(0, Math.min(100, cur + e.loyalty));
+  }
+
+  // Signal contrat
+  if (e.contractSignal) {
+    save[`contractSignal_${event.driverId}`] = true;
+  }
+
+  // Marquer comme résolu
+  if (!save.socialEvents) save.socialEvents = [];
+  const existing = save.socialEvents.find(ev => ev.id === event.id);
+  if (existing) {
+    existing.resolved = true;
+    existing.read = true;
+    existing.choiceMade = choice.text;
+  }
+
+  // Ajouter à l'historique social
+  if (!save.socialHistory) save.socialHistory = [];
+  save.socialHistory.unshift({
+    date: new Date().toISOString(),
+    driverName: dName,
+    trigger: event.trigger,
+    choice: choice.text,
+    effects: e,
+    race: save.race || 0,
+  });
+  save.socialHistory = save.socialHistory.slice(0, 30);
+
+  // News
+  if (!save.news) save.news = [];
+  save.news.push({
+    icon: '💬', category: 'social',
+    title: `Discussion — ${dName}`,
+    text: `${event.trigger} : "${choice.text.substring(0, 60)}..."`,
+    season: save.season, race: save.race,
+  });
+
+  Save.save(save);
+  save = Save.load();
+
+  showToast(`✅ ${dName} — ${choice.label}`);
+  render();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toastSocial');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function moralColor(v) { return v>=70?'var(--green)':v>=40?'var(--gold)':'var(--accent)'; }
+function moralLabel(v) { return v>=70?'En forme':v>=40?'Correct':'Bas'; }
+
+function render() {
+  if (!save?.playerTeamId) {
+    document.getElementById('content').innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">Aucune carrière. <a href="index.html" style="color:var(--accent)">Retour</a></div>';
+    return;
+  }
+
+  const drivers  = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
+  const season   = save.season || 2025;
+  const race     = save.race || 0;
+  const myTeam   = F1Data.teams.find(t => t.id === save.playerTeamId);
+
+  // Générer les nouveaux événements sociaux
+  const newEvents = generateSocialEvents(save);
+  if (!save.socialEvents) save.socialEvents = [];
+  newEvents.forEach(ev => {
+    if (!save.socialEvents.find(e => e.id === ev.id)) {
+      save.socialEvents.push({ ...ev, read: false, resolved: false });
+    }
+  });
+  if (newEvents.length) Save.save(save);
+
+  // Topbar
+  const pending = save.socialEvents.filter(e => !e.resolved && !e.read).length;
+  document.getElementById('topPills').innerHTML = `
+    <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">Saison ${season}</span>
+    ${pending > 0 ? `<span style="font-family:var(--fh);font-size:11px;padding:3px 8px;background:rgba(232,0,61,.15);border:1px solid rgba(232,0,61,.3);border-radius:4px;color:var(--accent)">${pending} message${pending>1?'s':''}</span>` : ''}`;
+
+  // Atmosphère équipe
+  const avgMoral = Math.round(drivers.reduce((s,d) => s + (save.immersion?.driverMorale?.[d.id]?.value ?? 70), 0) / Math.max(1, drivers.length));
+  const avgConf  = Math.round(drivers.reduce((s,d) => s + (save.driverConfidence?.[d.id] ?? 50), 0) / Math.max(1, drivers.length));
+  const avgLoy   = Math.round(drivers.reduce((s,d) => s + (save.driverLoyalty?.[d.id] ?? 50), 0) / Math.max(1, drivers.length));
+  const atmoLabel = avgMoral >= 70 && avgConf >= 60 ? '🔥 Excellente' : avgMoral >= 50 ? '👍 Bonne' : '😟 Tendue';
+
+  // Discussions en attente
+  const pendingEvents = save.socialEvents.filter(e => !e.resolved);
+
+  let html = `
+    <div class="section">
+      <div class="section-title">🏢 Atmosphère équipe</div>
+      <div class="team-atmo">
+        <div class="ta-row"><span>Ambiance générale</span><b style="color:${moralColor(avgMoral)}">${atmoLabel}</b></div>
+        <div class="ta-row"><span>Moral moyen</span><b style="color:${moralColor(avgMoral)}">${avgMoral}/100</b></div>
+        <div class="ta-row"><span>Confiance moyenne</span><b style="color:${moralColor(avgConf)}">${avgConf}/100</b></div>
+        <div class="ta-row"><span>Loyauté moyenne</span><b style="color:${moralColor(avgLoy)}">${avgLoy}/100</b></div>
+      </div>
+    </div>`;
+
+  // Discussions en attente
+  if (pendingEvents.length) {
+    html += `<div class="section"><div class="section-title">💬 Discussions en attente (${pendingEvents.length})</div>`;
+    pendingEvents.forEach(ev => {
+      const d = F1Data.drivers.find(x => x.id === ev.driverId);
+      html += `<div class="discussion-card">
+        <div class="dc-trigger">${ev.trigger}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:18px">${d?.flag||'🏁'}</span>
+          <span style="font-family:var(--fh);font-weight:700">${d?.firstName||''} ${d?.name||ev.driverId}</span>
+        </div>
+        <div class="dc-text">${ev.text}</div>
+        <div class="dc-choices">
+          ${ev.choices.map((c,i) => `
+            <div class="dc-choice ${c.type}" onclick='handleChoice(${JSON.stringify(ev.id)}, ${i})'>
+              <span class="cc-text">${c.text}</span>
+              <span class="cc-effect">${c.label}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Fiches pilotes
+  html += `<div class="section"><div class="section-title">🏎️ Vos pilotes</div>`;
+  drivers.forEach(d => {
+    const moral    = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
+    const confiance= save.driverConfidence?.[d.id] ?? 50;
+    const loyalty  = save.driverLoyalty?.[d.id] ?? 50;
+    const contract = save.contracts?.[d.id];
+    const years    = contract?.years ?? 2;
+    const pts      = save.driverStandings?.[d.id] || 0;
+
+    html += `<div class="driver-social" style="--accent:${F1Data.teams.find(t=>t.id===d.teamId)?.color||'#0090FF'}">
+      <div class="ds-header">
+        <div class="ds-flag">${d.flag||'🏁'}</div>
+        <div class="ds-info">
+          <div class="ds-name">${d.firstName} ${d.name}</div>
+          <div class="ds-sub">${d.age} ans · Contrat : ${years} an${years!==1?'s':''} · ${pts} pts championship</div>
+        </div>
+        <div class="ds-number">${d.number}</div>
+      </div>
+      <div class="gauges">
+        <div class="gauge">
+          <div class="g-val" style="color:${moralColor(moral)}">${moral}</div>
+          <div class="g-lbl">Moral</div>
+          <div class="g-bar"><div class="g-fill" style="width:${moral}%;background:${moralColor(moral)}"></div></div>
+        </div>
+        <div class="gauge">
+          <div class="g-val" style="color:${moralColor(confiance)}">${confiance}</div>
+          <div class="g-lbl">Confiance</div>
+          <div class="g-bar"><div class="g-fill" style="width:${confiance}%;background:${moralColor(confiance)}"></div></div>
+        </div>
+        <div class="gauge">
+          <div class="g-val" style="color:${moralColor(loyalty)}">${loyalty}</div>
+          <div class="g-lbl">Loyauté</div>
+          <div class="g-bar"><div class="g-fill" style="width:${loyalty}%;background:${moralColor(loyalty)}"></div></div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Historique des discussions
+  const history = (save.socialHistory || []).slice(0, 10);
+  if (history.length) {
+    html += `<div class="section"><div class="section-title">📋 Historique</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+        ${history.map(h => `
+          <div class="history-item">
+            <div class="hi-icon">💬</div>
+            <div>
+              <div class="hi-text"><b style="color:var(--text)">${h.driverName}</b> — ${h.trigger}<br><span style="color:rgba(255,255,255,.4)">"${h.choice.substring(0,50)}..."</span></div>
+              <div class="hi-date">GP ${h.race || '—'} · Saison ${save.season||2025}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function handleChoice(eventId, choiceIndex) {
+  const ev = save.socialEvents.find(e => e.id === eventId);
+  if (!ev) return;
+  const choice = ev.choices[choiceIndex];
+  if (!choice) return;
+  applyChoice(ev, choice);
+}
+
+render();
+</script>
+</body>
+</html>
