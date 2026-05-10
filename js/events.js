@@ -21,7 +21,7 @@ const CareerEvents = {
   },
 
   teamDrivers(save) {
-    return F1Data.drivers.filter(d => d.teamId === save.playerTeamId);
+    return F1Data.drivers.filter(d => d.teamId && d.teamId === save.playerTeamId);
   },
 
   // ── NEWS LOG ──────────────────────────────────────────────
