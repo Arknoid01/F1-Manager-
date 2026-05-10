@@ -262,7 +262,7 @@ function getSeasonArcEvent(save, d, race, season, totalRaces) {
 //  GÉNÉRATEUR PRINCIPAL 
 function generateSocialEvents(save) {
   const events = [];
-  const drivers    = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
+  const drivers    = F1Data.drivers.filter(d => d.teamId && d.teamId === save.playerTeamId && !d.retired);
   const lastGP     = save.lastGpSummary;
   const race       = save.race || 0;
   const season     = save.season || 2025;
@@ -1032,7 +1032,7 @@ function render() {
     return;
   }
 
-  const drivers  = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
+  const drivers  = F1Data.drivers.filter(d => d.teamId && d.teamId === save.playerTeamId && !d.retired);
   const season   = save.season || 2025;
   const race     = save.race || 0;
   const myTeam   = F1Data.teams.find(t => t.id === save.playerTeamId);

@@ -309,7 +309,7 @@ function init() {
   }
 
   circuit   = F1Data.circuits[(save.race || 0) % F1Data.circuits.length];
-  myDrivers = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
+  myDrivers = F1Data.drivers.filter(d => d.teamId && d.teamId === save.playerTeamId && !d.retired);
 
   // Générer météo + événement paddock si nouveau circuit
   const evKey = `paddock_${save.season}-${save.race}`;

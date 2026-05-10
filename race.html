@@ -1722,7 +1722,7 @@ function addEvents(evs) {
 function getPlayerDrivers() {
   const save = Save.load();
   const playerTeamId = save?.playerTeamId;
-  return F1Data.drivers.filter(d => d.teamId === playerTeamId);
+  return F1Data.drivers.filter(d => d.teamId && d.teamId === playerTeamId);
 }
 
 function initPreRaceStrategy() {
@@ -1744,7 +1744,7 @@ function initPreRaceStrategy() {
     const row = document.createElement('div');
     row.className = 'player-row';
     row.innerHTML = `
-      <div class="player-name">${driver.name}</div>
+      <div class="player-name">${driver.firstName} ${driver.name}</div>
       <select class="mini-sel" id="pre_c1_${driver.id}">${tyreOptions(defaults[0])}</select>
       <span style="font-family:var(--fh);color:var(--muted);font-size:11px">Pit T.</span>
       <input class="mini-sel" id="pre_p1_${driver.id}" type="number" min="2" max="${circuit.laps-3}" value="${defaultPits[0] || ''}" style="width:58px">
@@ -1898,7 +1898,7 @@ function saveLastGpSummary(results, careerReward) {
       winner: normalized[0] || null,
       podium: normalized.slice(0, 3),
       playerTeamId,
-      playerResults: normalized.filter(r => r.teamId === playerTeamId),
+      playerResults: normalized.filter(r => (r.team?.id || r.teamId) === playerTeamId),
       teamPoints: playerResults.reduce((sum, r) => sum + (r.points || 0), 0),
       reward: careerReward?.reward || 0,
       operatingCost: careerReward?.operatingCost || 0,

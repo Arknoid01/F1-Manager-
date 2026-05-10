@@ -237,7 +237,7 @@ function render() {
   }
 
   const myTeam  = F1Data.teams.find(t=>t.id===save.playerTeamId);
-  const drivers = F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
+  const drivers = F1Data.drivers.filter(d=>d.teamId&&d.teamId===save.playerTeamId&&!d.retired);
   const season  = save.season || 2025;
   const race    = save.race || 0;
 

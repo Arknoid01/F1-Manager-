@@ -589,7 +589,7 @@ function buildIndexSocialFallback(sv) {
   // Une seule génération auto par GP depuis l'index.
   if (sv._indexSocialGeneratedKey === key) return 0;
 
-  const drivers = (F1Data.drivers || []).filter(d => d.teamId === sv.playerTeamId && !d.retired).slice(0, 2);
+  const drivers = (F1Data.drivers || []).filter(d => d.teamId && d.teamId === sv.playerTeamId && !d.retired).slice(0, 2);
   if (!drivers.length) return 0;
 
   const lastGP = sv.lastGpSummary || null;
