@@ -352,6 +352,15 @@ const Career = {
     save.raceResults     = [];
     save.seasonFinished = false;
     save._seasonReadyForReview = false;
+
+    // Nettoyage des données du dernier GP : elles appartiennent à l'ancienne
+    // saison et ne doivent pas faire croire à l'index que la nouvelle saison
+    // est déjà terminée.
+    save.lastGpSummary = null;
+    save.lastRaceResult = null;
+    save._lastRaceResult = null;
+    save._seasonClosedAt = new Date().toISOString();
+
     save.news            = (save.news || []).slice(0, 5);
 
     // Reset objectifs sponsors pour la nouvelle saison
