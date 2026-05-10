@@ -126,7 +126,13 @@ const Save = {
 
     const stats = ['aero','chassis','engine','reliability'];
     save._carBreakdown = save._carBreakdown || {};
+
+    // Sécurité d'équilibrage : les anciens staffs générés pouvaient sauvegarder des bonus énormes (+7/+9).
+    // On limite l'effet total du staff sur les stats voiture pour que la R&D reste importante.
     const staffBonuses = save.staffBonuses || {};
+    ['aero','chassis','engine','reliability'].forEach(stat => {
+      if (staffBonuses[stat] != null) staffBonuses[stat] = Math.max(0, Math.min(6, Number(staffBonuses[stat]) || 0));
+    });
 
     stats.forEach(stat => {
       const originalBase = save.carDev?.[stat]?.base ?? team[stat] ?? 70;
@@ -206,6 +212,91 @@ const Save = {
   },
 
 
+
+  // ── PROGRESSION PILOTES APRÈS COURSE ─────────────────────
+  // Applique de petits gains persistants après chaque GP.
+  // Le plafond est le potentiel du pilote : plus il s'en approche,
+  // plus la progression ralentit.
+  progressDriversAfterRace(save, results) {
+    if (!save || typeof F1Data === 'undefined' || !Array.isArray(results)) return [];
+
+    save.driverStates = save.driverStates || {};
+    const progressed = [];
+    const stats = ['pace', 'consistency', 'wetSkill', 'overtaking', 'defending'];
+
+    results.forEach(r => {
+      const d = r.driver;
+      if (!d || !d.id) return;
+      if (r.status && String(r.status).toLowerCase().includes('dnf')) return;
+
+      const state = save.driverStates[d.id] || {
+        age: d.age, pace: d.pace, consistency: d.consistency, wetSkill: d.wetSkill,
+        overtaking: d.overtaking, defending: d.defending, salary: d.salary,
+        trait: d.trait, potential: d.potential, retired: d.retired, teamId: d.teamId,
+        seasons: d.seasons || 0, contractYears: d.contractYears || 0, personality: d.personality,
+      };
+
+      const potential = Number(state.potential ?? d.potential ?? 90);
+      const avg = stats.reduce((sum, st) => sum + Number(state[st] ?? d[st] ?? 75), 0) / stats.length;
+      const room = Math.max(0, potential - avg);
+      if (room <= 0.05) {
+        save.driverStates[d.id] = state;
+        return;
+      }
+
+      const age = Number(state.age ?? d.age ?? 28);
+      const youngMult = age <= 21 ? 1.45 : age <= 24 ? 1.25 : age <= 28 ? 1.0 : age <= 33 ? 0.65 : 0.35;
+      const pos = Number(r.position || 20);
+      const resultMult = pos <= 3 ? 1.25 : pos <= 10 ? 1.05 : 0.85;
+      const traitMult = state.trait === 'prodigy' ? 1.25 : 1;
+      const roomMult = Math.min(1.25, Math.max(0.25, room / 10));
+
+      // 1 à 2 stats progressent par course, avec de petits gains visibles sur la durée.
+      const pool = ['pace', 'consistency', 'overtaking', 'defending'];
+      if (Math.random() < 0.25) pool.push('wetSkill');
+      const first = pool[Math.floor(Math.random() * pool.length)];
+      const selected = [first];
+      if (Math.random() < 0.25) {
+        const second = pool.filter(st => st !== first)[Math.floor(Math.random() * (pool.length - 1))];
+        if (second) selected.push(second);
+      }
+
+      const gains = [];
+      selected.forEach(st => {
+        const current = Number(state[st] ?? d[st] ?? 75);
+        if (current >= potential) return;
+        const rawGain = (0.06 + Math.random() * 0.12) * youngMult * resultMult * traitMult * roomMult;
+        const gain = Math.round(Math.min(0.3, rawGain) * 10) / 10;
+        if (gain <= 0) return;
+        const next = Math.min(potential, Math.round((current + gain) * 10) / 10);
+        if (next > current) {
+          state[st] = next;
+          d[st] = next;
+          gains.push({ stat: st, gain: Math.round((next - current) * 10) / 10 });
+        }
+      });
+
+      save.driverStates[d.id] = state;
+      if (gains.length) progressed.push({ driver: d, teamId: state.teamId || d.teamId, gains });
+    });
+
+    const playerProgress = progressed.filter(p => p.teamId === save.playerTeamId);
+    if (playerProgress.length) {
+      save.news = save.news || [];
+      playerProgress.forEach(p => {
+        const labels = { pace:'Pace', consistency:'Régularité', wetSkill:'Pluie', overtaking:'Dépassement', defending:'Défense' };
+        save.news.unshift({
+          icon: '📈', category: 'driver',
+          title: `Progression — ${p.driver.firstName || ''} ${p.driver.name}`.trim(),
+          text: p.gains.map(g => `${labels[g.stat] || g.stat} +${g.gain}`).join(' · '),
+        });
+      });
+      save.news = save.news.slice(0, 30);
+    }
+
+    return progressed;
+  },
+
   // ── ENREGISTRER UNE COURSE DANS LA CARRIÈRE ───────────────
   recordRaceResults(raceState, results) {
     const save = this.load();
@@ -230,6 +321,9 @@ const Save = {
       save.driverStandings[driverId] = (save.driverStandings[driverId] || 0) + (r.points || 0);
       save.teamStandings[teamId]     = (save.teamStandings[teamId] || 0) + (r.points || 0);
     });
+
+    // Progression réelle des pilotes après le GP, enregistrée dans driverStates.
+    this.progressDriversAfterRace(save, results);
 
     const playerResults = results.filter(r => r.team && r.team.id === playerTeamId);
     const bestPosition  = playerResults.length ? Math.min(...playerResults.map(r => r.position)) : 20;
@@ -288,7 +382,7 @@ const Save = {
     save.race    = currentRaceIndex + 1;
 
     save.raceResults.push({
-      season: save.season||2025, raceIndex: save.raceResults.length,
+      season: save.season||2025, raceIndex: currentRaceIndex,
       circuitId: circuit?.id||null, circuitName: circuit?.name||'Circuit inconnu',
       date: new Date().toISOString(),
       reward: reward+sponsorBonus, operatingCost: gpOperatingCost,
@@ -302,27 +396,63 @@ const Save = {
       })),
     });
 
-    // ── FIN DE SAISON : ne PAS lancer l'intersaison ici ────────────
-    // La course doit seulement enregistrer le dernier GP et marquer la saison
-    // comme terminée. La vraie transition (vieillissement, contrats, mercato,
-    // revenus annuels, reset championnats) est déclenchée depuis season-review.html
-    // via Career.endOfSeason(save). Avant, cette fonction faisait déjà le reset :
-    // la page bilan recevait donc une saison vide ou pouvait appliquer la fin
-    // de saison deux fois.
+    // ── FIN DE SAISON ─────────────────────────────────────────
     if (save.race >= F1Data.circuits.length) {
-      const teamRank = [...F1Data.teams].sort((a,b)=>(save.teamStandings[b.id]||0)-(save.teamStandings[a.id]||0));
-      const playerPos = teamRank.findIndex(t=>t.id===playerTeamId)+1;
-      save.seasonFinished = true;
-      save._seasonReadyForReview = true;
-      save._newSeasonBanner = `Saison ${save.season||2025} terminée · P${playerPos || '?'} constructeurs · Revue annuelle disponible`;
-      save.news = save.news || [];
-      if (!save.news.some(n => n && n.id === `season_review_${save.season||2025}`)) {
-        save.news.unshift({
-          id:`season_review_${save.season||2025}`, icon:'🏁', category:'season',
-          title:'Fin de saison',
-          text:'Le dernier Grand Prix est terminé. La revue annuelle est disponible avant de lancer la prochaine saison.'
-        });
+      const teamRank   = [...F1Data.teams].sort((a,b)=>(save.teamStandings[b.id]||0)-(save.teamStandings[a.id]||0));
+      const playerPos  = teamRank.findIndex(t=>t.id===playerTeamId)+1;
+      const champion   = [...F1Data.drivers].sort((a,b)=>(save.driverStandings[b.id]||0)-(save.driverStandings[a.id]||0))[0];
+      const constrChamp= teamRank[0];
+
+      // ── Revenus Concorde (proportionnels au classement) ─────
+      const concordeRevs = F1Data.concordeRevenues || [120,100,85,72,62,54,46,38,30,22,15];
+      const concordePrize= concordeRevs[Math.min(playerPos-1, concordeRevs.length-1)] || 15;
+
+      save.completedSeasons = save.completedSeasons||[];
+      save.completedSeasons.push({
+        season: save.season||2025, playerConstructorPos: playerPos,
+        driverChampionId: champion?.id, constructorChampionId: constrChamp?.id,
+        prize: concordePrize,
+      });
+
+      // ── Recharge budget dynamique selon classement ──────────
+      // Meilleur classement = plus de budget → boule de neige positive
+      const budgetGrowth = Math.max(10, concordePrize * 0.15); // 15% des revenus Concorde
+      const team = F1Data.teams.find(t=>t.id===playerTeamId);
+      if (team) {
+        team.budget = Math.round(Math.min(600, (team.budget||200) + budgetGrowth) * 10) / 10;
       }
+
+
+
+      // ── Changement de règlement ─────────────────────────────
+      const nextSeason = (save.season||2025) + 1;
+      const regulation = (F1Data.regulationCycles||[]).find(r=>r.season===nextSeason);
+      if (regulation) {
+        this.applyRegulationReset(save, regulation);
+      }
+
+      save.budget = Math.round((save.budget + concordePrize) * 10) / 10;
+      // Tokens fin de saison : minimum 2 garanti + bonus classement
+      save.tokens = (save.tokens||0) + Math.max(2, playerPos <= 3 ? 8 : playerPos <= 6 ? 5 : playerPos <= 10 ? 3 : 1);
+      save.season = nextSeason;
+      save.race   = 0;
+      save.driverStandings = {};
+      save.teamStandings   = {};
+      save.raceResults     = [];
+      // Fin de saison sponsors — versement final 30% + bonus/pénalités
+      if (typeof Sponsors !== 'undefined') {
+        const finalPayment = Math.round(totalSponsorAnnual * 0.30 * 10) / 10;
+        save.budget = Math.round(((save.budget||0) + finalPayment) * 10) / 10;
+        const result = Sponsors.endOfSeason(save, playerPos);
+        if (save.news) save.news.push({ icon:'💰', category:'finance',
+          title:'Versement sponsors — Fin de saison',
+          text:`30% final : +${finalPayment}M€. Bonus objectifs : +${Math.max(0,result.bonuses)}M€. Contrats renouvelés : ${result.renewed}. Perdus : ${result.lost}.` });
+      } else {
+        (save.sponsors||[]).forEach(sp=>{ sp.progress=0; sp.paid=false; });
+      }
+
+      // Log info saison
+      save._newSeasonBanner = `P${playerPos} constructeurs · ${concordePrize}M€ revenus Concorde${regulation?` · ⚠️ ${regulation.name} — nouveau règlement !`:''}`;
     }
 
     const ok = this.save(save);
