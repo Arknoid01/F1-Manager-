@@ -1209,3 +1209,38 @@ const Career = {
     return                { label:'Retraite proche', color:'#ff4444', icon:'⚠️' };
   },
 };
+
+
+function resetSponsorObjectivesForNewSeason(career){
+  if(!career || !Array.isArray(career.sponsors)) return career;
+
+  career.sponsors.forEach(sponsor=>{
+    sponsor.progress = 0;
+    sponsor.paid = false;
+    sponsor.satisfied = false;
+
+    if(Array.isArray(sponsor.clauses)){
+      sponsor.clauses.forEach(clause=>{
+        clause.progress = 0;
+        clause.bonusPaid = false;
+        clause.paid = false;
+        clause.completed = false;
+        clause.satisfied = false;
+
+        if(clause.bonusObjective && typeof clause.bonusObjective === "object"){
+          clause.bonusObjective.progress = 0;
+          clause.bonusObjective.paid = false;
+          clause.bonusObjective.bonusPaid = false;
+          clause.bonusObjective.completed = false;
+          clause.bonusObjective.satisfied = false;
+          if("unlocked" in clause.bonusObjective){
+            clause.bonusObjective.unlocked = false;
+          }
+        }
+      });
+    }
+  });
+
+  return career;
+}
+
