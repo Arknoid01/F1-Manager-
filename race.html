@@ -594,7 +594,7 @@ const CR = {
     this.targetFrac   = [...this.fractions];
     this.carSpeed     = new Array(Race.state.grid.length).fill(1 / (getInterval() / 1000));
     this._prevFrac    = [...this.fractions];
-    this._visualLap   = 1;
+    this._visualLap   = 0;
 
     // Départ arrêté — les voitures restent immobiles pendant les feux
     this._started = false;
@@ -644,10 +644,9 @@ const CR = {
     // Passage de la ligne : la fraction passe de ~0.98+ à ~0.02 (wraparound)
     if (prev > 0.85 && cur < 0.15) {
       this._visualLap = Math.min((this._visualLap || 1) + 1, Race.state.totalLaps);
-      // Mettre à jour le compteur affiché
-      document.getElementById('svgLap').textContent = this._visualLap;
-      document.getElementById('tLap').innerHTML =
-        `Tour <b>${this._visualLap}</b>/<span>${Race.state.totalLaps}</span>`;
+      // Le compteur affiché suit le tour simulé réel via syncLapUI().
+      // Ne pas le piloter par l'animation SVG, sinon il peut prendre 2-3 tours
+      // de retard/avance selon les écarts, Safety Car ou vitesses visuelles.
     }
 
     this._prevFracLeader = cur;
@@ -668,6 +667,16 @@ let started     = false;
 
 // Intervalles en ms par tour simulé
 const SPEEDS = { slow: 6000, pause: null };
+
+function syncLapUI(forceLap) {
+  if (!Race.state) return;
+  const total = Race.state.totalLaps || Race.state.circuit?.laps || 0;
+  const lap = Math.max(0, Math.min(total, Number(forceLap ?? Race.state.currentLap ?? 0)));
+  const svgLap = document.getElementById('svgLap');
+  const tLap = document.getElementById('tLap');
+  if (svgLap) svgLap.textContent = lap;
+  if (tLap) tLap.innerHTML = `Tour <b>${lap}</b>/<span>${total || '—'}</span>`;
+}
 
 function getInterval() {
   return SPEEDS.slow; // toujours lent
@@ -1020,6 +1029,7 @@ function startRace() {
   document.getElementById('tTotal').textContent   = cir.laps;
   document.getElementById('svgTotal').textContent = cir.laps;
   document.getElementById('circLabel').textContent= cir.name.toUpperCase();
+  syncLapUI(0);
   document.getElementById('btnStart').disabled = true;
   document.getElementById('btnSlow').disabled  = false;
   document.getElementById('btnPause').disabled = false;
@@ -1056,6 +1066,7 @@ function runSim() {
     if (!res) return;
 
     CR.advanceLap();
+    syncLapUI(res.lap);
 
     // Mise à jour humidité piste (async pour éviter le lag)
     if (typeof Weather !== 'undefined' && Race.state) {
@@ -1111,7 +1122,7 @@ function skipEnd() {
   Race.simulateAll(()=>Telem.record());
   CR.advanceLap();
   Telem.updateAll();
-  document.getElementById('svgLap').textContent = Race.state.currentLap;
+  syncLapUI(Race.state.currentLap);
   document.getElementById('progFill').style.width = '100%';
   renderStandings();
   addEvents(Race.state.events.slice(-15));
