@@ -187,7 +187,8 @@
 
 <script src="js/data.js?v=20260508b"></script>
 <script src="js/save.js?v=20260508b"></script>
-<script src="js/theme.js"></script
+<script src="js/theme.js"></script>
+<script src="js/social-events.js?v=20260510"></script>
 <script src="js/immersion.js?v=20260508b"></script>
 <script src="js/events.js?v=20260508b"></script>
 <script src="js/career.js?v=20260508b"></script>
@@ -237,6 +238,10 @@ function init() {
     restoreDriverStates(save);
     if (typeof Career !== 'undefined' && typeof Career.restoreTeamStates === 'function') Career.restoreTeamStates(save);
     migrateSave(save);
+    if (window.SocialEventsSync) {
+      SocialEventsSync.sync(save);
+      save = Save.load() || save;
+    }
     showDashboard();
   } catch(err) {
     console.error('init error:', err);
@@ -446,7 +451,7 @@ function renderNavTiles(team,drivers) {
     {href:'immersion.html#academy',icon:'🌱',lbl:'Académie',val:`${save.immersion?.juniorAcademy?.length || 0}`,sub:'jeunes talents',c:'var(--blue)'},
     {href:'rd.html',icon:'🔬',lbl:'R&D',val:`${save.tokens||0} tokens`,sub:`Budget : ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--blue)'},
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
-    {href:'social.html',icon:'💬',lbl:'Social',val:(() => { const pending = (save.socialEvents||[]).filter(e=>!e.read).length; return pending > 0 ? `${pending} message${pending>1?'s':''}` : 'OK'; })(),sub:'Relations pilotes · équipe',c:'var(--accent)'},
+    {href:'social.html',icon:'💬',lbl:'Social',val:(() => { const pending = window.SocialEventsSync ? SocialEventsSync.unreadCount(save) : (save.socialEvents||[]).filter(e=>!e.resolved && !e.read).length; return pending > 0 ? `${pending} message${pending>1?'s':''}` : 'OK'; })(),sub:'Relations pilotes · équipe',c:'var(--accent)'},
     {href:'training.html',icon:'🏋️',lbl:'Entraînement',val:'Sim + Physique',sub:'Progresser entre les GP',c:'var(--green)'},
     {href:'javascript:void(0)',icon:'💾',lbl:'Sauvegarde',val:'Export/Import',sub:'Gerer ta partie',c:'var(--muted)',action:'toggleSaveTools()'},
   ];
@@ -535,7 +540,7 @@ function renderSaveTools() {
   // Section affichée via toggle
 }
 function updateSocialBadge() {
-  const pending = (save.socialEvents||[]).filter(e=>!e.resolved).length;
+  const pending = window.SocialEventsSync ? SocialEventsSync.unreadCount(save) : (save.socialEvents||[]).filter(e=>!e.resolved && !e.read).length;
   const badge   = document.getElementById('socialBadge');
   const count   = document.getElementById('socialCount');
   if (!badge) return;
