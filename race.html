@@ -660,7 +660,7 @@ function calcTyreLifeFromEL(fpResults, circuit) {
       if (!r.tyreLife || !r.laps) return;
       const wearPerLap  = (100 - r.tyreLife) / r.laps;
       if (wearPerLap <= 0) return;
-      const life        = Math.round(80 / wearPerLap); // jusqu'à 20% restant
+      const life        = Math.round(75 / wearPerLap); // jusqu'à 25% restant — pit avant la mort
       if (!lifemap[r.compound] || life > lifemap[r.compound])
         lifemap[r.compound] = Math.min(life, circuit.laps - 2);
     });
@@ -670,7 +670,7 @@ function calcTyreLifeFromEL(fpResults, circuit) {
     if (!lifemap[c]) {
       const tyre       = F1Data.tyres[c];
       const wearPerLap = tyre.degradationRate * circuit.tyreDegradation * 100;
-      lifemap[c]       = Math.min(Math.round(80 / wearPerLap), circuit.laps - 2);
+      lifemap[c]       = Math.min(Math.round(75 / wearPerLap), circuit.laps - 2);
     }
   });
   return lifemap;
@@ -1514,9 +1514,9 @@ function buildRaceNarrative(res) {
     if (car.position > lastPos) msgs.push(lapEvent(lap, 'radio', NarrativePool.losePos(name, car.position)));
     RaceNarrative.lastPlayerPos[id] = car.position;
 
-    if (cond <= 25 && RaceNarrative.once(`tyre_crit_${id}_${Math.floor(lap/4)}`)) {
+    if (cond <= 30 && RaceNarrative.once(`tyre_crit_${id}_${Math.floor(lap/4)}`)) {
       msgs.push(lapEvent(lap, 'engineer', NarrativePool.tyreCritical(name, cond)));
-    } else if (cond <= 45 && RaceNarrative.once(`tyre_warn_${id}_${Math.floor(lap/8)}`)) {
+    } else if (cond <= 50 && RaceNarrative.once(`tyre_warn_${id}_${Math.floor(lap/8)}`)) {
       msgs.push(lapEvent(lap, 'engineer', NarrativePool.tyreWarning(name, cond)));
     }
 
