@@ -453,6 +453,242 @@ function generateSocialEvents(save) {
     }
   }
 
+
+  // ── SITUATIONS PILOTES SUPPLÉMENTAIRES ──────────────────
+  drivers.forEach(d => {
+    const moral     = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
+    const loyalty   = save.driverLoyalty?.[d.id] ?? 50;
+    const confiance = save.driverConfidence?.[d.id] ?? 50;
+    const driverPts = save.driverStandings?.[d.id] || 0;
+    const contract  = save.contracts?.[d.id];
+    const yearsLeft = contract?.years ?? 2;
+    const lastResult = lastGP?.playerResults?.find(r => r.driverName?.includes(d.name));
+    const existing  = (save.socialEvents||[]).find(e => e.driverId === d.id && !e.resolved);
+    if (existing) return;
+
+    // Mauvaise serie de resultats
+    if (driverPts < 10 && race > 5 && !save[`social_slump_${d.id}_${season}`] && Math.random() < 0.5) {
+      events.push({ id:`slump_${d.id}_${season}`, driverId:d.id, type:'slump', trigger:'Serie de mauvais resultats',
+        text:`${d.firstName} ${d.name} traverse une periode difficile. Seulement ${driverPts} points en ${race} GP. Le paddock commence a parler. Comment reagissez-vous ?`,
+        choices:[
+          { text:"On analyse ensemble. Je crois en ton potentiel.", effect:{moral:+10,confiance:+8,loyalty:+5}, label:'🤝 Confiance', type:'positive' },
+          { text:"On change quelque chose : setup, strategie ou programme.", effect:{moral:+4,confiance:+4,pace:+2}, label:'🔧 Changement', type:'neutral' },
+          { text:"Les resultats doivent changer rapidement ou on reconsidere.", effect:{moral:-10,confiance:-8,loyalty:-6,pace:+3}, label:'⚠️ Ultimatum', type:'negative' },
+        ]
+      });
+      save[`social_slump_${d.id}_${season}`] = true;
+    }
+    // Duel chaud avec un rival
+    else if (!save[`social_rival_${d.id}_${race}`] && race > 3 && Math.random() < 0.3) {
+      const rivals = F1Data.drivers.filter(x => x.teamId !== save.playerTeamId && !x.retired && x.pace > 85);
+      const rival  = rivals[Math.floor(Math.random()*rivals.length)];
+      if (rival) {
+        events.push({ id:`rival_${d.id}_${race}`, driverId:d.id, type:'rivalry', trigger:'Duel avec un rival',
+          text:`${d.firstName} ${d.name} parle de sa bataille avec ${rival.firstName} ${rival.name} lors du dernier GP. Il veut une strategie claire pour les prochaines confrontations.`,
+          choices:[
+            { text:"On prepare un plan d attaque specifique contre lui.", effect:{moral:+7,confiance:+6,pace:+2}, label:'⚔️ Plan attaque', type:'positive' },
+            { text:"On se concentre sur notre course. Les rivaux viendront.", effect:{moral:+3,confiance:+3}, label:'🎯 Focus', type:'neutral' },
+            { text:"Il est plus rapide en ce moment. Sois patient.", effect:{moral:-4,confiance:-2,loyalty:-2}, label:'😐 Realiste', type:'negative' },
+          ]
+        });
+        save[`social_rival_${d.id}_${race}`] = true;
+      }
+    }
+    // Pilote qui demande plus d info sur la strategie
+    else if (!save[`social_strat_${d.id}_${race}`] && race > 2 && Math.random() < 0.35) {
+      events.push({ id:`strat_${d.id}_${race}`, driverId:d.id, type:'strategy', trigger:'Questions sur la strategie',
+        text:`${d.firstName} ${d.name} veut comprendre les choix strategiques du dernier GP. Il estime qu un meilleur timing de pit aurait pu valoir 2 positions.`,
+        choices:[
+          { text:"Il a raison. On revoit notre processus de decision au muret.", effect:{moral:+8,confiance:+8,loyalty:+4}, label:'✅ Mea culpa', type:'positive' },
+          { text:"On explique les contraintes. La strategie etait la meilleure possible.", effect:{moral:+3,confiance:+4}, label:'📊 Explication', type:'neutral' },
+          { text:"La strategie c est mon domaine. Lui c est la piste.", effect:{moral:-6,confiance:-5,loyalty:-3}, label:'✊ Hierarchie', type:'negative' },
+        ]
+      });
+      save[`social_strat_${d.id}_${race}`] = true;
+    }
+    // Pilote qui se compare a son equipier
+    else if (drivers.length >= 2 && race > 4 && !save[`social_compare_${d.id}_${race}`] && Math.random() < 0.25) {
+      const d2 = drivers.find(x => x.id !== d.id);
+      const d2Pts = save.driverStandings?.[d2?.id] || 0;
+      if (d2 && d2Pts > driverPts + 15) {
+        events.push({ id:`compare_${d.id}_${race}`, driverId:d.id, type:'comparison', trigger:'Comparaison avec l equipier',
+          text:`${d.firstName} ${d.name} note que ${d2.firstName} ${d2.name} a ${d2Pts - driverPts} points de plus avec une voiture identique. Il se remet en question.`,
+          choices:[
+            { text:"Tu as d autres qualites. Les points viendront.", effect:{moral:+8,confiance:+6,loyalty:+4}, label:'💪 Encouragement', type:'positive' },
+            { text:"Analysons ensemble pourquoi cet ecart existe.", effect:{moral:+4,confiance:+5,pace:+1}, label:'📊 Analyse', type:'neutral' },
+            { text:"L ecart est reel. Il faut hausser le niveau.", effect:{moral:-8,confiance:-5,pace:+3}, label:'😤 Exigence', type:'negative' },
+          ]
+        });
+        save[`social_compare_${d.id}_${race}`] = true;
+      }
+    }
+    // Retour apres une bonne serie
+    else if (driverPts > 50 && moral > 75 && !save[`social_momentum_${d.id}_${season}`] && race > 8) {
+      events.push({ id:`momentum_${d.id}_${season}`, driverId:d.id, type:'momentum', trigger:'Serie positive',
+        text:`${d.firstName} ${d.name} est en pleine confiance. ${driverPts} points et une dynamique remarquable. Il veut capitaliser sur cet elan.`,
+        choices:[
+          { text:"Tu es au sommet de ta forme. On attaque les prochains GP sans complexe.", effect:{moral:+8,confiance:+8,pace:+2,loyalty:+4}, label:'🔥 Full attack', type:'positive' },
+          { text:"Excellente serie. On reste concentres et humbles.", effect:{moral:+4,confiance:+5,loyalty:+2}, label:'🎯 Focus', type:'neutral' },
+          { text:"Le championnat se gagne sur la duree. Pas d emballement.", effect:{moral:+1,confiance:+2}, label:'🧊 Prudence', type:'negative' },
+        ]
+      });
+      save[`social_momentum_${d.id}_${season}`] = true;
+    }
+    // Pilote qui parle de sa famille / vie privee
+    else if (!save[`social_private_${d.id}_${season}`] && race > 6 && Math.random() < 0.2) {
+      events.push({ id:`private_${d.id}_${season}`, driverId:d.id, type:'personal', trigger:'Vie privee',
+        text:`${d.firstName} ${d.name} vous confie que les voyages permanents pesent sur sa vie de famille. Il cherche un equilibre entre sport de haut niveau et vie personnelle.`,
+        choices:[
+          { text:"On peut adapter le programme. Ta famille c est important.", effect:{moral:+12,confiance:+8,loyalty:+10}, label:'❤️ Humanite', type:'positive' },
+          { text:"Je comprends. On en parle entre deux saisons.", effect:{moral:+5,confiance:+5,loyalty:+4}, label:'🤝 Ecoute', type:'neutral' },
+          { text:"Le niveau elite exige des sacrifices. C est le metier.", effect:{moral:-8,confiance:-5,loyalty:-6}, label:'🏆 Excellence', type:'negative' },
+        ]
+      });
+      save[`social_private_${d.id}_${season}`] = true;
+    }
+    // Critique publique d un rival
+    else if (!save[`social_taunt_${d.id}_${race}`] && race > 5 && Math.random() < 0.2) {
+      const rivals = F1Data.drivers.filter(x => x.teamId !== save.playerTeamId && !x.retired);
+      const rival  = rivals[Math.floor(Math.random()*rivals.length)];
+      if (rival) {
+        events.push({ id:`taunt_${d.id}_${race}`, driverId:d.id, type:'media', trigger:'Provocation d un rival',
+          text:`${rival.firstName} ${rival.name} a fait une pique a ${d.firstName} ${d.name} dans les medias. Votre pilote veut repondre publiquement et attend votre feu vert.`,
+          choices:[
+            { text:"Reponds avec classe. La piste parlera mieux que les mots.", effect:{moral:+6,confiance:+5,loyalty:+3,pace:+2}, label:'😎 Classe', type:'positive' },
+            { text:"Ignore-le. Ce genre de jeu ne nous interesse pas.", effect:{moral:+2,confiance:+3}, label:'🧊 Flegme', type:'neutral' },
+            { text:"Dis ce que tu penses. On ne se laisse pas marcher dessus.", effect:{moral:+8,confiance:+3,loyalty:+2}, label:'🔥 Repondre', type:'negative' },
+          ]
+        });
+        save[`social_taunt_${d.id}_${race}`] = true;
+      }
+    }
+    // Pilote qui propose une idee technique
+    else if (!save[`social_idea_${d.id}_${season}`] && race > 4 && Math.random() < 0.25) {
+      events.push({ id:`idea_${d.id}_${season}`, driverId:d.id, type:'technical', trigger:'Idee technique du pilote',
+        text:`${d.firstName} ${d.name} a une idee sur le reglage de la suspension apres avoir discute avec un ingenieur rival. Il propose de tester un concept non conventionnel.`,
+        choices:[
+          { text:"On teste en EL. Les pilotes ont souvent des intuitions brillantes.", effect:{moral:+10,confiance:+8,pace:+2}, label:'🔬 On teste', type:'positive' },
+          { text:"On en discute avec les ingenieurs et on voit.", effect:{moral:+4,confiance:+4}, label:'💬 Discussion', type:'neutral' },
+          { text:"On s en tient aux protocoles etablis.", effect:{moral:-3,confiance:-2}, label:'📋 Protocole', type:'negative' },
+        ]
+      });
+      save[`social_idea_${d.id}_${season}`] = true;
+    }
+    // Depart imminent fin de contrat
+    else if (yearsLeft === 0 && !save[`social_leaving_${d.id}_${season}`]) {
+      events.push({ id:`leaving_${d.id}_${season}`, driverId:d.id, type:'departure', trigger:'Depart imminent',
+        text:`Le contrat de ${d.firstName} ${d.name} expire en fin de saison. Il a deja signe ailleurs. Comment gerez-vous ces derniers GP ensemble ?`,
+        choices:[
+          { text:"On finit la saison ensemble avec professionnalisme et respect.", effect:{moral:+8,confiance:+6,loyalty:+8,pace:+1}, label:'🤝 Fairplay', type:'positive' },
+          { text:"On reste focus sur les objectifs. Rien ne change.", effect:{moral:+3,confiance:+3}, label:'🎯 Focus', type:'neutral' },
+          { text:"Il part, c est comme ca. Minimums syndicaux.", effect:{moral:-10,confiance:-8,loyalty:-10,pace:-2}, label:'❄️ Froid', type:'negative' },
+        ]
+      });
+      save[`social_leaving_${d.id}_${season}`] = true;
+    }
+    // Bonne ambiance dans le garage
+    else if (moral > 80 && loyalty > 70 && !save[`social_vibe_${d.id}_${season}`] && race > 10 && Math.random() < 0.3) {
+      events.push({ id:`vibe_${d.id}_${season}`, driverId:d.id, type:'positive_vibe', trigger:'Excellente ambiance',
+        text:`${d.firstName} ${d.name} vous dit que c est la meilleure ambiance d equipe qu il ait connue. Il veut vous remercier personnellement.`,
+        choices:[
+          { text:"C est toi qui construis cette dynamique. Merci a toi.", effect:{moral:+8,confiance:+6,loyalty:+8}, label:'🙏 Reciproque', type:'positive' },
+          { text:"L equipe entiere le merite. On continue comme ca.", effect:{moral:+5,confiance:+4,loyalty:+5}, label:'👥 Collectif', type:'neutral' },
+          { text:"Bonne ambiance et bons resultats. C est tout ce qu on veut.", effect:{moral:+3,confiance:+3}, label:'📊 Resultats', type:'negative' },
+        ]
+      });
+      save[`social_vibe_${d.id}_${season}`] = true;
+    }
+  });
+
+  // ── DISCUSSIONS INGENIEURS SUPPLÉMENTAIRES ───────────────
+  const engExisting2 = (save.socialEvents||[]).find(e => e.driverId === 'engineer2' && !e.resolved);
+  const eng2Name = 'Votre chef mecanicien';
+
+  if (!engExisting2) {
+    // Analyse post-course
+    if (race > 1 && !save[`eng2_postrace_${race}_${season}`] && Math.random() < 0.4) {
+      events.push({ id:`eng2_postrace_${race}_${season}`, driverId:'engineer2', type:'engineer', trigger:'Debriefing post-course',
+        text:`${eng2Name} presente l analyse du dernier GP. Les donnees revelent trois points d amelioration potentiels. Ou concentrer les efforts ?`,
+        choices:[
+          { text:"On travaille sur les freinages. C est la ou on perd le plus.", effect:{pace:+2,confiance:+3,tokenBonus:0}, label:'🛑 Freinages', type:'positive' },
+          { text:"Priorite a la sortie de virage. On perd en acceleration.", effect:{pace:+2,confiance:+3}, label:'⚡ Acceleration', type:'neutral' },
+          { text:"On travaille les trois en parallele. Aucun compromis.", effect:{pace:+1,tokenBonus:+1}, label:'🔬 Tout', type:'negative' },
+        ]
+      });
+      save[`eng2_postrace_${race}_${season}`] = true;
+    }
+    // Preparation physique du pilote
+    else if (!save[`eng2_fitness_${race}_${season}`] && race > 5 && Math.random() < 0.3) {
+      const d = drivers[0];
+      events.push({ id:`eng2_fitness_${race}_${season}`, driverId:'engineer2', type:'engineer', trigger:'Programme physique pilote',
+        text:`Le preparateur physique de ${d?.firstName||'votre pilote'} rapporte une legere baisse de concentration en fin de course. Un programme specifique est propose.`,
+        choices:[
+          { text:"On l integre dans le planning. La forme physique est cle.", effect:{pace:+2,moral:+4,confiance:+3}, label:'💪 Programme', type:'positive' },
+          { text:"On laisse le pilote gerer son physique comme il l entend.", effect:{moral:+2,confiance:+2}, label:'🤝 Autonomie', type:'neutral' },
+          { text:"Pas le temps pour ca. On se concentre sur la voiture.", effect:{pace:-1,moral:-2}, label:'🚗 Voiture first', type:'negative' },
+        ]
+      });
+      save[`eng2_fitness_${race}_${season}`] = true;
+    }
+    // Gestion des ressources humaines
+    else if (!save[`eng2_team_${race}_${season}`] && race > 8 && Math.random() < 0.3) {
+      events.push({ id:`eng2_team_${race}_${season}`, driverId:'engineer2', type:'engineer', trigger:'Moral du staff technique',
+        text:`Votre responsable technique signale de la fatigue au sein de l equipe apres un triple header. Un moment de cohesion est suggere avant les prochains GP.`,
+        choices:[
+          { text:"On organise un diner d equipe. On prend soin des gens.", effect:{moral:+5,tokenBonus:0,pace:+1}, label:'🍽️ Cohesion', type:'positive' },
+          { text:"Une journee de repos supplementaire entre deux GP.", effect:{moral:+3,pace:+1}, label:'😴 Repos', type:'neutral' },
+          { text:"On a un championnat a courir. Le repos attendra.", effect:{moral:-4,pace:-1}, label:'📋 Focus', type:'negative' },
+        ]
+      });
+      save[`eng2_team_${race}_${season}`] = true;
+    }
+    // Analyse rivaux
+    else if (!save[`eng2_rival_${race}_${season}`] && race > 3 && Math.random() < 0.35) {
+      const rivals = F1Data.teams.filter(t => t.id !== save.playerTeamId).sort((a,b)=>b.performance-a.performance);
+      const rival  = rivals[0];
+      events.push({ id:`eng2_rival_${race}_${season}`, driverId:'engineer2', type:'engineer', trigger:'Analyse rivaux directs',
+        text:`L equipe data a analyse les telemetries de ${rival?.name||'vos rivaux'}. Un point faible specifique a ete identifie que vous pouvez exploiter.`,
+        choices:[
+          { text:"On oriente notre setup pour exploiter cette faiblesse.", effect:{pace:+3,confiance:+4}, label:'🎯 Exploitation', type:'positive' },
+          { text:"On note et on adapte notre strategie de course.", effect:{pace:+1,confiance:+2}, label:'📊 Adaptation', type:'neutral' },
+          { text:"On se concentre sur nous. Les rivaux s occupent d eux.", effect:{pace:0,moral:+2}, label:'🔵 Focus interne', type:'negative' },
+        ]
+      });
+      save[`eng2_rival_${race}_${season}`] = true;
+    }
+    // Incident technique mineur
+    else if (!save[`eng2_minor_${race}_${season}`] && Math.random() < 0.3) {
+      const issues = [
+        "Une legere fuite hydraulique a ete detectee. Rien de critique mais ca demande une attention.",
+        "Le DRS de la voiture 1 presente une anomalie d ouverture. Reparable en 2 heures.",
+        "Des vibrations inhabituelles ont ete detectees sur la suspension avant gauche.",
+      ];
+      const issue = issues[Math.floor(Math.random()*issues.length)];
+      events.push({ id:`eng2_minor_${race}_${season}`, driverId:'engineer2', type:'engineer', trigger:'Incident technique mineur',
+        text:`${issue} ${eng2Name} attend votre validation pour lancer la procedure.`,
+        choices:[
+          { text:"On traite ca immediatement. Tolerence zero sur la technique.", effect:{confiance:+4,dnfRisk:false}, label:'🔧 Immediat', type:'positive' },
+          { text:"On surveille et on intervient si ca empire.", effect:{confiance:+2}, label:'👁️ Surveillance', type:'neutral' },
+          { text:"On n a pas le temps. On gere apres les qualifs.", effect:{dnfRisk:true,confiance:-2}, label:'⏰ Plus tard', type:'negative' },
+        ]
+      });
+      save[`eng2_minor_${race}_${season}`] = true;
+    }
+    // Opportunite test jeune pilote
+    else if (!save[`eng2_junior_${season}`] && race < 18 && save.immersion?.juniorAcademy?.length > 0 && Math.random() < 0.3) {
+      const junior = save.immersion.juniorAcademy[0];
+      events.push({ id:`eng2_junior_${season}`, driverId:'engineer2', type:'engineer', trigger:'Opportunite jeune pilote',
+        text:`${junior?.firstName||'Un junior'} ${junior?.name||''} de l academie demande une session de debriefing avec l equipe senior. Cela peut accelerer son developpement.`,
+        choices:[
+          { text:"On integre le junior au debriefing complet. Investissement long terme.", effect:{tokenBonus:+1,moral:+3}, label:'🌱 Formation', type:'positive' },
+          { text:"Une session limitee. On garde nos donnees sensibles.", effect:{tokenBonus:0,moral:+2}, label:'⚖️ Limite', type:'neutral' },
+          { text:"Pas le moment. On reste concentres sur le GP actuel.", effect:{moral:+0}, label:'❌ Pas maintenant', type:'negative' },
+        ]
+      });
+      save[`eng2_junior_${season}`] = true;
+    }
+  }
+
   return events;
 }
 
