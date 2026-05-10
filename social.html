@@ -64,6 +64,9 @@
 
 /* Atmosphère équipe */
 .team-atmo{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+.media-effects{background:linear-gradient(135deg,rgba(0,144,255,.08),rgba(255,255,255,.02));border:1px solid rgba(0,144,255,.25);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.me-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-family:var(--fh);font-size:12px}
+.me-row:last-child{border:none}.me-row span{color:var(--muted)}
 .ta-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-family:var(--fh);font-size:13px}
 .ta-row:last-child{border:none}
 .ta-row span{color:var(--muted);font-size:11px}
@@ -819,123 +822,148 @@ function generateSocialEvents(save) {
   return events;
 }
 
+
+function clampMedia(v, min, max) { return Math.max(min, Math.min(max, Number(v)||0)); }
+function ensureMediaEffects(save) {
+  if (!save.mediaEffects || save.mediaEffects.race !== (save.race||0) || save.mediaEffects.season !== (save.season||2025)) {
+    save.mediaEffects = { race: save.race||0, season: save.season||2025, team:{}, drivers:{}, log:[] };
+  }
+  save.mediaEffects.team = save.mediaEffects.team || {};
+  save.mediaEffects.drivers = save.mediaEffects.drivers || {};
+  save.mediaEffects.log = save.mediaEffects.log || [];
+  return save.mediaEffects;
+}
+function addMediaTeamEffect(key, delta, limit=6) {
+  const media = ensureMediaEffects(save);
+  media.team[key] = clampMedia((media.team[key]||0) + delta, -limit, limit);
+}
+function addMediaDriverEffect(driverId, key, delta, limit=5) {
+  const media = ensureMediaEffects(save);
+  if (!media.drivers[driverId]) media.drivers[driverId] = {};
+  media.drivers[driverId][key] = clampMedia((media.drivers[driverId][key]||0) + delta, -limit, limit);
+}
+function mediaEffectLabel(effect={}) {
+  const parts=[];
+  if (effect.moral) parts.push(`Moral ${effect.moral>0?'+':''}${effect.moral}`);
+  if (effect.confiance) parts.push(`Confiance ${effect.confiance>0?'+':''}${effect.confiance}`);
+  if (effect.loyalty) parts.push(`Loyauté ${effect.loyalty>0?'+':''}${effect.loyalty}`);
+  if (effect.pace) parts.push(`Rythme ${effect.pace>0?'+':''}${effect.pace}`);
+  if (effect.raceBonus) parts.push(`Course ${effect.raceBonus>0?'+':''}${effect.raceBonus}`);
+  if (effect.qualiBonusPct) parts.push(`Qualif ${effect.qualiBonusPct>0?'+':''}${effect.qualiBonusPct}`);
+  if (effect.tyreBonus) parts.push(`Pneus ${effect.tyreBonus>0?'+':''}${effect.tyreBonus}`);
+  if (effect.tyreMalus) parts.push(`Usure pneus +${effect.tyreMalus}`);
+  if (effect.weatherBonus) parts.push(`Météo +${effect.weatherBonus}`);
+  if (effect.tokenBonus) parts.push(`R&D +${effect.tokenBonus}`);
+  if (effect.rdBonus) parts.push(`R&D ${effect.rdBonus} +1`);
+  if (effect.penaltyGrid) parts.push(`Pénalité grille`);
+  if (effect.dnfRisk) parts.push(`Risque DNF`);
+  if (effect.engineWear) parts.push(`Usure moteur +${effect.engineWear}`);
+  return parts.join(' · ') || 'Impact narratif';
+}
+
 function applyChoice(event, choice) {
-  const e = choice.effect;
+  const e = choice.effect || {};
   const d = F1Data.drivers.find(x => x.id === event.driverId);
-  const dName = d ? `${d.firstName} ${d.name}` : 'Pilote';
+  const dName = event.type === 'engineer' ? 'Équipe technique' : (d ? `${d.firstName} ${d.name}` : 'Pilote');
+  const media = ensureMediaEffects(save);
 
   // Moral
   if (e.moral) {
     if (!save.immersion) save.immersion = {};
     if (!save.immersion.driverMorale) save.immersion.driverMorale = {};
-    if (!save.immersion.driverMorale[event.driverId]) save.immersion.driverMorale[event.driverId] = { value: 70 };
-    const cur = save.immersion.driverMorale[event.driverId].value || 70;
-    save.immersion.driverMorale[event.driverId].value = Math.max(0, Math.min(100, cur + e.moral));
+    const targets = event.type === 'engineer'
+      ? F1Data.drivers.filter(x => x.teamId === save.playerTeamId && !x.retired).map(x => x.id)
+      : [event.driverId];
+    targets.forEach(id => {
+      if (!save.immersion.driverMorale[id]) save.immersion.driverMorale[id] = { value: 70 };
+      const cur = save.immersion.driverMorale[id].value || 70;
+      save.immersion.driverMorale[id].value = Math.max(0, Math.min(100, cur + e.moral));
+    });
   }
 
   // Confiance
   if (!save.driverConfidence) save.driverConfidence = {};
   if (e.confiance) {
-    const cur = save.driverConfidence[event.driverId] || 50;
-    save.driverConfidence[event.driverId] = Math.max(0, Math.min(100, cur + e.confiance));
+    const targets = event.type === 'engineer'
+      ? F1Data.drivers.filter(x => x.teamId === save.playerTeamId && !x.retired).map(x => x.id)
+      : [event.driverId];
+    targets.forEach(id => {
+      const cur = save.driverConfidence[id] || 50;
+      save.driverConfidence[id] = Math.max(0, Math.min(100, cur + e.confiance));
+    });
   }
 
   // Loyauté
   if (!save.driverLoyalty) save.driverLoyalty = {};
-  if (e.loyalty) {
+  if (e.loyalty && event.type !== 'engineer') {
     const cur = save.driverLoyalty[event.driverId] || 50;
     save.driverLoyalty[event.driverId] = Math.max(0, Math.min(100, cur + e.loyalty));
   }
 
-  // Signal contrat
-  if (e.contractSignal) {
+  // Signal contrat réellement exploitable par contracts.html / IA future
+  if (e.contractSignal && event.type !== 'engineer') {
     save[`contractSignal_${event.driverId}`] = true;
+    save.contractSignals = save.contractSignals || {};
+    save.contractSignals[event.driverId] = {
+      race: save.race||0,
+      season: save.season||2025,
+      reason: event.trigger,
+      mood: choice.type || 'neutral'
+    };
   }
 
-  // Pace direct — stocké temporairement sur le save pour ce GP
-  if (e.pace && event.driverId !== 'engineer') {
-    if (!save.driverEffects) save.driverEffects = {};
-    if (!save.driverEffects[event.driverId]) save.driverEffects[event.driverId] = {};
-    const cur = save.driverEffects[event.driverId].paceDelta || 0;
-    save.driverEffects[event.driverId].paceDelta = Math.max(-5, Math.min(5, cur + e.pace));
-    save.driverEffects[event.driverId].paceExpiry = (save.race||0) + 2; // dure 2 GP
+  // Effets performance : centralisés dans mediaEffects, puis consommés par race.js/engine.js
+  if (e.pace) {
+    if (event.type === 'engineer' || event.driverId === 'engineer' || event.driverId === 'engineer2') {
+      addMediaTeamEffect('pace', e.pace, 6);
+    } else {
+      addMediaDriverEffect(event.driverId, 'pace', e.pace, 5);
+      if (!save.driverEffects) save.driverEffects = {};
+      if (!save.driverEffects[event.driverId]) save.driverEffects[event.driverId] = {};
+      const cur = save.driverEffects[event.driverId].paceDelta || 0;
+      save.driverEffects[event.driverId].paceDelta = Math.max(-5, Math.min(5, cur + e.pace));
+      save.driverEffects[event.driverId].paceExpiry = (save.race||0) + 2;
+      save.driverEffects[event.driverId].label = mediaEffectLabel(e);
+    }
   }
+  if (e.raceBonus) addMediaTeamEffect('race', e.raceBonus, 6);
+  if (e.qualiBonusPct) { addMediaTeamEffect('qualifying', e.qualiBonusPct, 6); save.weekendSetup = 'qualify'; }
+  if (e.tyreBonus) addMediaTeamEffect('tyres', e.tyreBonus, 6);
+  if (e.tyreMalus) addMediaTeamEffect('tyreMalus', e.tyreMalus, 12);
+  if (e.weatherBonus) addMediaTeamEffect('weather', e.weatherBonus, 6);
+  if (e.dnfRisk) addMediaTeamEffect('dnfRisk', 1, 5);
+  if (e.engineWear) addMediaTeamEffect('engineWear', e.engineWear, 8);
 
   // Pénalité grille — stockée pour le prochain GP
   if (e.penaltyGrid) {
     if (!save.gridPenalties) save.gridPenalties = {};
-    const driverKey = event.driverId;
-    save.gridPenalties[driverKey] = (save.gridPenalties[driverKey]||0) + 5;
-    if (save.news) save.news.push({ icon:'⚠️', category:'technique',
-      title:'Pénalité grille', text:'Changement de pièce — pénalité de 5 places sur la grille au prochain GP.' });
+    const drivers = F1Data.drivers.filter(x => x.teamId === save.playerTeamId && !x.retired);
+    drivers.forEach(x => { save.gridPenalties[x.id] = (save.gridPenalties[x.id]||0) + 5; });
+    if (save.news) save.news.push({ icon:'⚠️', category:'technique', title:'Pénalité grille', text:'Changement de pièce — pénalité de 5 places sur la grille au prochain GP.' });
   }
 
-  // Risque DNF — augmente légèrement la probabilité d abandon ce GP
-  if (e.dnfRisk) {
-    save._dnfRiskBoost = (save._dnfRiskBoost||0) + 0.04; // +4% de risque DNF
-  }
-
-  // Usure moteur accélérée
+  // Compatibilité avec anciennes mécaniques
+  if (e.dnfRisk) save._dnfRiskBoost = (save._dnfRiskBoost||0) + 0.04;
   if (e.engineWear) {
     save._engineWear = (save._engineWear||0) + e.engineWear;
     if ((save._engineWear||0) >= 5 && !save._enginePenaltyWarned) {
       save._enginePenaltyWarned = true;
-      if (save.news) save.news.push({ icon:'⚠️', category:'technique',
-        title:'Avertissement moteur', text:"Usure moteur élevée. Une pénalité moteur est possible dans les 3 prochains GP." });
+      if (save.news) save.news.push({ icon:'⚠️', category:'technique', title:'Avertissement moteur', text:"Usure moteur élevée. Une pénalité moteur est possible dans les 3 prochains GP." });
     }
   }
-
-  // Bonus qualif — setup orienté qualif
-  if (e.qualiBonusPct) {
-    save.weekendSetup = 'qualify';
-    if (!save.driverEffects) save.driverEffects = {};
-    Object.keys(save.driverEffects||{}).forEach(id => {
-      save.driverEffects[id].qualBonus = e.qualiBonusPct;
-    });
-  }
-
-  // Effets ingénieur
-  if (e.tokenBonus && e.tokenBonus > 0) {
-    save.tokens = (save.tokens||0) + e.tokenBonus;
-  }
+  if (e.tokenBonus && e.tokenBonus > 0) save.tokens = (save.tokens||0) + e.tokenBonus;
   if (e.rdBonus) {
     if (!save.carDev) save.carDev = {};
     if (!save.carDev[e.rdBonus]) save.carDev[e.rdBonus] = { level: 70, done: [], pending: [] };
     save.carDev[e.rdBonus].level = Math.min(100, (save.carDev[e.rdBonus].level||70) + 1);
   }
-  if (e.setupBonus) {
-    save.weekendSetup = e.setupBonus;
-  }
-  if (e.weatherBonus && e.weatherBonus > 0) {
-    const drivers2 = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
-    drivers2.forEach(d => {
-      if (!save.immersion) save.immersion = {};
-      if (!save.immersion.driverMorale) save.immersion.driverMorale = {};
-      if (!save.immersion.driverMorale[d.id]) save.immersion.driverMorale[d.id] = { value: 70 };
-      const cur = save.immersion.driverMorale[d.id].value || 70;
-      save.immersion.driverMorale[d.id].value = Math.min(100, cur + e.weatherBonus);
-    });
-  }
+  if (e.setupBonus) save.weekendSetup = e.setupBonus;
   if (e.reliabilityBonus && e.reliabilityBonus > 0) {
-    // Améliore la fiabilité de la voiture temporairement
     if (!save.carDev) save.carDev = {};
     if (!save.carDev.reliability) save.carDev.reliability = { level: 70, done: [], pending: [] };
     save.carDev.reliability.level = Math.min(100, (save.carDev.reliability.level||70) + e.reliabilityBonus);
   }
-  if (e.pace && e.pace !== 0) {
-    // Impact temporaire sur les pilotes de l équipe
-    const drivers3 = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
-    if (!save.engineModeBonus) save.engineModeBonus = {};
-    drivers3.forEach(d => { save.engineModeBonus[d.id] = (save.engineModeBonus[d.id]||0) + e.pace; });
-  }
-  if (e.upgradeNow) {
-    // Signal d installation immédiate — pris en compte dans rd.html
-    save._upgradeNowSignal = true;
-  }
-  if (e.dnfRisk) {
-    // Augmente légèrement le risque de DNF pour le prochain GP
-    save._dnfRiskBonus = (save._dnfRiskBonus || 0) + 0.05;
-  }
+  if (e.upgradeNow) save._upgradeNowSignal = true;
 
   // Marquer comme résolu
   if (!save.socialEvents) save.socialEvents = [];
@@ -944,7 +972,19 @@ function applyChoice(event, choice) {
     existing.resolved = true;
     existing.read = true;
     existing.choiceMade = choice.text;
+    existing.appliedEffects = mediaEffectLabel(e);
   }
+
+  media.log.unshift({
+    date: new Date().toISOString(),
+    race: save.race||0,
+    season: save.season||2025,
+    source: event.trigger,
+    target: dName,
+    choice: choice.text,
+    effects: mediaEffectLabel(e)
+  });
+  media.log = media.log.slice(0, 12);
 
   // Ajouter à l historique social
   if (!save.socialHistory) save.socialHistory = [];
@@ -953,7 +993,9 @@ function applyChoice(event, choice) {
     driverName: dName,
     trigger: event.trigger,
     choice: choice.text,
+    choiceType: choice.type || 'neutral',
     effects: e,
+    effectsText: mediaEffectLabel(e),
     race: save.race || 0,
   });
   save.socialHistory = save.socialHistory.slice(0, 30);
@@ -962,15 +1004,15 @@ function applyChoice(event, choice) {
   if (!save.news) save.news = [];
   save.news.push({
     icon: '💬', category: 'social',
-    title: `Discussion — ${dName}`,
-    text: `${event.trigger} : "${choice.text.substring(0, 60)}..."`,
+    title: `Décision média — ${dName}`,
+    text: `${event.trigger} : ${mediaEffectLabel(e)}`,
     season: save.season, race: save.race,
   });
 
   Save.save(save);
   save = Save.load();
 
-  showToast(`✅ ${dName} — ${choice.label}`);
+  showToast(`✅ ${dName} — ${mediaEffectLabel(e)}`);
   render();
 }
 
@@ -1019,6 +1061,17 @@ function render() {
 
   // Discussions en attente
   const pendingEvents = save.socialEvents.filter(e => !e.resolved);
+  const media = ensureMediaEffects(save);
+  const mediaTeam = media.team || {};
+  const mediaRows = [];
+  if (mediaTeam.pace) mediaRows.push(['Rythme voiture', (mediaTeam.pace>0?'+':'')+mediaTeam.pace]);
+  if (mediaTeam.race) mediaRows.push(['Bonus course', (mediaTeam.race>0?'+':'')+mediaTeam.race]);
+  if (mediaTeam.qualifying) mediaRows.push(['Bonus qualification', (mediaTeam.qualifying>0?'+':'')+mediaTeam.qualifying]);
+  if (mediaTeam.tyres) mediaRows.push(['Gestion pneus', (mediaTeam.tyres>0?'+':'')+mediaTeam.tyres]);
+  if (mediaTeam.tyreMalus) mediaRows.push(['Usure pneus supplémentaire', '+'+mediaTeam.tyreMalus]);
+  if (mediaTeam.weather) mediaRows.push(['Préparation météo', '+'+mediaTeam.weather]);
+  if (mediaTeam.dnfRisk) mediaRows.push(['Risque fiabilité', '+'+mediaTeam.dnfRisk]);
+  if (mediaTeam.engineWear) mediaRows.push(['Usure moteur', '+'+mediaTeam.engineWear]);
 
   let html = `
     <div class="section">
@@ -1029,6 +1082,10 @@ function render() {
         <div class="ta-row"><span>Confiance moyenne</span><b style="color:${moralColor(avgConf)}">${avgConf}/100</b></div>
         <div class="ta-row"><span>Loyauté moyenne</span><b style="color:${moralColor(avgLoy)}">${avgLoy}/100</b></div>
       </div>
+      ${mediaRows.length ? `<div class="media-effects">
+        <div style="font-family:var(--fh);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Effets média actifs sur ce GP</div>
+        ${mediaRows.map(r=>`<div class="me-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}
+      </div>` : ''}
     </div>`;
 
   // Discussions en attente
@@ -1047,7 +1104,7 @@ function render() {
           ${ev.choices.map((c,i) => `
             <div class="dc-choice ${c.type}" onclick='handleChoice(${JSON.stringify(ev.id)}, ${i})'>
               <span class="cc-text">${c.text}</span>
-              <span class="cc-effect">${c.label}</span>
+              <span class="cc-effect">${c.label}<br><small>${mediaEffectLabel(c.effect)}</small></span>
             </div>
           `).join('')}
         </div>
@@ -1105,7 +1162,7 @@ function render() {
           <div class="history-item">
             <div class="hi-icon">💬</div>
             <div>
-              <div class="hi-text"><b style="color:var(--text)">${h.driverName}</b> — ${h.trigger}<br><span style="color:rgba(255,255,255,.4)">"${h.choice.substring(0,50)}..."</span></div>
+              <div class="hi-text"><b style="color:var(--text)">${h.driverName}</b> — ${h.trigger}<br><span style="color:rgba(255,255,255,.4)">"${h.choice.substring(0,50)}..."</span>${h.effectsText ? `<br><span style="color:var(--green)">${h.effectsText}</span>` : ``}</div>
               <div class="hi-date">GP ${h.race || '—'} · Saison ${save.season||2025}</div>
             </div>
           </div>
