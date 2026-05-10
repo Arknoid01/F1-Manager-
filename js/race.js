@@ -387,6 +387,25 @@ const Race = {
         lapTime = cir.baseLapTime * 1.38 + (Math.random() - 0.5) * 0.3;
       }
 
+      // ── Aspiration — effet sillage sur le temps au tour ──
+      // Si une voiture est dans le sillage d'une autre (<1.5s)
+      // elle gagne 0.1 à 0.3s grâce à la réduction de traînée
+      if (!s.safetyCar.active && car.gap !== null && car.gap > 0) {
+        const carAhead = s.grid.find(c =>
+          c.status !== 'dnf' && c.position === car.position - 1
+        );
+        if (carAhead && carAhead.gap !== null) {
+          const gapToAhead = car.gap - carAhead.gap;
+          if (gapToAhead > 0 && gapToAhead < 1.5) {
+            // Plus on est proche, plus le sillage est fort
+            const slipEffect = 0.25 * (1 - gapToAhead / 1.5);
+            // Modifié par le nombre de zones DRS du circuit
+            const drsMultiplier = 1 + (cir.drsZones - 1) * 0.15;
+            lapTime -= slipEffect * drsMultiplier;
+          }
+        }
+      }
+
       car.currentPace  = lapTime;
       car.totalTime   += lapTime + car.penaltyTime;
       car.penaltyTime  = 0;

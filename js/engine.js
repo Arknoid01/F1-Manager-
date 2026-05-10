@@ -286,7 +286,7 @@ const Engine = {
     return events;
   },
 
-  // ── DÉPASSEMENT — TRAITS MAJEURS ─────────────────────────
+  // ── DÉPASSEMENT — DRS + ASPIRATION + TRAITS ─────────────
   attemptOvertake(attacker, defender, circuit) {
     const speedDiff = defender.currentPace - attacker.currentPace;
     if (speedDiff <= 0) return false;
@@ -297,7 +297,7 @@ const Engine = {
     let attackerOv = attacker.driver.overtaking;
     let defenderDf = defender.driver.defending;
 
-    // Traits : overtaker boost, defender résiste
+    // Traits
     if (attacker.driver.trait === 'overtaker')  attackerOv = Math.min(99, attackerOv + 7);
     if (attacker.driver.trait === 'aggressive') attackerOv = Math.min(99, attackerOv + 3);
     if (defender.driver.trait === 'defender')   defenderDf = Math.min(99, defenderDf + 7);
@@ -306,8 +306,41 @@ const Engine = {
     const attackerSkill = attackerOv / 100;
     const defenderSkill = defenderDf / 100;
 
-    const chance = baseChance * circuitFactor * (0.5 + attackerSkill * 0.5) * (1 - defenderSkill * 0.3);
-    return Math.random() < Math.max(0, Math.min(chance, 0.80));
+    // ── DRS — selon le nombre de zones du circuit ──────────
+    // 1 zone → +8%, 2 zones → +16%, 3 zones → +25%
+    const drsZones  = circuit.drsZones || 1;
+    const drsBonus  = drsZones * 0.08;
+
+    // ── Aspiration (slipstream) ────────────────────────────
+    // Si l'attaquant est dans le sillage (gap < 1s), il bénéficie
+    // d'une réduction de traînée qui facilite le dépassement
+    const gap = attacker.gap !== null && defender.gap !== null
+      ? Math.abs(attacker.gap - defender.gap)
+      : 2;
+    const slipstreamBonus = gap < 1.0
+      ? 0.18 * (1 - gap)   // max +18% si collé, diminue avec la distance
+      : gap < 2.0
+      ? 0.06               // léger effet à distance moyenne
+      : 0;
+
+    // ── Setup aéro joueur ──────────────────────────────────
+    // low_drag → meilleur DRS (+5%), high_df → moins bon DRS (-5%)
+    let setupBonus = 0;
+    try {
+      const sv = typeof Save !== 'undefined' ? Save.load() : null;
+      if (sv?.weekendSetup && sv?.playerTeamId === attacker.driver.teamId) {
+        if (sv.weekendSetup === 'low_drag') setupBonus =  0.05;
+        if (sv.weekendSetup === 'high_df')  setupBonus = -0.05;
+      }
+    } catch(e) {}
+
+    const chance = baseChance
+      * circuitFactor
+      * (0.5 + attackerSkill * 0.5)
+      * (1 - defenderSkill * 0.3)
+      * (1 + drsBonus + slipstreamBonus + setupBonus);
+
+    return Math.random() < Math.max(0, Math.min(chance, 0.85));
   },
 
   // ── SAFETY CAR ────────────────────────────────────────────
