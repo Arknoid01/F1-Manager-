@@ -350,6 +350,7 @@ function showDashboard() {
   renderDrivers(drivers,team);
   renderCarTiles(team);
   renderNavTiles(team,drivers);
+  renderSaveTools();
   renderStoryDecisions();
   renderStandings();
   renderNews();
@@ -421,6 +422,7 @@ function renderNavTiles(team,drivers) {
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
     {href:'social.html',icon:'💬',lbl:'Social',val:(() => { const pending = (save.socialEvents||[]).filter(e=>!e.read).length; return pending > 0 ? `${pending} message${pending>1?'s':''}` : 'OK'; })(),sub:'Relations pilotes · équipe',c:'var(--accent)'},
     {href:'training.html',icon:'🏋️',lbl:'Entraînement',val:'Bientôt',sub:'Simulateur · Sport',c:'var(--muted)'},
+    {href:'#saveToolsSection',icon:'💾',lbl:'Sauvegarde',val:'Export/Import',sub:'Gérer ta partie',c:'var(--muted)',onclick:'document.getElementById(\'saveToolsSection\').scrollIntoView({behavior:\'smooth\'})'},
   ];
 
   document.getElementById('navTiles').innerHTML=tiles.map(t=>`<a href="${t.href}" class="tile" style="border-left:2px solid ${t.c}"><span class="tile-icon">${t.icon}</span><div class="tile-lbl">${t.lbl}</div><div class="tile-val" style="color:${t.c}">${t.val}</div><div class="tile-sub">${t.sub}</div></a>`).join('');
@@ -500,6 +502,71 @@ function showToast(msg,isError=false) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.className=`toast${isError?' error':''}`;
   t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── EXPORT / IMPORT SAVE ─────────────────────────────────
+function renderSaveTools() {
+  const el = document.getElementById('saveToolsSection');
+  if (el) el.style.display = 'block';
+}
+
+function exportSave() {
+  try {
+    const raw = localStorage.getItem('f1manager_v1')
+             || localStorage.getItem('f1manager_save')
+             || localStorage.getItem('f1-manager-save');
+    if (!raw) { showToast('❌ Aucune sauvegarde trouvée', true); return; }
+
+    const blob = new Blob([raw], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const date = new Date().toISOString().slice(0,10);
+    const team = save?.playerTeamId || 'equipe';
+    const season = save?.season || 2025;
+    a.href     = url;
+    a.download = `f1manager_${team}_s${season}_${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ Sauvegarde exportée !');
+  } catch(e) {
+    showToast('❌ Erreur export : ' + e.message, true);
+  }
+}
+
+function importSave(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      // Vérification basique
+      if (!data.playerTeamId && !data.season) {
+        showToast('❌ Fichier invalide — ce n'est pas une sauvegarde F1 Manager', true);
+        return;
+      }
+      if (!confirm(`Importer cette sauvegarde ?
+
+Équipe : ${data.playerTeamId || '?'}
+Saison : ${data.season || '?'}
+GP : ${data.race || 0}/${F1Data.circuits.length}
+
+⚠️ La partie actuelle sera écrasée.`)) return;
+
+      // Détecter la bonne clé localStorage
+      const key = localStorage.getItem('f1manager_v1') ? 'f1manager_v1'
+                : localStorage.getItem('f1manager_save') ? 'f1manager_save'
+                : 'f1manager_v1';
+
+      localStorage.setItem(key, JSON.stringify(data));
+      showToast('✅ Sauvegarde importée ! Rechargement...');
+      setTimeout(() => location.reload(), 1500);
+    } catch(err) {
+      showToast('❌ Erreur import : ' + err.message, true);
+    }
+  };
+  reader.readAsText(file);
 }
 
 init();
