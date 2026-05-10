@@ -463,7 +463,9 @@ function renderDomain(key) {
     .map(t => ({ name: t.shortName, val: t[domain.stat] || 70, color: t.color }))
     .sort((a, b) => b.val - a.val);
   const bestRival = rivals[0];
-  const gap       = (dev.level || 70) - (bestRival?.val || 70);
+  const staffB    = Number(save.staffBonuses?.[key] || 0);
+  const finalLvl  = Math.max(1, Math.min(100, Math.round(((dev.level || 70) + staffB) * 10) / 10));
+  const gap       = finalLvl - (bestRival?.val || 70);
 
   const content = document.getElementById('domainContent');
   content.innerHTML = `
@@ -474,11 +476,12 @@ function renderDomain(key) {
         <div class="domain-name">${domain.label}</div>
         <div class="domain-stat">${domain.upgrades.filter(u => dev.done.includes(u.id)).length}/${domain.upgrades.length} upgrades · ${dev.pending?.length || 0} en livraison${dev._heritage>0?' · <span style=\"color:var(--green)\">+'+dev._heritage.toFixed(1)+' héritage</span>':''}</div>
         <div class="stat-bar-wrap">
-          <div class="stat-bar-fill" style="width:${dev.level || 70}%;background:${domain.color}"></div>
+          <div class="stat-bar-fill" style="width:${finalLvl}%;background:${domain.color}"></div>
         </div>
       </div>
       <div class="domain-level">
-        <div class="domain-val" style="color:${domain.color}">${dev.level || 70}</div>
+        <div class="domain-val" style="color:${domain.color}">${finalLvl}</div>
+        <div style="font-family:var(--fh);font-size:10px;color:var(--muted)">${staffB?`R&D ${dev.level || 70} · Staff +${staffB}`:'Valeur finale'}</div>
         <div class="domain-rival" style="color:${gap >= 0 ? 'var(--green)' : 'var(--accent)'}">
           ${gap >= 0 ? '+' : ''}${gap} vs meilleur
         </div>
@@ -488,13 +491,13 @@ function renderDomain(key) {
     <!-- Comparaison rivaux -->
     <div class="rivals-grid">
       <div style="font-family:var(--fh);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Comparaison rivaux</div>
-      ${[{name:'Vous', val:dev.level||70, color:domain.color, isMe:true}, ...rivals.slice(0,5)].map(r => `
+      ${[{name:'Vous', val:finalLvl, color:domain.color, isMe:true}, ...rivals.slice(0,5)].map(r => `
         <div class="rival-row">
           <div class="rival-name" style="color:${r.isMe?domain.color:'var(--muted)'}${r.isMe?';font-weight:700':''}">${r.name}${r.isMe?' ★':''}</div>
           <div class="rival-bar-wrap"><div class="rival-bar" style="width:${r.val}%;background:${r.color||'#888'}"></div></div>
           <div class="rival-val" style="color:${r.isMe?domain.color:'var(--text)'}">${r.val}</div>
-          <div class="rival-gap" style="color:${r.isMe?'transparent':r.val>(dev.level||70)?'var(--accent)':'var(--green)'}">
-            ${r.isMe?'':((r.val-(dev.level||70))>0?'+':''+(r.val-(dev.level||70)))}
+          <div class="rival-gap" style="color:${r.isMe?'transparent':r.val>finalLvl?'var(--accent)':'var(--green)'}">
+            ${r.isMe?'':((r.val-finalLvl)>0?'+':''+(r.val-finalLvl))}
           </div>
         </div>
       `).join('')}

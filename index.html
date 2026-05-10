@@ -403,6 +403,7 @@ function renderDrivers(drivers,team) {
 function renderCarTiles(team) {
   const carDev=save.carDev||{};
   const sb=save.staffBonuses||{};
+  const bd=save._carBreakdown||{};
   const stats=[
     {key:'aero',label:'Aéro',icon:'🌊',color:'var(--blue)'},
     {key:'chassis',label:'Châssis',icon:'🏗️',color:'var(--accent)'},
@@ -410,12 +411,18 @@ function renderCarTiles(team) {
     {key:'reliability',label:'Fiabilité',icon:'🛡️',color:'var(--green)'},
   ];
   document.getElementById('carTiles').innerHTML=stats.map(s=>{
-    const base   = team?.[s.key]||70;
-    const devLvl = carDev[s.key]?.level || base;
-    const staffB = sb[s.key]||0;
-    // Même calcul que rd.html : dev.level + bonus staff direct
-    const val    = Math.min(100, devLvl + staffB);
-    return `<div class="tile"><div class="tile-icon">${s.icon}</div><div class="tile-lbl">${s.label}</div><div class="tile-val" style="color:${s.color}">${devLvl}${staffB>0?`<span style="font-size:13px;color:var(--green)"> +${staffB}</span>`:''}</div><div class="sbar"><div class="sbar-fill" style="width:${val}%;background:${s.color}"></div></div></div>`;
+    const rawBase = carDev[s.key]?.base ?? bd[s.key]?.base ?? team?.[s.key] ?? 70;
+    const rdLevel = carDev[s.key]?.level ?? rawBase;
+    const rdBonus = Math.round((rdLevel - rawBase) * 10) / 10;
+    const staffB  = Number(sb[s.key]||0);
+    const finalVal = Math.max(1, Math.min(100, Math.round((rdLevel + staffB) * 10) / 10));
+    const parts=[];
+    parts.push(`Base ${rawBase}`);
+    if(rdBonus>0) parts.push(`R&D +${rdBonus}`);
+    if(rdBonus<0) parts.push(`Règlement ${rdBonus}`);
+    if(staffB>0) parts.push(`Staff +${staffB}`);
+    if(staffB<0) parts.push(`Staff ${staffB}`);
+    return `<div class="tile"><div class="tile-icon">${s.icon}</div><div class="tile-lbl">${s.label}</div><div class="tile-val" style="color:${s.color}">${finalVal}</div><div style="font-family:var(--fh);font-size:10px;color:var(--muted);margin-top:2px;line-height:1.35">${parts.join(' · ')}</div><div class="sbar"><div class="sbar-fill" style="width:${finalVal}%;background:${s.color}"></div></div></div>`;
   }).join('');
 }
 
