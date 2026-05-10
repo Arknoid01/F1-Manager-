@@ -41,6 +41,12 @@ const Engine = {
           lapTime -= _sv.sponsorBonuses.engine * 0.015;
         }
       }
+      const media = (_sv?.mediaEffects?.race === (_sv?.race||0) && _sv?.mediaEffects?.season === (_sv?.season||2025)) ? _sv.mediaEffects : null;
+      if (media?.team && _sv?.playerTeamId === team?.id) {
+        lapTime -= (media.team.pace || 0) * 0.020;
+        lapTime -= (media.team.race || 0) * 0.030;
+        if (weather !== 'dry') lapTime -= (media.team.weather || 0) * 0.035;
+      }
     } catch(e) {}
 
     // ── 2. Skill pilote ───────────────────────────────────
@@ -172,6 +178,11 @@ const Engine = {
         if (_svDeg.weekendSetup === 'qualify') rate *= 1.12; // pneus plus sollicités
         if (_svDeg.weekendSetup === 'race')    rate *= 0.90; // meilleure gestion pneus
       }
+      const media = (_svDeg?.mediaEffects?.race === (_svDeg?.race||0) && _svDeg?.mediaEffects?.season === (_svDeg?.season||2025)) ? _svDeg.mediaEffects : null;
+      if (media?.team && _svDeg?.playerTeamId === driver?.teamId) {
+        rate *= Math.max(0.70, 1 - (media.team.tyres || 0) * 0.035);
+        rate *= Math.min(1.40, 1 + (media.team.tyreMalus || 0) * 0.015);
+      }
     } catch(e) {}
 
     // Variabilité
@@ -262,7 +273,13 @@ const Engine = {
 
     // Abandon mécanique
     const reliabilityFactor = (100 - team.reliability) / 100;
-    if (Math.random() < reliabilityFactor * 0.0015) {
+    let mediaDnfBoost = 0;
+    try {
+      const _svInc = typeof Save !== 'undefined' ? Save.load() : null;
+      const media = (_svInc?.mediaEffects?.race === (_svInc?.race||0) && _svInc?.mediaEffects?.season === (_svInc?.season||2025)) ? _svInc.mediaEffects : null;
+      if (_svInc?.playerTeamId === (team?.id || driver?.teamId)) mediaDnfBoost = (media?.team?.dnfRisk || 0) * 0.0008 + ((_svInc?._dnfRiskBoost||0) * 0.002);
+    } catch(e) {}
+    if (Math.random() < reliabilityFactor * 0.0015 + mediaDnfBoost) {
       events.push({ type: 'dnf', reason: 'mechanical' });
     }
 

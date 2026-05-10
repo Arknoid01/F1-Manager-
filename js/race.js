@@ -104,6 +104,14 @@ const Race = {
       const driverDelta = (87 - car.driver.pace)      * 0.013;
       const random      = (Math.random() - 0.5) * 0.40;       // ±0.20s
       car._qualiTime    = circuit.baseLapTime + teamDelta + driverDelta + random;
+      try {
+        const _svQ = typeof Save !== 'undefined' ? Save.load() : null;
+        if (_svQ?.playerTeamId === car.team?.id) {
+          const media = (_svQ?.mediaEffects?.race === (_svQ?.race||0) && _svQ?.mediaEffects?.season === (_svQ?.season||2025)) ? _svQ.mediaEffects : null;
+          const qBonus = (media?.team?.qualifying || 0) + ((media?.team?.pace || 0) * 0.5);
+          if (qBonus) car._qualiTime -= qBonus * 0.025;
+        }
+      } catch(e) {}
     });
 
     // Trier par temps de quali (meilleur devant)
