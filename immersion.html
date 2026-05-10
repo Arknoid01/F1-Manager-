@@ -57,7 +57,15 @@ function showPane(id,btn){document.querySelectorAll('.tab-pane').forEach(p=>p.cl
 function panel(title,body,extra=''){return `<div class="panel"><div class="sec-lbl">${title}${extra}</div><div class="section-body">${body}</div></div>`;}
 function renderNews(items){ if(!items?.length) return '<div class="empty">Aucune nouvelle paddock pour le moment. Termine un GP pour générer des articles.</div>'; return items.slice(-8).reverse().map(n=>`<div class="news-row"><div class="news-ico">${n.icon||'📰'}</div><div><div class="news-title">${esc(n.title)}</div><div class="news-text">${esc(n.text)}</div></div></div>`).join('');}
 function renderInterviews(items){ if(!items?.length) return '<div class="empty">Aucune interview disponible.</div>'; return items.slice(-3).reverse().map(i=>`<div class="quote"><b>${esc(i.circuitName)} — ${esc(i.headline)}</b>${(i.quotes||[]).map(q=>`<div style="margin-top:8px">${esc(q)}</div>`).join('')}</div>`).join('');}
-function moraleList(m){ const vals=Object.values(m||{}); if(!vals.length) return '<div class="empty">Moral pilote disponible après le prochain GP.</div>'; return vals.slice(0,4).map(d=>`<div class="row"><div class="row-main"><div class="row-name">${esc(d.name)}</div><div class="row-sub">${esc(d.note)}</div></div><div class="row-val">${clamp(d.value)}</div></div>`).join('');}
+function moraleList(m){
+  if(!m||!Object.keys(m).length) return '<div class="empty">Moral pilote disponible après le prochain GP.</div>';
+  return Object.entries(m).slice(0,4).map(([id,d])=>{
+    const driver = F1Data.drivers.find(x=>x.id===id);
+    const name   = driver ? driver.firstName+' '+driver.name : (d.name||id);
+    const col    = clamp(d.value)>=70?'var(--green)':clamp(d.value)>=40?'var(--gold)':'var(--accent)';
+    return `<div class="row"><div class="row-main"><div class="row-name">${esc(name)}</div><div class="row-sub">${esc(d.note||'')}</div></div><div class="row-val" style="color:${col}">${clamp(d.value)}</div></div>`;
+  }).join('');
+}
 function topRows(arr,suffix=''){ if(!arr.length) return '<div class="empty">Pas encore assez de données.</div>'; return arr.map((r,i)=>`<div class="row"><div class="row-main"><div class="row-name">${i+1}. ${esc(r.name)}</div></div><div class="row-val">${r.value}${suffix}</div></div>`).join('');}
 function histRows(items){ if(!items?.length) return '<div class="empty">Termine une course pour remplir l’historique.</div>'; return items.slice().reverse().map(g=>`<div class="row"><div class="row-main"><div class="row-name">S${g.season} — ${esc(g.circuitName)}</div><div class="row-sub">Victoire ${esc(g.winner)} · ${esc(g.weather)} · SC ${g.safetyCarLaps||0}t · DNF ${g.dnf||0}</div></div><div class="row-val">${g.teamPoints||0} pts</div></div>`).join('');}
 function init(){
@@ -72,7 +80,7 @@ function init(){
   <section class="tab-pane active" id="overview">
     <div class="tiles-grid">
       ${panel('Réputation équipe',`<div class="tile-val">${clamp(rep.value)}</div>${bar(rep.value,'blue')}<div>${(rep.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`)}
-      ${panel('Sponsors vivants',`<div class="tile-val">${clamp(im.sponsorMood.value)}</div>${bar(im.sponsorMood.value,'orange')}<div class="tile-sub" style="margin-top:8px">${esc(im.sponsorMood.note)}</div>`)}
+      ${panel('Humeur sponsors',`<div class="tile-val">${clamp(im.sponsorMood.value)}<span style="font-size:13px;color:var(--muted)">/100</span></div>${bar(im.sponsorMood.value,'orange')}<div class="tile-sub" style="margin-top:8px">${esc(im.sponsorMood.note)}</div>`)}
       ${panel('Moral pilotes',moraleList(im.driverMorale))}
       ${panel('Garage & staff',`<div class="tile-val">${clamp(im.staffMorale.value)}</div>${bar(im.staffMorale.value,'green')}<div class="tile-sub" style="margin-top:8px">${esc(im.staffMorale.note)}</div>`)}
     </div>
