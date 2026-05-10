@@ -1,4 +1,4 @@
-const CACHE = 'f1manager-v4';
+const CACHE = 'f1manager-v5';
 const ASSETS = [
   '/F1-Manager-/',
   '/F1-Manager-/index.html',
