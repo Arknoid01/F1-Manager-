@@ -156,6 +156,19 @@
     <div class="tiles-grid" id="carTiles"></div>
 
     <!-- CLASSEMENT -->
+    <div id="saveToolsSection" style="display:none;margin-bottom:16px">
+      <div class="sec-lbl">💾 Gestion de la sauvegarde</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onclick="exportSave()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--fh);font-size:13px;color:var(--text);cursor:pointer;text-align:left;width:100%">
+          📤 Exporter — télécharge un fichier .json
+        </button>
+        <label style="background:var(--surface2);border:1px solid rgba(232,0,61,.3);border-radius:8px;padding:12px;font-family:var(--fh);font-size:13px;color:var(--text);cursor:pointer;display:block">
+          📂 Importer — <span style="color:var(--accent)">écrase la partie actuelle</span>
+          <input type="file" accept=".json" onchange="importSave(event)" style="display:none">
+        </label>
+      </div>
+    </div>
+
     <div class="sec-lbl">Classement constructeurs</div>
     <div class="panel" id="standingsPanel"></div>
 
@@ -422,10 +435,10 @@ function renderNavTiles(team,drivers) {
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
     {href:'social.html',icon:'💬',lbl:'Social',val:(() => { const pending = (save.socialEvents||[]).filter(e=>!e.read).length; return pending > 0 ? `${pending} message${pending>1?'s':''}` : 'OK'; })(),sub:'Relations pilotes · équipe',c:'var(--accent)'},
     {href:'training.html',icon:'🏋️',lbl:'Entraînement',val:'Bientôt',sub:'Simulateur · Sport',c:'var(--muted)'},
-    {href:'#saveToolsSection',icon:'💾',lbl:'Sauvegarde',val:'Export/Import',sub:"Gérer ta partie",c:"var(--muted)"},
+    {href:'javascript:void(0)',icon:'💾',lbl:'Sauvegarde',val:'Export/Import',sub:'Gerer ta partie',c:'var(--muted)',action:'toggleSaveTools()'},
   ];
 
-  document.getElementById('navTiles').innerHTML=tiles.map(t=>`<a href="${t.href}" class="tile" style="border-left:2px solid ${t.c}"><span class="tile-icon">${t.icon}</span><div class="tile-lbl">${t.lbl}</div><div class="tile-val" style="color:${t.c}">${t.val}</div><div class="tile-sub">${t.sub}</div></a>`).join('');
+  document.getElementById('navTiles').innerHTML=tiles.map(t=>`<a href="${t.href}" class="tile" style="border-left:2px solid ${t.c}" ${t.action?`onclick="${t.action}"`:''}><span class="tile-icon">${t.icon}</span><div class="tile-lbl">${t.lbl}</div><div class="tile-val" style="color:${t.c}">${t.val}</div><div class="tile-sub">${t.sub}</div></a>`).join('');
 }
 
 
@@ -506,8 +519,14 @@ function showToast(msg,isError=false) {
 
 // ── EXPORT / IMPORT SAVE ─────────────────────────────────
 function renderSaveTools() {
+  // Section affichée via toggle
+}
+function toggleSaveTools() {
   const el = document.getElementById('saveToolsSection');
-  if (el) el.style.display = 'block';
+  if (!el) return;
+  const visible = el.style.display !== 'none';
+  el.style.display = visible ? 'none' : 'block';
+  if (!visible) el.scrollIntoView({ behavior: 'smooth' });
 }
 
 function exportSave() {
