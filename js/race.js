@@ -67,8 +67,25 @@ const Race = {
         }
       } catch(e) {}
       let strategy = Engine.generateStrategy(circuit, team.performance, weather, driver.trait, driverIndex + 1);
-      if (playerStrategies && playerStrategies[driver.id]) {
-        strategy = Engine.normalizeStrategy(playerStrategies[driver.id], circuit, weather);
+
+      // Stratégie joueur : recherche robuste.
+      // Certains écrans sauvegardent les clés en string, ou utilisent un nom/index
+      // selon l'origine du pilote. Sans ça, la course repasse parfois sur une
+      // stratégie auto IA, ce qui donne l'impression que le pilote ignore les consignes.
+      const strategyKeyCandidates = [
+        driver.id,
+        String(driver.id),
+        baseDriver?.id,
+        String(baseDriver?.id),
+        driver.name,
+        `${driver.firstName || ''} ${driver.name || ''}`.trim(),
+      ].filter(v => v !== undefined && v !== null && v !== '');
+      const chosenStrategyKey = playerStrategies
+        ? strategyKeyCandidates.find(k => Object.prototype.hasOwnProperty.call(playerStrategies, k))
+        : null;
+      if (chosenStrategyKey !== null && chosenStrategyKey !== undefined) {
+        strategy = Engine.normalizeStrategy(playerStrategies[chosenStrategyKey], circuit, weather);
+        strategy.source = 'player';
       }
 
       grid.push({
@@ -214,33 +231,43 @@ const Race = {
         car.tyre, lap, s.totalLaps, car.strategy, someoneJustPitted, s.weather, s.safetyCar.active
       );
 
-      // Pour le joueur : respecter strictement la stratégie choisie en course sèche.
-      // Les arrêts opportunistes sont limités pour éviter que le moteur transforme
-      // une stratégie MEDIUM -> HARD en arrêts anticipés non désirés.
+      // Pour le joueur : priorité à la stratégie choisie.
+      // Le moteur peut conseiller un undercut, une SC ou un arrêt météo, mais il ne doit
+      // plus transformer tout seul une stratégie choisie en stratégie automatique.
       if (isPlayerCar && pitDecision.pit) {
-        const remainingPitLaps = Array.isArray(car.strategy?.pitLaps) ? car.strategy.pitLaps : [];
-        const nextPlannedPit = remainingPitLaps.find(pl => pl >= lap - 1);
-        const closeToPlan = Number.isFinite(nextPlannedPit) && Math.abs(nextPlannedPit - lap) <= 1;
+        const plannedPits = Array.isArray(car.strategy?.pitLaps) ? car.strategy.pitLaps : [];
+        const exactPlannedPit = plannedPits.some(pl => Number(pl) === lap);
+        const closeToPlan = plannedPits.some(pl => Math.abs(Number(pl) - lap) <= 1);
+        const hum = typeof currentHumidity !== 'undefined' ? currentHumidity : 0;
+        const compound = car.tyre?.compound;
+        const slick = ['SOFT','MEDIUM','HARD'].includes(compound);
 
-        if (pitDecision.reason === 'undercut') {
-          // Réactiver l'undercut pour le joueur, mais uniquement
-          // dans une vraie fenêtre stratégique proche.
-          const undercutAllowed = closeToPlan || Math.abs((nextPlannedPit || lap) - lap) <= 2;
-          if (!undercutAllowed) pitDecision = { pit: false };
-        } else if (pitDecision.reason === 'safety_car_opportunity' && !closeToPlan) {
-          pitDecision = { pit: false };
+        if (pitDecision.reason === 'planned') {
+          // Arrêt prévu = toujours respecté.
+          pitDecision = exactPlannedPit ? pitDecision : { pit: false };
+        } else if (pitDecision.reason === 'team_order') {
+          // Bouton manuel du joueur = toujours prioritaire.
+          pitDecision = pitDecision;
+        } else if (pitDecision.reason === 'weather_change') {
+          // Météo : seulement quand c'est vraiment nécessaire, pas dès une petite humidité.
+          // Ça évite les arrêts INTER/WET qui donnent l'impression que la stratégie est ignorée.
+          const dangerousWeather = (slick && hum >= 55) || (compound === 'WET' && hum < 25) || (compound === 'INTER' && hum < 18);
+          if (!dangerousWeather && !closeToPlan) pitDecision = { pit: false };
+        } else if (pitDecision.reason === 'safety_car_opportunity') {
+          // SC : opportunité seulement dans la fenêtre du plan.
+          if (!closeToPlan) pitDecision = { pit: false };
         } else if (pitDecision.reason === 'tyre_dead') {
-          // Ne pas casser la stratégie pour une usure simplement basse :
-          // on force seulement si le pneu est vraiment critique, ou si le pit prévu
-          // arrive quasiment maintenant.
-          const criticalTyre = car.tyre.condition < 0.06;
+          // Sécurité pure : on force uniquement si le pneu est réellement au bord du KO.
+          const criticalTyre = car.tyre.condition < 0.04;
           if (!criticalTyre && !closeToPlan) pitDecision = { pit: false };
+        } else if (pitDecision.reason === 'undercut') {
+          // Plus d'undercut automatique pour l'équipe joueur.
+          pitDecision = { pit: false };
         } else {
-          const allowedReasons = ['planned','safety_car_opportunity','weather_change','team_order'];
-          if (!allowedReasons.includes(pitDecision.reason)) pitDecision = { pit: false };
+          pitDecision = { pit: false };
         }
 
-        if (pitDecision.pit && pitsDone >= maxPits && pitDecision.reason !== 'weather_change' && car.tyre.condition > 0.06) {
+        if (pitDecision.pit && pitsDone >= maxPits && pitDecision.reason !== 'weather_change' && car.tyre.condition > 0.04) {
           pitDecision = { pit: false };
         }
       }
