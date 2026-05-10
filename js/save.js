@@ -70,6 +70,7 @@ const Save = {
         this.migrateBaseData(save, currentDataVersion);
       }
 
+      this.migrateSponsorSeasonProgress(save);
       this.applyDriverStates(save);
       this.applyTeamDevelopment(save);
       return save;
@@ -77,6 +78,49 @@ const Save = {
       console.error('[Save] Erreur chargement:', e);
       return null;
     }
+  },
+
+
+  migrateSponsorSeasonProgress(save) {
+    if (!save || !Array.isArray(save.sponsors)) return;
+    const season = Number(save.season || 2025);
+
+    save.sponsors.forEach(sp => {
+      const clauses = sp.clauses || [];
+      const hasOldProgress = clauses.some(cl =>
+        Number(cl.progress || 0) !== 0 ||
+        cl.bonusPaid || cl.paid || cl.completed ||
+        (cl.bonusObjective && (
+          Number(cl.bonusObjective.progress || 0) !== 0 ||
+          cl.bonusObjective.paid || cl.bonusObjective.bonusPaid ||
+          cl.bonusObjective.completed || cl.bonusObjective.unlocked
+        ))
+      );
+
+      if (sp._progressSeason !== season && ((save.race || 0) <= 1 || hasOldProgress)) {
+        sp.progress = 0;
+        sp.paid = false;
+        sp.satisfied = true;
+        sp._progressSeason = season;
+
+        clauses.forEach(cl => {
+          cl.progress = 0;
+          cl.bonusPaid = false;
+          cl.paid = false;
+          cl.completed = false;
+          cl.satisfied = false;
+
+          if (cl.bonusObjective && typeof cl.bonusObjective === 'object') {
+            cl.bonusObjective.progress = 0;
+            cl.bonusObjective.paid = false;
+            cl.bonusObjective.bonusPaid = false;
+            cl.bonusObjective.completed = false;
+            cl.bonusObjective.satisfied = false;
+            cl.bonusObjective.unlocked = false;
+          }
+        });
+      }
+    });
   },
 
   migrateBaseData(save, newVersion) {

@@ -995,6 +995,38 @@ const Sponsors = {
     Save.save(save);
   },
 
+
+  resetSeasonProgress(save) {
+    if (!save || !Array.isArray(save.sponsors)) return save;
+    const season = Number(save.season || 2025);
+
+    save.sponsors.forEach(sp => {
+      sp.progress = 0;
+      sp.paid = false;
+      sp.satisfied = true;
+      sp._progressSeason = season;
+
+      (sp.clauses || []).forEach(cl => {
+        cl.progress = 0;
+        cl.bonusPaid = false;
+        cl.paid = false;
+        cl.completed = false;
+        cl.satisfied = false;
+
+        if (cl.bonusObjective && typeof cl.bonusObjective === 'object') {
+          cl.bonusObjective.progress = 0;
+          cl.bonusObjective.paid = false;
+          cl.bonusObjective.bonusPaid = false;
+          cl.bonusObjective.completed = false;
+          cl.bonusObjective.satisfied = false;
+          cl.bonusObjective.unlocked = false;
+        }
+      });
+    });
+
+    return save;
+  },
+
   // ── FIN DE SAISON ─────────────────────────────────────────
   endOfSeason(save, playerPos) {
     if (!save) return { gained:0, lost:0, renewed:0, bonuses:0 };
@@ -1050,7 +1082,25 @@ const Sponsors = {
             const newValue = Math.round(sp.value * (allMet ? 1.15 : 1.0));
             sp.value    = Math.min(sp.maxValue || sp.value * 1.5, newValue);
             sp.remainingSeasons = sp.duration;
-            sp.clauses.forEach(cl => { cl.progress = 0; });
+            
+            sp.clauses.forEach(cl => {
+              cl.progress = 0;
+              cl.bonusPaid = false;
+              cl.paid = false;
+              cl.completed = false;
+              cl.satisfied = false;
+              if (cl.bonusObjective && typeof cl.bonusObjective === 'object') {
+                cl.bonusObjective.progress = 0;
+                cl.bonusObjective.paid = false;
+                cl.bonusObjective.bonusPaid = false;
+                cl.bonusObjective.completed = false;
+                cl.bonusObjective.satisfied = false;
+                cl.bonusObjective.unlocked = false;
+              }
+            });
+            sp.progress = 0;
+            sp.paid = false;
+            sp._progressSeason = save.season || 2025;
             renewed++;
             if (save.news) save.news.push({
               icon:'🔄', category:'sponsor',
@@ -1063,7 +1113,25 @@ const Sponsors = {
           }
         } else {
           // Reset progress pour la nouvelle saison
-          sp.clauses.forEach(cl => { cl.progress = 0; });
+          
+            sp.clauses.forEach(cl => {
+              cl.progress = 0;
+              cl.bonusPaid = false;
+              cl.paid = false;
+              cl.completed = false;
+              cl.satisfied = false;
+              if (cl.bonusObjective && typeof cl.bonusObjective === 'object') {
+                cl.bonusObjective.progress = 0;
+                cl.bonusObjective.paid = false;
+                cl.bonusObjective.bonusPaid = false;
+                cl.bonusObjective.completed = false;
+                cl.bonusObjective.satisfied = false;
+                cl.bonusObjective.unlocked = false;
+              }
+            });
+            sp.progress = 0;
+            sp.paid = false;
+            sp._progressSeason = save.season || 2025;
         }
 
         // Sponsor développeur — augmente si progression classement

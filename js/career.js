@@ -246,6 +246,38 @@ const Career = {
     Object.keys(save.contracts || {}).forEach(id => { if (removable.has(id)) delete save.contracts[id]; });
   },
 
+
+  resetSponsorSeasonProgress(save) {
+    if (!save || !Array.isArray(save.sponsors)) return save;
+    const season = Number(save.season || 2025);
+
+    save.sponsors.forEach(sp => {
+      sp.progress = 0;
+      sp.paid = false;
+      sp.satisfied = true;
+      sp._progressSeason = season;
+
+      (sp.clauses || []).forEach(cl => {
+        cl.progress = 0;
+        cl.bonusPaid = false;
+        cl.paid = false;
+        cl.completed = false;
+        cl.satisfied = false;
+
+        if (cl.bonusObjective && typeof cl.bonusObjective === 'object') {
+          cl.bonusObjective.progress = 0;
+          cl.bonusObjective.paid = false;
+          cl.bonusObjective.bonusPaid = false;
+          cl.bonusObjective.completed = false;
+          cl.bonusObjective.satisfied = false;
+          cl.bonusObjective.unlocked = false;
+        }
+      });
+    });
+
+    return save;
+  },
+
   // ── FIN DE SAISON COMPLÈTE ────────────────────────────────
   // Appelé manuellement depuis drivers.html
   endOfSeason(save) {
@@ -363,8 +395,8 @@ const Career = {
 
     save.news            = (save.news || []).slice(0, 5);
 
-    // Reset objectifs sponsors pour la nouvelle saison
-    (save.sponsors || []).forEach(sp => { sp.progress = 0; sp.paid = false; });
+    // Reset profond des objectifs sponsors pour la nouvelle saison
+    this.resetSponsorSeasonProgress(save);
 
     // 7. Tokens bonus + prime fin de saison
     save.tokens = (save.tokens || 0) + 3; // réduit de 5→3 (nerf R&D)
