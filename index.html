@@ -248,9 +248,15 @@ function isSeasonComplete(sv){
   const lastName = lastCircuit?.name;
 
   // Sécurité : si le dernier GP du calendrier est déjà archivé, la saison est terminée,
-  // même si une ancienne save n'a pas incrémenté save.race correctement.
-  if (lastRecorded && (lastRecorded.circuitId === lastId || lastRecorded.circuitName === lastName)) return true;
-  if (lastSummary && (lastSummary.circuitId === lastId || lastSummary.circuitName === lastName || lastSummary.gp === lastName)) return true;
+  // mais uniquement pour la saison EN COURS. Sans ce contrôle, le lastGpSummary
+  // de l'ancienne saison faisait réapparaître le bouton "Clôturer" après avoir
+  // lancé la saison suivante.
+  const currentSeason = sv?.season || 2025;
+  const recordedSeasonOk = !lastRecorded || !lastRecorded.season || Number(lastRecorded.season) === Number(currentSeason);
+  const summarySeasonOk  = !lastSummary  || !lastSummary.season  || Number(lastSummary.season)  === Number(currentSeason);
+
+  if (lastRecorded && recordedSeasonOk && (lastRecorded.circuitId === lastId || lastRecorded.circuitName === lastName)) return true;
+  if (lastSummary && summarySeasonOk && (lastSummary.circuitId === lastId || lastSummary.circuitName === lastName || lastSummary.gp === lastName)) return true;
 
   return false;
 }

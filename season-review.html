@@ -366,6 +366,14 @@ function launchNextSeason() {
 
   try {
     save = Save.load();
+
+    // Anti double-clôture : si la saison a déjà été lancée, ne pas appliquer
+    // une deuxième intersaison. Cela évite de passer de 2026 à 2027 sans courir.
+    if (!save || (!save.seasonFinished && !save._seasonReadyForReview)) {
+      location.href = 'index.html';
+      return;
+    }
+
     const report = Career.endOfSeason(save) || {};
     save = Save.load() || save;
 
