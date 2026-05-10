@@ -380,6 +380,10 @@ const Engine = {
     else if (gridPos <= 15) strategyBias = 'offset';
     else                    strategyBias = 'gamble';
 
+    // Variabilité 3 arrêts → 2 arrêts selon le style et la position
+    if (stops === 3 && strategyBias === 'conservative' && Math.random() < 0.5) stops = 2;
+    if (stops === 3 && strategyBias === 'aggressive'   && Math.random() < 0.35) stops = 2;
+    if (stops === 3 && teamPerformance > 85            && Math.random() < 0.4) stops = 2;
     // Gamble : les derniers tentent souvent 1 arrêt au lieu de 2
     if (strategyBias === 'gamble' && stops === 2 && Math.random() < 0.55) stops = 1;
     // Offset : décaler le pit de quelques tours
@@ -410,7 +414,11 @@ const Engine = {
         { compounds: ['SOFT','SOFT','HARD'],    pitLaps: [Math.round(L*0.20+pitOffset), Math.round(L*0.42+pitOffset)] },  // agressif
       ],
       3: [
-        { compounds: ['SOFT','SOFT','MEDIUM','HARD'], pitLaps: [Math.round(L*0.19), Math.round(L*0.40), Math.round(L*0.64)] },
+        { compounds: ['SOFT','SOFT','MEDIUM','HARD'],  pitLaps: [Math.round(L*0.19), Math.round(L*0.40), Math.round(L*0.64)] },
+        { compounds: ['SOFT','MEDIUM','MEDIUM','HARD'], pitLaps: [Math.round(L*0.22), Math.round(L*0.44), Math.round(L*0.67)] },
+        { compounds: ['SOFT','SOFT','HARD','MEDIUM'],   pitLaps: [Math.round(L*0.18), Math.round(L*0.38), Math.round(L*0.62)] },
+        { compounds: ['MEDIUM','SOFT','SOFT','HARD'],   pitLaps: [Math.round(L*0.25), Math.round(L*0.45), Math.round(L*0.65)] },
+        { compounds: ['SOFT','HARD','SOFT','MEDIUM'],   pitLaps: [Math.round(L*0.20), Math.round(L*0.48), Math.round(L*0.68)] },
       ],
     };
 

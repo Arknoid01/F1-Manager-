@@ -45,20 +45,24 @@ const Race = {
       const baseTeam = F1Data.teams.find(t => t.id === driver.teamId);
       if (!baseTeam) return;
       const team     = this.getEffectiveTeam(baseTeam);
-      // Appliquer le moral du pilote (uniquement équipe joueur)
+      // Appliquer moral + confiance + loyauté (uniquement équipe joueur)
       try {
         const _sv = Save.load();
         if (_sv?.playerTeamId === driver.teamId) {
-          // Le moral est stocké dans save.immersion.driverMorale[id].value
-          const driverKey = driver.id || driver.name;
-          const moralObj  = _sv?.immersion?.driverMorale?.[driverKey];
-          const moral     = moralObj?.value ?? 70;
-          // moral 0-100 : 70 = neutre, chaque point au-dessus = +0.2 pace
+          const driverKey  = driver.id || driver.name;
+          const moral      = _sv?.immersion?.driverMorale?.[driverKey]?.value ?? 70;
+          const confiance  = _sv?.driverConfidence?.[driverKey] ?? 50;
+          const loyalty    = _sv?.driverLoyalty?.[driverKey] ?? 50;
+
+          // Moral : +0.2 pace par point au-dessus de 70
           const moralDelta = Math.round((moral - 70) * 0.2);
-          if (moralDelta !== 0) {
-            driver.pace        = Math.max(1, Math.min(100, (driver.pace||75)        + moralDelta));
-            driver.consistency = Math.max(1, Math.min(100, (driver.consistency||75) + Math.round(moralDelta * 0.5)));
-          }
+          // Confiance haute → régularité améliorée
+          const confDelta  = Math.round((confiance - 50) * 0.1);
+          // Loyauté basse → pilote moins motivé (-pace si < 30)
+          const loyDelta   = loyalty < 30 ? -2 : loyalty < 40 ? -1 : 0;
+
+          driver.pace        = Math.max(1, Math.min(100, (driver.pace||75)        + moralDelta + loyDelta));
+          driver.consistency = Math.max(1, Math.min(100, (driver.consistency||75) + Math.round(moralDelta * 0.5) + confDelta));
         }
       } catch(e) {}
       let strategy = Engine.generateStrategy(circuit, team.performance, weather, driver.trait, driverIndex + 1);
