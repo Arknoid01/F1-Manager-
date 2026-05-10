@@ -336,7 +336,7 @@ const CareerEvents = {
       { icon:'🔬', title:'Données simulateur', text:`Les données de simulateur de la semaine pointent vers une bonne corrélation avec la piste réelle. Les ingénieurs sont optimistes sur le setup de départ.` },
       { icon:'🔧', title:'Nuit de travail', text:`Les mécaniciens de ${teamName} ont travaillé jusqu'à 3h du matin pour affiner les réglages. Le muret est satisfait du résultat. La voiture est prête.` },
       { icon:'📊', title:'Analyse télémétrie', text:`L'ingénieur de course de ${dName} a passé la soirée sur les données des rivaux. Quelques failles ont été identifiées. Le plan de course est ajusté en conséquence.` },
-      { icon:'🍕', title:'Cohésion d'équipe', text:`Dîner d'équipe hier soir pour souder le groupe avant le week-end. ${teamName} mise sur l'esprit collectif pour performer ce GP.` },
+      { icon:'🍕', title:"Cohésion d'équipe", text:`Dîner d'équipe hier soir pour souder le groupe avant le week-end. ${teamName} mise sur l'esprit collectif pour performer ce GP.` },
       { icon:'💬', title:'Conférence de presse', text:`${dName} était en forme en conférence de presse ce jeudi. Détendu, précis, confiant. Les journalistes ont noté une sérénité inhabituelle.` },
       { icon:'🏋️', title:'Préparation physique', text:`${dName} a commencé sa journée par une séance de sport à 7h. La condition physique est un facteur clé sur ce circuit exigeant.` },
       { icon:'🎯', title:'Debriefing EL', text:`Deux heures de debriefing après les essais libres. Les ingénieurs ont identifié le setup optimal. La voiture devrait être plus compétitive en qualif.` },
@@ -380,7 +380,7 @@ const CareerEvents = {
       { icon:'🌙', title:'Nuit dans le paddock', text:`Le paddock ne dort jamais vraiment. À minuit, des mécaniciens travaillent encore sous les lumières des garages. C'est ça aussi, la Formule 1.` },
       { icon:'🎬', title:'Caméras partout', text:`Les équipes de tournage sont partout dans le paddock de ${circName}. Chaque sourire, chaque tension — tout est filmé pour la postérité.` },
       { icon:'🚗', title:'Logistique monstre', text:`23 camions, des milliers de pièces, des centaines de personnes — tout ça pour quelques centaines de kilomètres de course. La F1 c'est une organisation colossale.` },
-      { icon:'🏨', title:'Vie d'hôtel', text:`Les pilotes et le staff enchaînent les hôtels depuis des semaines. ${dName} avoue que son sac est perpétuellement à moitié défait. C'est le prix du rêve.` },
+      { icon:'🏨', title:"Vie d'hôtel", text:`Les pilotes et le staff enchaînent les hôtels depuis des semaines. ${dName} avoue que son sac est perpétuellement à moitié défait. C'est le prix du rêve.` },
       { icon:'🌤️', title:'Météo du week-end', text:`La météo de ${circName} est capricieuse. Les ingénieurs ont préparé deux setup différents selon l'évolution des conditions. L'adaptabilité sera clé.` },
       { icon:'🔋', title:'Simulateur de nuit', text:`${dName} a passé deux heures au simulateur hier soir pour peaufiner ses repères. Chaque dixième gagné virtuellement peut se retrouver en vrai.` },
     ];
@@ -631,3 +631,7 @@ const CareerEvents = {
     });
   },
 };
+
+
+// Expose CareerEvents for every HTML page / inline handler.
+if (typeof window !== 'undefined') window.CareerEvents = CareerEvents;
