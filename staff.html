@@ -962,7 +962,7 @@ function hireStaff(id) {
   renderMarket();
   renderSalaries();
   document.getElementById('budgetBadge').textContent = `💰 ${Math.round(save.budget*10)/10}M €`;
-  document.getElementById('hiredCount').textContent  = save.staff.length;
+  document.getElementById('hiredCount').textContent  = (save.staff||[]).length;
   toast(`✅ ${st.name} recruté ! Impact immédiat sur la voiture.`);
 }
 
@@ -1006,7 +1006,7 @@ function fireStaff(id) {
   renderMarket();
   renderSalaries();
   document.getElementById('budgetBadge').textContent = `💰 ${Math.round(save.budget*10)/10}M €`;
-  document.getElementById('hiredCount').textContent  = save.staff.length;
+  document.getElementById('hiredCount').textContent  = (save.staff||[]).length;
   toast(`🚪 ${st.name} licencié (indemnité : ${penalty}M€)`);
 }
 

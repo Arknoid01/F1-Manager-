@@ -760,7 +760,7 @@ function buildFPResults(results) {
   return results.map(r => {
     const driver  = F1Data.drivers.find(d => d.id === r.driver);
     const tyre    = F1Data.tyres[r.compound];
-    const minLap  = Math.min(...r.lapTimes);
+    const minLap  = r.lapTimes?.length > 0 ? Math.min(...r.lapTimes) : null;
     const tyreClr = r.finalWear > 60 ? '#ff4444' : r.finalWear > 35 ? '#ffea00' : '#00e676';
 
     return `

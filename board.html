@@ -531,10 +531,10 @@ function renderActions() {
           save.reputation = Math.max(0,rep-5);
           save.boardPressure = Math.max(0,pressure-10);
           save.boardObjectives = getCareerEventsSafe().generateObjectives(save);
-          save.boardObjectives.renegotiated = true;
+          (save.boardObjectives = save.boardObjectives || {}) && (save.boardObjectives.renegotiated = true);
           // Adoucir les objectifs
-          save.boardObjectives.constructorPos = Math.min(10,save.boardObjectives.constructorPos+2);
-          save.boardObjectives.driverPos = Math.min(15,save.boardObjectives.driverPos+3);
+          if (save.boardObjectives) save.boardObjectives.constructorPos = Math.min(10,(save.boardObjectives.constructorPos||10)+2);
+          if (save.boardObjectives) save.boardObjectives.driverPos = Math.min(15,(save.boardObjectives.driverPos||15)+3);
           getCareerEventsSafe().log(save,{phase:'board',icon:'🎯',title:'Objectifs renégociés',text:'La direction accepte des objectifs plus réalistes.'});
           Save.save(save); init();
           toast('✅ Objectifs revus à la baisse !');
