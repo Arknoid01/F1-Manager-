@@ -238,11 +238,9 @@ function init() {
     restoreDriverStates(save);
     if (typeof Career !== 'undefined' && typeof Career.restoreTeamStates === 'function') Career.restoreTeamStates(save);
     migrateSave(save);
-    if (window.SocialEventsSync) {
-      SocialEventsSync.sync(save);
-      save = Save.load() || save;
-    }
+    syncSocialNotifications();
     showDashboard();
+    startSocialNotificationWatcher();
   } catch(err) {
     console.error('init error:', err);
     document.getElementById('mainPage').innerHTML =
@@ -539,17 +537,60 @@ function showToast(msg,isError=false) {
 function renderSaveTools() {
   // Section affichée via toggle
 }
+function syncSocialNotifications() {
+  try {
+    if (!save) save = Save.load();
+    if (!save || !save.playerTeamId) return 0;
+    if (window.SocialEventsSync && typeof SocialEventsSync.sync === 'function') {
+      const added = SocialEventsSync.sync(save);
+      save = Save.load() || save;
+      return added || 0;
+    }
+  } catch (e) {
+    console.warn('Social notif sync error:', e);
+  }
+  return 0;
+}
+
+function getSocialUnreadCount() {
+  try {
+    const sv = Save.load() || save || {};
+    if (window.SocialEventsSync && typeof SocialEventsSync.unreadCount === 'function') {
+      return SocialEventsSync.unreadCount(sv);
+    }
+    return (sv.socialEvents || []).filter(e => !e.resolved && !e.read).length;
+  } catch (e) {
+    return 0;
+  }
+}
+
 function updateSocialBadge() {
-  const pending = window.SocialEventsSync ? SocialEventsSync.unreadCount(save) : (save.socialEvents||[]).filter(e=>!e.resolved && !e.read).length;
+  syncSocialNotifications();
+  const pending = getSocialUnreadCount();
   const badge   = document.getElementById('socialBadge');
   const count   = document.getElementById('socialCount');
   if (!badge) return;
   if (pending > 0) {
     badge.style.display = 'inline-flex';
-    count.textContent   = pending > 9 ? '9+' : pending;
+    badge.style.alignItems = 'center';
+    count.textContent = pending > 9 ? '9+' : pending;
   } else {
     badge.style.display = 'none';
+    if (count) count.textContent = '';
   }
+}
+
+let socialNotifWatcherStarted = false;
+function startSocialNotificationWatcher() {
+  if (socialNotifWatcherStarted) return;
+  socialNotifWatcherStarted = true;
+  updateSocialBadge();
+  setInterval(updateSocialBadge, 4000);
+  window.addEventListener('storage', updateSocialBadge);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) updateSocialBadge();
+  });
+  window.addEventListener('pageshow', updateSocialBadge);
 }
 
 function toggleSaveTools() {
