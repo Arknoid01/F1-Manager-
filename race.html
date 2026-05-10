@@ -2122,7 +2122,7 @@ function restoreDriverStates() {
       d.trait       = state.trait       ?? d.trait;
       d.potential   = state.potential   ?? d.potential;
       d.retired     = state.retired     ?? false;
-      d.teamId      = state.teamId;  // ← crucial : teamId depuis la save
+      d.teamId      = state.teamId ?? d.teamId;  // garder teamId data.js si absent du save
       d.seasons     = state.seasons  ?? 0;
     });
   }
