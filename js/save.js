@@ -304,12 +304,20 @@ const Save = {
     try {
       if (!save.driverStates) save.driverStates = {};
       results.forEach(r => {
-        const dId = r.driverId || r.driver?.id;
+        const dId = (r.driver && r.driver.id) || r.driverId;
         if (!dId) return;
         const driver = F1Data.drivers.find(d => d.id === dId);
         if (!driver) return;
+        // Initialiser si absent (save ancien ou premier GP)
+        if (!save.driverStates[dId]) {
+          save.driverStates[dId] = {
+            pace: driver.pace, consistency: driver.consistency,
+            wetSkill: driver.wetSkill, overtaking: driver.overtaking,
+            defending: driver.defending, potential: driver.potential,
+            age: driver.age, retired: driver.retired, teamId: driver.teamId,
+          };
+        }
         const state = save.driverStates[dId];
-        if (!state) return;
 
         const pot   = state.potential || driver.potential || 85;
         const age   = state.age       || driver.age       || 25;
@@ -318,11 +326,11 @@ const Save = {
         if (isDnf) return; // pas de progression sur abandon
 
         // Facteur age
-        const ageFactor = age < 23 ? 1.2 : age < 29 ? 1.0 : age < 34 ? 0.6 : 0.2;
+        const ageFactor = age < 23 ? 1.5 : age < 29 ? 1.2 : age < 34 ? 0.8 : 0.3;
         // Facteur resultat
-        const posFactor = pos <= 3 ? 1.2 : pos <= 6 ? 1.0 : pos <= 10 ? 0.7 : 0.4;
-        // Gain de base par course : 0.05 à 0.15
-        const baseGain  = (0.05 + Math.random() * 0.10) * ageFactor * posFactor;
+        const posFactor = pos <= 3 ? 1.5 : pos <= 6 ? 1.2 : pos <= 10 ? 1.0 : 0.7;
+        // Gain de base par course : 0.10 à 0.25
+        const baseGain  = (0.10 + Math.random() * 0.15) * ageFactor * posFactor;
 
         // Stat a ameliorer
         const statToImprove = pos <= 10
@@ -334,11 +342,13 @@ const Save = {
 
         // Ralentir si proche du potentiel
         const gap       = pot - current;
-        const gapFactor = gap <= 2 ? 0.2 : gap <= 5 ? 0.5 : 1.0;
-        const finalGain = Math.round(baseGain * gapFactor * 10) / 10;
+        const gapFactor = gap <= 2 ? 0.3 : gap <= 5 ? 0.6 : 1.0;
+        // Arrondir à 2 décimales pour éviter les gains nuls
+        const finalGain = Math.round(baseGain * gapFactor * 100) / 100;
 
-        if (finalGain > 0) {
-          state[statToImprove] = Math.min(pot, Math.round((current + finalGain) * 10) / 10);
+        if (finalGain >= 0.01) {
+          state[statToImprove] = Math.min(pot, Math.round((current + finalGain) * 100) / 100);
+          console.log('[Progression] ' + dId + ' ' + statToImprove + ' +' + finalGain + ' -> ' + state[statToImprove]);
         }
 
         // Regression legere apres 34 ans
