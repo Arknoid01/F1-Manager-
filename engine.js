@@ -262,7 +262,14 @@ const Engine = {
 
     // Abandon mécanique
     const reliabilityFactor = (100 - team.reliability) / 100;
-    if (Math.random() < reliabilityFactor * 0.0015) {
+    let dnfRiskBoost = 0;
+    try {
+      const _sv = typeof Save !== 'undefined' ? Save.load() : null;
+      if (_sv?._dnfRiskBoost && _sv?.playerTeamId === (team?.id||driver?.teamId)) {
+        dnfRiskBoost = _sv._dnfRiskBoost || 0;
+      }
+    } catch(e) {}
+    if (Math.random() < reliabilityFactor * 0.0015 + dnfRiskBoost * 0.0005) {
       events.push({ type: 'dnf', reason: 'mechanical' });
     }
 

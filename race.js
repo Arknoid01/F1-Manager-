@@ -61,7 +61,11 @@ const Race = {
           // Loyauté basse → pilote moins motivé (-pace si < 30)
           const loyDelta   = loyalty < 30 ? -2 : loyalty < 40 ? -1 : 0;
 
-          driver.pace        = Math.max(1, Math.min(100, (driver.pace||75)        + moralDelta + loyDelta));
+          // Effet social temporaire (paceDelta depuis discussions)
+          const effect     = _sv?.driverEffects?.[driverKey];
+          const paceDelta  = (effect?.paceExpiry >= (_sv?.race||0)) ? (effect?.paceDelta||0) : 0;
+
+          driver.pace        = Math.max(1, Math.min(100, (driver.pace||75)        + moralDelta + loyDelta + paceDelta));
           driver.consistency = Math.max(1, Math.min(100, (driver.consistency||75) + Math.round(moralDelta * 0.5) + confDelta));
         }
       } catch(e) {}

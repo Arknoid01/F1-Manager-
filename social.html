@@ -1006,6 +1006,48 @@ function applyChoice(event, choice) {
     save[`contractSignal_${event.driverId}`] = true;
   }
 
+  // Pace direct — stocké temporairement sur le save pour ce GP
+  if (e.pace && event.driverId !== 'engineer') {
+    if (!save.driverEffects) save.driverEffects = {};
+    if (!save.driverEffects[event.driverId]) save.driverEffects[event.driverId] = {};
+    const cur = save.driverEffects[event.driverId].paceDelta || 0;
+    save.driverEffects[event.driverId].paceDelta = Math.max(-5, Math.min(5, cur + e.pace));
+    save.driverEffects[event.driverId].paceExpiry = (save.race||0) + 2; // dure 2 GP
+  }
+
+  // Pénalité grille — stockée pour le prochain GP
+  if (e.penaltyGrid) {
+    if (!save.gridPenalties) save.gridPenalties = {};
+    const driverKey = event.driverId;
+    save.gridPenalties[driverKey] = (save.gridPenalties[driverKey]||0) + 5;
+    if (save.news) save.news.push({ icon:'⚠️', category:'technique',
+      title:'Pénalité grille', text:'Changement de pièce — pénalité de 5 places sur la grille au prochain GP.' });
+  }
+
+  // Risque DNF — augmente légèrement la probabilité d'abandon ce GP
+  if (e.dnfRisk) {
+    save._dnfRiskBoost = (save._dnfRiskBoost||0) + 0.04; // +4% de risque DNF
+  }
+
+  // Usure moteur accélérée
+  if (e.engineWear) {
+    save._engineWear = (save._engineWear||0) + e.engineWear;
+    if ((save._engineWear||0) >= 5 && !save._enginePenaltyWarned) {
+      save._enginePenaltyWarned = true;
+      if (save.news) save.news.push({ icon:'⚠️', category:'technique',
+        title:'Avertissement moteur', text:"Usure moteur élevée. Une pénalité moteur est possible dans les 3 prochains GP." });
+    }
+  }
+
+  // Bonus qualif — setup orienté qualif
+  if (e.qualiBonusPct) {
+    save.weekendSetup = 'qualify';
+    if (!save.driverEffects) save.driverEffects = {};
+    Object.keys(save.driverEffects||{}).forEach(id => {
+      save.driverEffects[id].qualBonus = e.qualiBonusPct;
+    });
+  }
+
   // Effets ingénieur
   if (e.tokenBonus && e.tokenBonus > 0) {
     save.tokens = (save.tokens||0) + e.tokenBonus;
