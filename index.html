@@ -235,27 +235,26 @@ let save = null;
 
 function isSeasonComplete(sv){
   const total = F1Data.circuits.length || 23;
+  const currentSeason = Number(sv?.season || 2025);
   const raceNum = Number(sv?.race) || 0;
+
+  // La saison est terminée uniquement APRÈS avoir validé le dernier GP.
+  // Exemple avec 23 GP : race 22 = dernier GP à courir, race 23 = saison finie.
   if (raceNum >= total) return true;
 
-  const lastCircuit = F1Data.circuits[total - 1];
-  const lastResults = Array.isArray(sv?.raceResults) ? sv.raceResults : [];
-  if (lastResults.length >= total) return true;
+  const allResults = Array.isArray(sv?.raceResults) ? sv.raceResults : [];
+  const seasonResults = allResults.filter(r => Number(r?.season || currentSeason) === currentSeason);
+  if (seasonResults.length >= total) return true;
 
-  const lastRecorded = lastResults[lastResults.length - 1];
-  const lastSummary  = sv?.lastGpSummary;
+  const lastCircuit = F1Data.circuits[total - 1];
   const lastId = lastCircuit?.id;
   const lastName = lastCircuit?.name;
+  const lastRecorded = seasonResults[seasonResults.length - 1];
+  const lastSummary = sv?.lastGpSummary;
+  const summarySeasonOk = !lastSummary || !lastSummary.season || Number(lastSummary.season) === currentSeason;
 
-  // Sécurité : si le dernier GP du calendrier est déjà archivé, la saison est terminée,
-  // mais uniquement pour la saison EN COURS. Sans ce contrôle, le lastGpSummary
-  // de l'ancienne saison faisait réapparaître le bouton "Clôturer" après avoir
-  // lancé la saison suivante.
-  const currentSeason = sv?.season || 2025;
-  const recordedSeasonOk = !lastRecorded || !lastRecorded.season || Number(lastRecorded.season) === Number(currentSeason);
-  const summarySeasonOk  = !lastSummary  || !lastSummary.season  || Number(lastSummary.season)  === Number(currentSeason);
-
-  if (lastRecorded && recordedSeasonOk && (lastRecorded.circuitId === lastId || lastRecorded.circuitName === lastName)) return true;
+  // Sécurité anciennes sauvegardes : si le dernier GP de la saison courante est archivé.
+  if (lastRecorded && (lastRecorded.circuitId === lastId || lastRecorded.circuitName === lastName)) return true;
   if (lastSummary && summarySeasonOk && (lastSummary.circuitId === lastId || lastSummary.circuitName === lastName || lastSummary.gp === lastName)) return true;
 
   return false;
