@@ -153,8 +153,8 @@ function doTrain(driverId, type) {
   // Vérifier le coût
   if (type === 'simulator') {
     if ((save.tokens||0) < 1) { showToast('Pas assez de tokens R&D', true); return; }
-    const stat = selectedStats[driverId];
-    if (!stat) { showToast('Sélectionne une statistique à travailler', true); return; }
+    const stat = selectedStats[driverId] || 'pace';
+    selectedStats[driverId] = stat;
 
     const gain = calcGain(driverId, stat, type);
     if (gain <= 0) { showToast(`${driver.firstName} ${driver.name} a atteint son potentiel sur cette stat !`, true); return; }
@@ -298,9 +298,8 @@ function render() {
             const cur    = state[stat] || d[stat] || 75;
             const atMax  = cur >= pot;
             return `<div class="stat-pill ${selectedStat===stat?'selected':''} ${atMax?'disabled':''}"
-              onclick="${atMax?'':''}" 
-              onclick="selectStat('${d.id}','${stat}')" 
-              style="${atMax?'opacity:.4':''}">${info.icon} ${info.label}</div>`;
+              ${atMax ? '' : `onclick="selectStat('${d.id}','${stat}')"`}
+              style="${atMax?'opacity:.4;cursor:not-allowed':''}">${info.icon} ${info.label}</div>`;
           }).join('')}
         </div>
         <button class="train-btn sim ${simUsed >= simMax ? 'disabled' : ''}"

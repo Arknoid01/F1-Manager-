@@ -366,12 +366,12 @@ function render() {
               <div class="dr-sub">${d.age} ans · ${d.trait} · Potentiel : ${d.potential}</div>
               <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
                 ${[
-                  {l:'Pace',d.pace},
-                  {l:'Régularité',d.consistency},
-                  {l:'Pluie',d.wetSkill},
-                  {l:'Dépas.',d.overtaking},
-                  {l:'Défense',d.defending},
-                ].map(s=>`<span style="font-family:var(--fh);font-size:10px;color:var(--muted)">${s.l} <strong style="color:var(--text)">${s[1]||s.d}</strong></span>`).join('')}
+                  {l:'Pace', d:d.pace},
+                  {l:'Régularité', d:d.consistency},
+                  {l:'Pluie', d:d.wetSkill},
+                  {l:'Dépas.', d:d.overtaking},
+                  {l:'Défense', d:d.defending},
+                ].map(s=>`<span style="font-family:var(--fh);font-size:10px;color:var(--muted)">${s.l} <strong style="color:var(--text)">${s.d}</strong></span>`).join('')}
               </div>
             </div>
             <div class="dr-ovr" style="color:${color}">${ovr}</div>
