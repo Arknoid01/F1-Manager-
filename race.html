@@ -433,11 +433,15 @@ const TRACKS = {
 const CR = {
   pathEl: null,
   len: 0,
-  carEls: [], _carMap: {}, // éléments SVG
+  carEls: [], _carMap: {},
   raf: null,
-
-  // Fraction du tour parcourue par chaque voiture (0..1), par index de grille
   fractions: [],
+
+  // Le SVG est maintenant piloté par les données de course.
+  // currentLap + gaps + temps au tour => position visuelle.
+  // Ça évite le décalage où l'animation finissait un tour avant/après la simulation.
+  _lapStartTime: 0,
+  _lastRaceLap: 0,
 
   init(circuitId) {
     const t = TRACKS[circuitId] || { d: 'M70,35 L300,35 Q365,35 368,95 L370,145 Q372,195 330,215 L295,230 Q345,245 345,270 L100,270 Q55,268 42,225 L30,180 Q18,130 35,85 Q48,50 70,35 Z', sl:{x:70,y:35}, w:10 };
@@ -448,20 +452,16 @@ const CR = {
     cG.innerHTML = '';
     this.carEls  = [];
     this.fractions = [];
-    this.targetFrac = [];
     if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
 
-    // Halo
     const halo = this._path(t.d, 'none', 'rgba(255,255,255,0.05)', t.w + 8);
     tG.appendChild(halo);
-    // Asphalte
     const road = this._path(t.d, 'none', '#252535', t.w);
     tG.appendChild(road);
-    // Pointillés centre
     const dash = this._path(t.d, 'none', '#3a3a55', 1);
     dash.setAttribute('stroke-dasharray', '7 5');
     tG.appendChild(dash);
-    // Ligne départ
+
     const sl = document.createElementNS('http://www.w3.org/2000/svg','rect');
     sl.setAttribute('x',  t.sl.x - 1.5);
     sl.setAttribute('y',  t.sl.y - t.w / 2);
@@ -473,22 +473,19 @@ const CR = {
     this.pathEl = road;
     this.len    = road.getTotalLength();
 
-    // Créer 1 élément SVG par voiture (triés par grille de départ)
     if (!Race.state) return;
-    // Table de couleurs directe depuis F1Data
     const colorMap = {};
     F1Data.teams.forEach(t => { colorMap[t.id.toLowerCase()] = visibleTeamColor(t.color); });
     const _sv  = Save.load();
     const _pid = _sv?.playerTeamId?.toLowerCase() || '';
 
-    // Map driverId → {el, frac, speed} pour éviter tout problème d'index
     this._carMap = {};
-
     Race.state.grid.forEach((car, idx) => {
       const g   = document.createElementNS('http://www.w3.org/2000/svg','g');
       const tid = car.driver.teamId?.toLowerCase() || '';
       const teamColor   = colorMap[tid] || '#888888';
       const isPlayerCar = tid === _pid;
+
       const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
       c.setAttribute('r', isPlayerCar ? '7' : '5');
       c.setAttribute('fill', teamColor);
@@ -508,24 +505,20 @@ const CR = {
       g.appendChild(c);
       g.appendChild(tx);
       cG.appendChild(g);
-
       this.carEls.push(g);
-      // Stocker l'id du pilote pour retrouver l'élément facilement
       g.dataset.driverId = car.driver.id;
+
       const totalCars = Race.state.grid.length;
-      // Espacer les voitures sur ~3% du circuit pour représenter l'ordre de grille
       const startFrac = (1.0 - idx * (0.03 / Math.max(totalCars, 1)) + 1) % 1;
       this.fractions.push(startFrac);
-      this.targetFrac.push(startFrac);
+      this._carMap[car.driver.id] = { el: g, frac: startFrac };
 
-      // IMPORTANT : advanceLap() et startAnim() lisent uniquement _carMap.
-      // Sans cette ligne, les éléments SVG sont créés mais jamais animés/positionnés.
-      this._carMap[car.driver.id] = { el: g, frac: startFrac, speed: 0 };
-
-      // Position initiale visible avant le départ.
       const pt = this.pathEl.getPointAtLength(startFrac * this.len);
       g.setAttribute('transform', `translate(${pt.x},${pt.y})`);
     });
+
+    this._lapStartTime = performance.now();
+    this._lastRaceLap = Race.state.currentLap || 0;
   },
 
   _path(d, fill, stroke, sw) {
@@ -539,97 +532,78 @@ const CR = {
     return el;
   },
 
-  // Appelé à chaque tour simulé — met à jour les vitesses individuelles
+  // Appelé après chaque tour simulé : on recale le SVG sur le nouveau tour réel.
   advanceLap() {
     if (!Race.state || !this.pathEl || !this._carMap) return;
+    this._lastRaceLap = Race.state.currentLap || 0;
+    this._lapStartTime = performance.now();
+    this.renderFromRaceData(0);
+  },
 
-    const standings = Race.getStandings();
-    const leader    = standings[0];
-    if (!leader) return;
+  renderFromRaceData(progressOverride) {
+    if (!Race.state || !this.pathEl || !this._carMap) return;
 
-    const leaderEntry = this._carMap[leader.driver.id];
-    const leaderFrac  = leaderEntry ? leaderEntry.frac : 0.98;
-    const lapTime     = Race.state.circuit.baseLapTime || 90;
-    const baseSpeed   = 1 / (getInterval() / 1000);
+    const standings = Race.getStandings ? Race.getStandings() : [...Race.state.grid].sort((a,b)=>(a.position||99)-(b.position||99));
+    if (!standings.length) return;
 
-    standings.forEach(function(car) {
+    const interval = getInterval() || 6000;
+    const elapsed = Math.max(0, performance.now() - (this._lapStartTime || performance.now()));
+    let progress = progressOverride;
+    if (progress == null) progress = Math.min(0.985, elapsed / interval);
+
+    // Après l'arrivée, on garde tout le monde proche de la ligne.
+    if (Race.state.finished) progress = 0.995;
+
+    const lapTime = Race.state.circuit?.baseLapTime || 90;
+    const leaderFrac = progress;
+
+    standings.forEach((car, posIdx) => {
       const entry = this._carMap[car.driver.id];
       if (!entry) return;
 
       if (car.status === 'dnf') {
         entry.el.style.display = 'none';
-        entry.speed = 0;
         return;
       }
 
-      // Vitesse relative
-      const lastLap  = car.lapTimes.length > 0 ? car.lapTimes[car.lapTimes.length-1] : lapTime;
-      entry.speed = baseSpeed * (lapTime / lastLap);
+      // La distance est déduite du vrai gap en secondes.
+      // Un petit espacement minimum garde l'ordre lisible quand les écarts sont très faibles.
+      const gap = Math.max(0, Number(car.gap || 0));
+      const realBehind = gap / lapTime;
+      const minBehind = posIdx * 0.006;
+      const behind = Math.max(realBehind, minBehind);
+      const frac = (leaderFrac - behind + 1) % 1;
 
-      // Synchroniser la fraction selon le classement réel.
-      // Le gap donne la distance derrière le leader, mais on ajoute aussi un
-      // très petit espacement minimum par position pour éviter que deux points
-      // se superposent ou semblent inversés quand les écarts sont quasi égaux.
-      const gap          = car.gap || 0;
-      const realBehind   = gap / lapTime;
-      const minBehind    = standings.indexOf(car) * 0.006;
-      const fracBehind   = Math.max(realBehind, minBehind) % 1;
-      entry.frac         = (leaderFrac - fracBehind + 1) % 1;
-    }.bind(this));
-
-    // Sync aussi carSpeed[] pour la boucle RAF existante
-    Race.state.grid.forEach(function(car, idx) {
-      const entry = this._carMap[car.driver.id];
-      if (entry) this.carSpeed[idx] = entry.speed;
-    }.bind(this));
+      entry.frac = frac;
+      const pt = this.pathEl.getPointAtLength(frac * this.len);
+      entry.el.setAttribute('transform', `translate(${pt.x},${pt.y})`);
+      entry.el.style.display = '';
+    });
   },
 
-  // Animation RAF — vitesse constante et fluide pour chaque voiture
+  // Boucle visuelle : pas de simulation séparée, seulement interpolation entre deux tours réels.
   startAnim() {
     if (!this.pathEl) return;
-    let lastTime = performance.now();
+    this._started = false;
+    this._lapStartTime = performance.now();
+    this._lastRaceLap = Race.state?.currentLap || 0;
 
-    const loop = (now) => {
-      const dt = (now - lastTime) / 1000;
-      lastTime = now;
-
+    const loop = () => {
       if (Race.state && !isPaused && this._started && this._carMap) {
-        var self = this;
-        Object.values(this._carMap).forEach(function(entry) {
-          if (entry.speed === 0) return;
-          entry.frac = (entry.frac + dt * entry.speed) % 1;
-          var pt = self.pathEl.getPointAtLength(entry.frac * self.len);
-          entry.el.setAttribute('transform', 'translate('+pt.x+','+pt.y+')');
-          entry.el.style.display = '';
-        });
-
-        // Compteur de tour synchronisé sur le leader visuel
-        // Quand le leader passe la fraction 0 (ligne de départ), on incrémente
-        this._syncLapCounter();
+        this.renderFromRaceData();
       }
-
       this.raf = requestAnimationFrame(loop);
     };
 
-    this._displayFrac = [...this.fractions];
-    this.targetFrac   = [...this.fractions];
-    this.carSpeed     = new Array(Race.state.grid.length).fill(1 / (getInterval() / 1000));
-    this._prevFrac    = [...this.fractions];
-    this._visualLap   = 0;
-
-    // Départ arrêté — les voitures restent immobiles pendant les feux
-    this._started = false;
     this.raf = requestAnimationFrame(loop);
   },
 
-  // Séquence de feux de départ
   startLights(onGo) {
     const lights = document.getElementById('lightsOverlay');
     if (!lights) { onGo(); return; }
     lights.style.display = 'flex';
     const dots = lights.querySelectorAll('.light-dot');
 
-    // Allumer les feux un par un (5 rouges)
     let i = 0;
     const on = setInterval(() => {
       if (i < dots.length) {
@@ -637,40 +611,17 @@ const CR = {
         i++;
       } else {
         clearInterval(on);
-        // Extinction après 800ms → DÉPART !
         setTimeout(() => {
           dots.forEach(d => d.classList.remove('on'));
           setTimeout(() => {
             lights.style.display = 'none';
             this._started = true;
+            this._lapStartTime = performance.now();
             onGo();
           }, 300);
         }, 800);
       }
     }, 400);
-  },
-
-  // Détecte le passage de la ligne de départ du leader
-  _syncLapCounter() {
-    if (!Race.state) return;
-    // Trouver le leader actuel (position 1)
-    const leader = Race.state.grid.find(c => c.position === 1 && c.status === 'racing');
-    if (!leader) return;
-    const entry = this._carMap[leader.driver.id];
-    if (!entry) return;
-
-    const cur  = entry.frac || 0;
-    const prev = this._prevFracLeader ?? cur;
-
-    // Passage de la ligne : la fraction passe de ~0.98+ à ~0.02 (wraparound)
-    if (prev > 0.85 && cur < 0.15) {
-      this._visualLap = Math.min((this._visualLap || 1) + 1, Race.state.totalLaps);
-      // Le compteur affiché suit le tour simulé réel via syncLapUI().
-      // Ne pas le piloter par l'animation SVG, sinon il peut prendre 2-3 tours
-      // de retard/avance selon les écarts, Safety Car ou vitesses visuelles.
-    }
-
-    this._prevFracLeader = cur;
   },
 
   stopAnim() {
