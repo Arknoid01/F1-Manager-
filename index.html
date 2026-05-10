@@ -80,6 +80,39 @@
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.error{border-left-color:var(--accent)}
 
+/* Notification média : toujours visible dans la topbar mobile */
+.top-pills{overflow:visible!important}
+.social-alert-badge{
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  position:relative;
+  text-decoration:none;
+  font-size:18px;
+  width:30px;
+  height:30px;
+  border:1px solid rgba(232,0,61,.35);
+  background:rgba(232,0,61,.12);
+  border-radius:999px;
+  margin-left:2px;
+}
+.social-alert-badge .count{
+  position:absolute;
+  top:-4px;
+  right:-5px;
+  background:var(--accent);
+  color:#fff;
+  font-family:var(--fh);
+  font-size:9px;
+  font-weight:900;
+  padding:1px 4px;
+  border-radius:8px;
+  min-width:14px;
+  text-align:center;
+  line-height:1.4;
+}
+
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
 <link rel="stylesheet" href="css/immersive-theme.css?v=20260508c">
@@ -96,8 +129,8 @@
   <div class="top-pills">
     <div class="pill pill-muted" id="seasonBadge">—</div>
     <div class="pill pill-gold" id="budgetBadge">—</div>
-    <a href="social.html" id="socialBadge" style="display:none;position:relative;text-decoration:none;font-size:18px;padding:4px 6px;margin-top:2px" title="Messages en attente">
-      📩<span id="socialCount" style="position:absolute;top:0px;right:0px;background:var(--accent);color:#fff;font-family:var(--fh);font-size:9px;font-weight:900;padding:1px 4px;border-radius:8px;min-width:14px;text-align:center;line-height:1.4"></span>
+    <a href="social.html" id="socialBadge" class="social-alert-badge" title="Messages média non lus">
+      📩<span id="socialCount" class="count"></span>
     </a>
     <a href="aide.html" style="text-decoration:none;font-size:18px;padding:2px 4px" title="Aide">ℹ️</a>
   </div>
@@ -188,7 +221,7 @@
 <script src="js/data.js?v=20260508b"></script>
 <script src="js/save.js?v=20260508b"></script>
 <script src="js/theme.js"></script>
-<script src="js/social-events.js?v=20260510"></script>
+<script src="js/social-events.js?v=20260510b"></script>
 <script src="js/immersion.js?v=20260508b"></script>
 <script src="js/events.js?v=20260508b"></script>
 <script src="js/career.js?v=20260508b"></script>
@@ -537,15 +570,88 @@ function showToast(msg,isError=false) {
 function renderSaveTools() {
   // Section affichée via toggle
 }
+function buildIndexSocialFallback(sv) {
+  if (!sv || !sv.playerTeamId || typeof F1Data === 'undefined') return 0;
+  if (!sv.socialEvents) sv.socialEvents = [];
+
+  const hasPending = sv.socialEvents.some(e => !e.resolved && !e.read);
+  if (hasPending) return 0;
+
+  const season = sv.season || 2025;
+  const race   = sv.race || 0;
+  const key    = `${season}_${race}`;
+
+  // Une seule génération auto par GP depuis l'index.
+  if (sv._indexSocialGeneratedKey === key) return 0;
+
+  const drivers = (F1Data.drivers || []).filter(d => d.teamId === sv.playerTeamId && !d.retired).slice(0, 2);
+  if (!drivers.length) return 0;
+
+  const lastGP = sv.lastGpSummary || null;
+  const created = [];
+
+  drivers.forEach((d, i) => {
+    if (sv.socialEvents.some(e => e.driverId === d.id && !e.resolved)) return;
+
+    const result = lastGP?.playerResults?.find(r => String(r.driverId) === String(d.id) || r.driverName?.includes(d.name));
+    const pos = result?.position;
+    let trigger = '💬 Message pilote';
+    let text = `${d.firstName || ''} ${d.name} souhaite échanger avec vous avant le prochain week-end.`;
+
+    if (result?.status === 'dnf') {
+      trigger = '❌ Abandon au dernier GP';
+      text = `${d.firstName || ''} ${d.name} veut revenir sur son abandon et comprendre la réaction de l'équipe.`;
+    } else if (pos === 1) {
+      trigger = '🏆 Victoire';
+      text = `${d.firstName || ''} ${d.name} veut célébrer la victoire et parler de la dynamique de l'équipe.`;
+    } else if (pos && pos <= 3) {
+      trigger = '🏆 Podium';
+      text = `${d.firstName || ''} ${d.name} veut capitaliser sur le podium du dernier GP.`;
+    } else if ((sv.immersion?.driverMorale?.[d.id]?.value ?? 70) < 45) {
+      trigger = '😟 Moral pilote';
+      text = `${d.firstName || ''} ${d.name} traverse une période compliquée et demande un échange.`;
+    } else if (i > 0) {
+      return;
+    }
+
+    created.push({
+      id: `idx_social_${d.id}_${season}_${race}`,
+      driverId: d.id,
+      type: 'index_auto',
+      trigger,
+      text,
+      read: false,
+      resolved: false,
+      choices: [
+        { text:'On prend le temps d’en parler calmement.', effect:{moral:+5,confiance:+4,loyalty:+3}, label:'🤝 Soutien', type:'positive' },
+        { text:'On reste concentrés sur le prochain GP.', effect:{confiance:+2,pace:+1}, label:'🎯 Focus', type:'neutral' },
+        { text:'Les résultats doivent parler maintenant.', effect:{moral:-3,pace:+2}, label:'⚠️ Pression', type:'negative' },
+      ]
+    });
+  });
+
+  created.forEach(ev => sv.socialEvents.push(ev));
+  sv._indexSocialGeneratedKey = key;
+  if (created.length && typeof Save !== 'undefined') Save.save(sv);
+  return created.length;
+}
+
 function syncSocialNotifications() {
   try {
-    if (!save) save = Save.load();
+    save = Save.load() || save;
     if (!save || !save.playerTeamId) return 0;
+
+    let added = 0;
     if (window.SocialEventsSync && typeof SocialEventsSync.sync === 'function') {
-      const added = SocialEventsSync.sync(save);
+      added += SocialEventsSync.sync(save) || 0;
       save = Save.load() || save;
-      return added || 0;
     }
+
+    // Sécurité : si le fichier social-events est en cache ou ne génère rien,
+    // l'index crée quand même un message non lu minimal pour ce GP.
+    added += buildIndexSocialFallback(save) || 0;
+    save = Save.load() || save;
+    return added;
   } catch (e) {
     console.warn('Social notif sync error:', e);
   }
@@ -573,6 +679,7 @@ function updateSocialBadge() {
   if (pending > 0) {
     badge.style.display = 'inline-flex';
     badge.style.alignItems = 'center';
+    badge.style.justifyContent = 'center';
     count.textContent = pending > 9 ? '9+' : pending;
   } else {
     badge.style.display = 'none';
