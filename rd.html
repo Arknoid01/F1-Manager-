@@ -868,8 +868,11 @@ function renderProjection() {
     // Bonus investissement direct (nextYearDev)
     const directBonus = save.nextYearDev?.[domain.nextYear.id]?.gain || 0;
 
-    // Bonus allocation ressources (proportionnel à pctFuture et au budget restant)
-    const allocBonus  = Math.round(pctFuture * 12 * (key === 'aero' || key === 'chassis' ? 1.2 : 1.0));
+    // Bonus allocation ressources — plafonné et réaliste
+    // Max +6 pts si 100% alloué au futur, moins si allocation partielle
+    // Aéro/châssis légèrement favorisés (règlement 2026)
+    const multiplier  = (key === 'aero' || key === 'chassis') ? 1.15 : 1.0;
+    const allocBonus  = Math.round(pctFuture * 5 * multiplier); // max +5-6 pts
 
     const projected   = Math.min(100, currentLevel + directBonus + allocBonus);
 
