@@ -1116,7 +1116,8 @@ function renderStandings() {
   const cMap = {};
   F1Data.teams.forEach(t => { cMap[t.id] = visibleTeamColor(t.color); });
 
-  Race.getStandings().forEach(car => {
+  const allStandings = Race.getStandings();
+  allStandings.forEach(car => {
     const tyre      = F1Data.tyres[car.tyre.compound];
     const isDnf     = car.status === 'dnf';
     const isLead    = car.position === 1;
@@ -1135,8 +1136,7 @@ function renderStandings() {
       : car.gap !== null ? '+'+car.gap.toFixed(1)+'s' : 'DNF';
 
     // Intervalle avec le pilote devant
-    const standings = Race.getStandings();
-    const carAhead  = standings.find(c => c.position === car.position - 1 && c.status !== 'dnf');
+    const carAhead  = allStandings.find(c => c.position === car.position - 1 && c.status !== 'dnf');
     const interval  = (!isLead && !isDnf && carAhead && car.gap !== null && carAhead.gap !== null)
       ? '+' + Math.abs(car.gap - carAhead.gap).toFixed(2) + 's'
       : null;
