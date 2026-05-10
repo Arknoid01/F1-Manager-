@@ -206,6 +206,91 @@ const Save = {
   },
 
 
+
+  // ── PROGRESSION PILOTES APRÈS COURSE ─────────────────────
+  // Applique de petits gains persistants après chaque GP.
+  // Le plafond est le potentiel du pilote : plus il s'en approche,
+  // plus la progression ralentit.
+  progressDriversAfterRace(save, results) {
+    if (!save || typeof F1Data === 'undefined' || !Array.isArray(results)) return [];
+
+    save.driverStates = save.driverStates || {};
+    const progressed = [];
+    const stats = ['pace', 'consistency', 'wetSkill', 'overtaking', 'defending'];
+
+    results.forEach(r => {
+      const d = r.driver;
+      if (!d || !d.id) return;
+      if (r.status && String(r.status).toLowerCase().includes('dnf')) return;
+
+      const state = save.driverStates[d.id] || {
+        age: d.age, pace: d.pace, consistency: d.consistency, wetSkill: d.wetSkill,
+        overtaking: d.overtaking, defending: d.defending, salary: d.salary,
+        trait: d.trait, potential: d.potential, retired: d.retired, teamId: d.teamId,
+        seasons: d.seasons || 0, contractYears: d.contractYears || 0, personality: d.personality,
+      };
+
+      const potential = Number(state.potential ?? d.potential ?? 90);
+      const avg = stats.reduce((sum, st) => sum + Number(state[st] ?? d[st] ?? 75), 0) / stats.length;
+      const room = Math.max(0, potential - avg);
+      if (room <= 0.05) {
+        save.driverStates[d.id] = state;
+        return;
+      }
+
+      const age = Number(state.age ?? d.age ?? 28);
+      const youngMult = age <= 21 ? 1.45 : age <= 24 ? 1.25 : age <= 28 ? 1.0 : age <= 33 ? 0.65 : 0.35;
+      const pos = Number(r.position || 20);
+      const resultMult = pos <= 3 ? 1.25 : pos <= 10 ? 1.05 : 0.85;
+      const traitMult = state.trait === 'prodigy' ? 1.25 : 1;
+      const roomMult = Math.min(1.25, Math.max(0.25, room / 10));
+
+      // 1 à 2 stats progressent par course, avec de petits gains visibles sur la durée.
+      const pool = ['pace', 'consistency', 'overtaking', 'defending'];
+      if (Math.random() < 0.25) pool.push('wetSkill');
+      const first = pool[Math.floor(Math.random() * pool.length)];
+      const selected = [first];
+      if (Math.random() < 0.25) {
+        const second = pool.filter(st => st !== first)[Math.floor(Math.random() * (pool.length - 1))];
+        if (second) selected.push(second);
+      }
+
+      const gains = [];
+      selected.forEach(st => {
+        const current = Number(state[st] ?? d[st] ?? 75);
+        if (current >= potential) return;
+        const rawGain = (0.06 + Math.random() * 0.12) * youngMult * resultMult * traitMult * roomMult;
+        const gain = Math.round(Math.min(0.3, rawGain) * 10) / 10;
+        if (gain <= 0) return;
+        const next = Math.min(potential, Math.round((current + gain) * 10) / 10);
+        if (next > current) {
+          state[st] = next;
+          d[st] = next;
+          gains.push({ stat: st, gain: Math.round((next - current) * 10) / 10 });
+        }
+      });
+
+      save.driverStates[d.id] = state;
+      if (gains.length) progressed.push({ driver: d, teamId: state.teamId || d.teamId, gains });
+    });
+
+    const playerProgress = progressed.filter(p => p.teamId === save.playerTeamId);
+    if (playerProgress.length) {
+      save.news = save.news || [];
+      playerProgress.forEach(p => {
+        const labels = { pace:'Pace', consistency:'Régularité', wetSkill:'Pluie', overtaking:'Dépassement', defending:'Défense' };
+        save.news.unshift({
+          icon: '📈', category: 'driver',
+          title: `Progression — ${p.driver.firstName || ''} ${p.driver.name}`.trim(),
+          text: p.gains.map(g => `${labels[g.stat] || g.stat} +${g.gain}`).join(' · '),
+        });
+      });
+      save.news = save.news.slice(0, 30);
+    }
+
+    return progressed;
+  },
+
   // ── ENREGISTRER UNE COURSE DANS LA CARRIÈRE ───────────────
   recordRaceResults(raceState, results) {
     const save = this.load();
@@ -230,6 +315,9 @@ const Save = {
       save.driverStandings[driverId] = (save.driverStandings[driverId] || 0) + (r.points || 0);
       save.teamStandings[teamId]     = (save.teamStandings[teamId] || 0) + (r.points || 0);
     });
+
+    // Progression réelle des pilotes après le GP, enregistrée dans driverStates.
+    this.progressDriversAfterRace(save, results);
 
     const playerResults = results.filter(r => r.team && r.team.id === playerTeamId);
     const bestPosition  = playerResults.length ? Math.min(...playerResults.map(r => r.position)) : 20;
