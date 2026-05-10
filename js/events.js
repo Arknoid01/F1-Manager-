@@ -93,49 +93,61 @@ const CareerEvents = {
 
   // Évaluer si les objectifs sont atteints
   evaluateObjectives(save) {
-    if (!save?.boardObjectives) return { score:0, details:[] };
+    if (!save?.boardObjectives) return { score:0, details:[], racesDone:0, racesWithPoints:0 };
+
     const obj = save.boardObjectives;
     const details = [];
     let score = 0;
 
+    const sameId = (a,b) => String(a) === String(b);
+    const currentSeason = Number(save.season || obj.season || 2025);
+    const totalRaces = F1Data?.circuits?.length || 24;
+
+    // Ne lit que les résultats de la saison en cours.
+    // Important : certaines anciennes sauvegardes gardent l'historique de plusieurs saisons dans raceResults.
+    const seasonResults = (save.raceResults || []).filter(r => {
+      if (r.season === undefined || r.season === null) return true;
+      return Number(r.season) === currentSeason;
+    });
+    const racesDone = seasonResults.length || Number(save.race || 0) || 0;
+    const seasonStarted = racesDone > 0;
+    const seasonFinished = racesDone >= totalRaces;
+
     // Position constructeurs
     const teams = [...F1Data.teams].sort((a,b) =>
-      (save.teamStandings?.[b.id]||0) - (save.teamStandings?.[a.id]||0)
+      (Number(save.teamStandings?.[b.id])||0) - (Number(save.teamStandings?.[a.id])||0)
     );
-    const constPos = teams.findIndex(t => t.id === save.playerTeamId) + 1;
-    const constOk  = constPos <= obj.constructorPos;
-    details.push({ label:`Constructeurs P${constPos}/${obj.constructorPos}`, ok: constOk });
+    const constPos = seasonStarted ? (teams.findIndex(t => sameId(t.id, save.playerTeamId)) + 1) : null;
+    const constOk  = constPos ? constPos <= obj.constructorPos : null;
+    details.push({ label:`Constructeurs ${constPos ? `P${constPos}` : '—'}/${obj.constructorPos}`, ok: constOk, finalOnly:true });
     if (constOk) score += 30;
 
     // Position pilote
-    const drivers = [...F1Data.drivers].filter(d => d.teamId === save.playerTeamId)
-      .sort((a,b) => (save.driverStandings?.[b.id]||0) - (save.driverStandings?.[a.id]||0));
-    const driverPts = drivers[0] ? (save.driverStandings?.[drivers[0].id]||0) : 0;
     const allDrivers = [...F1Data.drivers].filter(d=>!d.retired)
-      .sort((a,b)=>(save.driverStandings?.[b.id]||0)-(save.driverStandings?.[a.id]||0));
-    const driverPos = allDrivers.findIndex(d=>d.teamId===save.playerTeamId)+1;
-    const driverOk  = driverPos > 0 && driverPos <= obj.driverPos;
-    details.push({ label:`Pilote P${driverPos||'?'}/${obj.driverPos}`, ok: driverOk });
+      .sort((a,b)=>(Number(save.driverStandings?.[b.id])||0)-(Number(save.driverStandings?.[a.id])||0));
+    const driverPos = seasonStarted ? (allDrivers.findIndex(d=>sameId(d.teamId, save.playerTeamId))+1) : null;
+    const driverOk  = driverPos ? driverPos <= obj.driverPos : null;
+    details.push({ label:`Pilote ${driverPos ? `P${driverPos}` : '—'}/${obj.driverPos}`, ok: driverOk, finalOnly:true });
     if (driverOk) score += 30;
 
     // Courses avec points
-    const racesWithPoints = (save.raceResults||[]).filter(r => {
-      // playerPoints n'est pas stocké directement — on calcule depuis r.results
+    const racesWithPoints = seasonResults.filter(r => {
       const playerPts = (r.results||[])
-        .filter(x => x.teamId === save.playerTeamId)
-        .reduce((s, x) => s + (x.points||0), 0);
+        .filter(x => sameId(x.teamId ?? x.team?.id, save.playerTeamId))
+        .reduce((sum, x) => sum + (Number(x.points)||0), 0);
       return playerPts > 0;
     }).length;
-    const racesOk = racesWithPoints >= obj.minPointsRaces;
-    details.push({ label:`${racesWithPoints}/${obj.minPointsRaces} courses avec points`, ok: racesOk });
+    const racesOk = racesWithPoints >= (Number(obj.minPointsRaces)||0);
+    details.push({ label:`${racesWithPoints}/${obj.minPointsRaces} courses avec points`, ok: racesOk, progress:racesWithPoints, target:obj.minPointsRaces });
     if (racesOk) score += 20;
 
-    // Budget surplus (simplifié)
-    const budgetOk = (save.budget||0) > 50;
-    details.push({ label:`Budget ${budgetOk?'sain':'insuffisant'}`, ok: budgetOk });
+    // Santé financière : utilise l'objectif sauvegardé si disponible au lieu d'une valeur fixe.
+    const budgetTarget = Number.isFinite(Number(obj.budgetSurplus)) ? Number(obj.budgetSurplus) : 50;
+    const budgetOk = (Number(save.budget)||0) >= budgetTarget;
+    details.push({ label:`Budget ${Math.round((Number(save.budget)||0)*10)/10}/${budgetTarget}M€`, ok: budgetOk, target:budgetTarget });
     if (budgetOk) score += 20;
 
-    return { score, details, constPos, driverPos };
+    return { score, details, constPos, driverPos, racesWithPoints, racesDone, seasonFinished, budgetTarget };
   },
 
   // Calculer la pression du board
