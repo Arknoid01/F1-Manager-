@@ -255,6 +255,86 @@ function generateSocialEvents(save) {
     }
   });
 
+  // ── DISCUSSIONS INGÉNIEURS ────────────────────────────────
+  // Ingénieur de piste — briefings techniques avec bonus
+  const eng = save.staff?.find(s => s.role === 'race_engineer' || s.specialty === 'race_engineer');
+  const engName = eng ? (eng.firstName ? `${eng.firstName} ${eng.name}` : eng.name) : 'Votre ingénieur de piste';
+
+  // Briefing pneus avant GP
+  if (race > 0 && !save[`eng_tyres_${race}_${season}`] && Math.random() < 0.5) {
+    const circuits = F1Data.circuits || [];
+    const circuit  = circuits[(race) % circuits.length];
+    const highDeg  = circuit?.tyreDegradation > 1.2;
+    events.push({
+      id: `eng_tyres_${race}_${season}`,
+      driverId: 'engineer',
+      type: 'engineer',
+      trigger: `Briefing pneus — ${circuit?.name || 'prochain GP'}`,
+      text: `${engName} vous présente l'analyse pneus pour le prochain GP. La dégradation sur ce circuit est ${highDeg ? 'élevée' : 'modérée'}. Il propose une approche stratégique et attend votre validation.`,
+      choices: [
+        { text: highDeg ? "On part sur 2 arrêts avec Medium/Hard en priorité." : "1 arrêt optimisé, on gère la dégradation.", effect: { tyreBonus: +2, setupBonus: 'race' }, label: '🏁 Stratégie course', type: 'positive' },
+        { text: "On attaque avec les Softs dès le départ, quitte à pitter tôt.", effect: { tyreBonus: +1, setupBonus: 'qualify' }, label: '⚡ Agressif', type: 'neutral' },
+        { text: "On s'adapte en direct selon la course. Reste flexible.", effect: { tyreBonus: 0 }, label: '🎲 Improvisation', type: 'negative' },
+      ]
+    });
+    save[`eng_tyres_${race}_${season}`] = true;
+  }
+
+  // Analyse setup après EL
+  else if (save.weekendFPDone >= 2 && !save[`eng_setup_${race}_${season}`] && Math.random() < 0.5) {
+    events.push({
+      id: `eng_setup_${race}_${season}`,
+      driverId: 'engineer',
+      type: 'engineer',
+      trigger: 'Analyse setup post-EL',
+      text: `${engName} a compilé les données des essais libres. Deux options se dégagent : optimiser pour les qualifs ou préserver les pneus pour la course. Votre décision influencera la configuration finale.`,
+      choices: [
+        { text: "Tout sur la qualif. On maximise la position de départ.", effect: { qualiBonusPct: +3, tyreMalus: +8 }, label: '⚡ Mode qualif', type: 'positive' },
+        { text: "Équilibre qualif/course. On reste polyvalents.", effect: { qualiBonusPct: +1, tyreMalus: +3 }, label: '⚖️ Équilibre', type: 'neutral' },
+        { text: "Priorité course. La grille s'oublie, les points restent.", effect: { qualiBonusPct: 0, tyreMalus: 0, raceBonus: +2 }, label: '🏁 Mode course', type: 'negative' },
+      ]
+    });
+    save[`eng_setup_${race}_${season}`] = true;
+  }
+
+  // Découverte technique R&D
+  else if (!save[`eng_rd_${race}_${season}`] && race % 4 === 0 && race > 0) {
+    const domains = ['aero', 'chassis', 'engine', 'reliability'];
+    const domain  = domains[Math.floor(Math.random() * domains.length)];
+    const labels  = { aero:'aérodynamique', chassis:'châssis', engine:'moteur', reliability:'fiabilité' };
+    events.push({
+      id: `eng_rd_${race}_${season}`,
+      driverId: 'engineer',
+      type: 'engineer',
+      trigger: 'Piste de développement identifiée',
+      text: `L'équipe technique a identifié une piste d'amélioration sur le ${labels[domain]} suite aux données de ce GP. Le responsable R&D demande votre feu vert pour orienter les ressources.`,
+      choices: [
+        { text: "Lancez les recherches immédiatement. On investit.", effect: { rdBonus: domain, tokenBonus: +1 }, label: '🔬 Investir', type: 'positive' },
+        { text: "Intéressant mais on attend les prochains GP pour confirmer.", effect: { tokenBonus: 0 }, label: '⏳ Prudence', type: 'neutral' },
+        { text: "On a d'autres priorités en ce moment. Classez ça.", effect: { tokenBonus: -0 }, label: '❌ Refus', type: 'negative' },
+      ]
+    });
+    save[`eng_rd_${race}_${season}`] = true;
+  }
+
+  // Météo imprévisible — conseil stratégie
+  else if (save.weekendWeather !== 'dry' && !save[`eng_weather_${race}_${season}`]) {
+    const isHeavy = save.weekendWeather === 'heavy_rain';
+    events.push({
+      id: `eng_weather_${race}_${season}`,
+      driverId: 'engineer',
+      type: 'engineer',
+      trigger: 'Briefing météo stratégique',
+      text: `${engName} vous alerte : la météo de ce week-end est ${isHeavy ? 'très perturbée' : 'incertaine'}. Plusieurs scénarios de course sont possibles. Il faut définir une priorité stratégique maintenant.`,
+      choices: [
+        { text: isHeavy ? "On prépare Full Wet en priorité, Inters en backup." : "On prépare les Inters. On sera réactifs.", effect: { weatherBonus: +3, moral: +2 }, label: '🌧️ Adapté météo', type: 'positive' },
+        { text: "On reste sur notre plan de base. La météo changera peut-être.", effect: { weatherBonus: +1 }, label: '🎲 Optimiste', type: 'neutral' },
+        { text: "Données insuffisantes. On improvise en direct au muret.", effect: { weatherBonus: 0 }, label: '🤷 Attentiste', type: 'negative' },
+      ]
+    });
+    save[`eng_weather_${race}_${season}`] = true;
+  }
+
   return events;
 }
 
@@ -289,6 +369,30 @@ function applyChoice(event, choice) {
   // Signal contrat
   if (e.contractSignal) {
     save[`contractSignal_${event.driverId}`] = true;
+  }
+
+  // Effets ingénieur
+  if (e.tokenBonus && e.tokenBonus > 0) {
+    save.tokens = (save.tokens||0) + e.tokenBonus;
+  }
+  if (e.rdBonus) {
+    if (!save.carDev) save.carDev = {};
+    if (!save.carDev[e.rdBonus]) save.carDev[e.rdBonus] = { level: 70, done: [], pending: [] };
+    save.carDev[e.rdBonus].level = Math.min(100, (save.carDev[e.rdBonus].level||70) + 1);
+  }
+  if (e.setupBonus) {
+    save.weekendSetup = e.setupBonus;
+  }
+  if (e.weatherBonus && e.weatherBonus > 0) {
+    // Bonus de connaissance météo — améliore le moral des pilotes
+    const drivers2 = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
+    drivers2.forEach(d => {
+      if (!save.immersion) save.immersion = {};
+      if (!save.immersion.driverMorale) save.immersion.driverMorale = {};
+      if (!save.immersion.driverMorale[d.id]) save.immersion.driverMorale[d.id] = { value: 70 };
+      const cur = save.immersion.driverMorale[d.id].value || 70;
+      save.immersion.driverMorale[d.id].value = Math.min(100, cur + 2);
+    });
   }
 
   // Marquer comme résolu
@@ -393,8 +497,8 @@ function render() {
       html += `<div class="discussion-card">
         <div class="dc-trigger">${ev.trigger}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:18px">${d?.flag||'🏁'}</span>
-          <span style="font-family:var(--fh);font-weight:700">${d?.firstName||''} ${d?.name||ev.driverId}</span>
+          <span style="font-size:18px">${ev.type==='engineer'?'🔧':(d?.flag||'🏁')}</span>
+          <span style="font-family:var(--fh);font-weight:700">${ev.type==='engineer'?'Ingénieur de piste':(d?.firstName||'')+' '+(d?.name||ev.driverId)}</span>
         </div>
         <div class="dc-text">${ev.text}</div>
         <div class="dc-choices">
