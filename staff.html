@@ -571,6 +571,27 @@ const LEGACY_STAFF_IDS = {
   stella: 'dir_stella'
 };
 
+
+function normalizeGeneratedStaffPower(st) {
+  if (!st || !st.generated || !st.impacts) return st;
+  const main = st.specialty;
+  const capped = {};
+  Object.entries(st.impacts).forEach(([key, val]) => {
+    const n = Number(val) || 0;
+    // Staff généré : max +3 sur sa spécialité, +4 si elite, +1 ailleurs.
+    const limit = key === main ? (st.elite ? 4 : 3) : 1;
+    capped[key] = Math.max(0, Math.min(limit, n));
+  });
+  st.impacts = capped;
+  return st;
+}
+
+function normalizeAllGeneratedStaff(saveObj) {
+  if (!saveObj) return;
+  if (Array.isArray(saveObj.generatedStaff)) saveObj.generatedStaff.forEach(normalizeGeneratedStaffPower);
+  if (saveObj.staffStates) Object.values(saveObj.staffStates).forEach(normalizeGeneratedStaffPower);
+}
+
 function normalizeStaffId(id) {
   const key = String(id || '');
   return LEGACY_STAFF_IDS[key] || key;
@@ -629,6 +650,7 @@ function init() {
   }
 
   save.staff = save.staff || [];
+  normalizeAllGeneratedStaff(save);
   migrateLegacyStaffIds();
 
   // Restaurer les staffs générés depuis la save
@@ -676,6 +698,7 @@ function applyStaffPassives() {
   };
 
   hiredStaff.forEach(st => {
+    normalizeGeneratedStaffPower(st);
     Object.entries(st.impacts).forEach(([key, val]) => {
       save.staffBonuses[key] = (save.staffBonuses[key] || 0) + val;
     });
