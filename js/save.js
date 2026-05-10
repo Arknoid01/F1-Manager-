@@ -203,7 +203,7 @@ const Save = {
     const teamPoints    = playerResults.reduce((sum, r) => sum + (r.points || 0), 0);
 
     // Récompense course de base
-    const reward = 1 + Math.round(teamPoints * 0.3) + (bestPosition <= 3 ? 3 : bestPosition <= 10 ? 1 : 0);
+    const reward = 2 + Math.round(teamPoints * 0.3) + (bestPosition <= 3 ? 3 : bestPosition <= 10 ? 1 : 0);
 
     // Tokens performance-based + 0.5 garanti (demi-token = 1 token tous les 2 GP)
     // Nerf v2 : gains réduits pour allonger la progression R&D
