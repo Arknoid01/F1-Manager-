@@ -468,7 +468,7 @@ const Engine = {
       .sort((a,b) => a - b)
       .slice(0, Math.max(0, compounds.length - 1));
     while (pitLaps.length < compounds.length - 1) {
-      pitLaps.push(Math.round(circuit.laps * ((pitLaps.length + 1) / compounds.length)));
+      if (compounds.length > 0) pitLaps.push(Math.round(circuit.laps * ((pitLaps.length + 1) / compounds.length)));
     }
     return { compounds, pitLaps };
   },

@@ -69,7 +69,7 @@ const Weekend = {
       tyreCondition = Math.max(0, tyreCondition - degradeRate * (1 - setupOpt.tyreBonus));
     }
 
-    const avgLap    = lapTimes.reduce((s,l)=>s+l,0) / lapTimes.length;
+    const avgLap    = lapTimes.length > 0 ? lapTimes.reduce((s,l)=>s+l,0) / lapTimes.length : 0;
     const finalWear = 100 - tyreCondition * 100;
 
     return {

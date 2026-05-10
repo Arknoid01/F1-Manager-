@@ -1124,7 +1124,7 @@ const Career = {
 
     // Générer tous les 1-2 ans (pas forcément chaque saison)
     // Mais on génère toujours au moins 2 la première fois
-    const isFirst  = save.generatedStaff.length === 0;
+    const isFirst  = (save.generatedStaff?.length ?? 0) === 0;
     const count    = isFirst
       ? 25  // Pool initial large
       : 4 + Math.floor(Math.random() * 5); // 4-8 nouveaux par saison
