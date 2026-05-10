@@ -663,7 +663,7 @@ const Career = {
 
     this.persistDriverStates(save);
     Save.save(save);
-    return { ok: true, msg: `${driver.name} recruté pour ${signingFee}M€${transfer.replaced ? `, ${transfer.replaced.name} devient agent libre` : ''} !`, signingFee };
+    return { ok: true, msg: `${driver.firstName} ${driver.name} recruté pour ${signingFee}M€${transfer.replaced ? `, ${transfer.replaced.firstName} ${transfer.replaced.name} devient agent libre` : ''} !`, signingFee };
   },
 
 
@@ -884,7 +884,7 @@ const Career = {
     save.contracts[d.id] = { ...c, refus:(c.refus||0)+1, cooldownUntilSeason:(save.season || 2025) + 1, salary:c.salary || d.salary, years:c.years || 0, status:c.status || 'pilote2', satisfaction: Math.max(15, (c.satisfaction ?? 50) - 6) };
     const counter = roll <= evalResult.chance + 22 ? evalResult.demand : null;
     Save.save(save);
-    return { ok:true, accepted:false, counter, chance:evalResult.chance, msg: counter ? `${d.name} refuse mais propose une contre-offre.` : `${d.name} refuse l'offre.` };
+    return { ok:true, accepted:false, counter, chance:evalResult.chance, msg: counter ? `${d.firstName} ${d.name} refuse mais propose une contre-offre.` : `${d.firstName} ${d.name} refuse l'offre.` };
   },
 
   // ── LICENCIER UN PILOTE ──────────────────────────────────
@@ -915,7 +915,7 @@ const Career = {
 
     this.persistDriverStates(save);
     Save.save(save);
-    return { ok: true, msg: `${driver.name} libéré (indemnité : ${penalty}M€)` };
+    return { ok: true, msg: `${driver.firstName} ${driver.name} libéré (indemnité : ${penalty}M€)` };
   },
 
   // ── STATS AFFICHABLES ───────────────────────────────────

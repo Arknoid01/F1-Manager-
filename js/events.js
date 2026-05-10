@@ -217,7 +217,7 @@ const CareerEvents = {
       }),
       () => ({
         title: 'Gastro dans l\'équipe',
-        text:  `Une gastro-entérite touche plusieurs membres de l'équipe dont ${d.name}. Week-end compliqué en perspective.`,
+        text:  `Une gastro-entérite touche plusieurs membres de l'équipe dont ${d.firstName} ${d.name}. Week-end compliqué en perspective.`,
         icon:  '🤒', category: 'medical',
         effect: () => this.applyDriverEffect(save, d.id, {consistency:-5, races:1, label:'Pas dans son assiette'})
       }),
@@ -271,7 +271,7 @@ const CareerEvents = {
       // Mercato / Contrats
       () => ({
         title: 'Rumeur mercato',
-        text:  `Le clan ${d.name} demande des garanties sportives pour sa prolongation. Le coût augmente.`,
+        text:  `Le clan ${d.firstName} ${d.name} demande des garanties sportives pour sa prolongation. Le coût augmente.`,
         icon:  '📰', category: 'mercato',
         effect: () => {
           save.contracts[d.id] = save.contracts[d.id] || {years:2};
@@ -615,7 +615,7 @@ const CareerEvents = {
         text: `${driver.firstName} ${driver.name} ${isMine?'prolonge':'rejoint l\'équipe'} pour ${offer.salary}M€/an, ${offer.years} an(s).`
       });
       Save.save(save);
-      return { ok:true, accepted:true, msg:`${driver.name} a accepté l'offre !` };
+      return { ok:true, accepted:true, msg:`${driver.firstName} ${driver.name} a accepté l'offre !` };
     } else {
       // Contre-offre
       save.contracts[driverId] = save.contracts[driverId] || {};
@@ -625,7 +625,7 @@ const CareerEvents = {
       return {
         ok:false, accepted:false,
         counter,
-        msg:`${driver.name} refuse. Il demande ${demand+1}M€/an minimum.`
+        msg:`${driver.firstName} ${driver.name} refuse. Il demande ${demand+1}M€/an minimum.`
       };
     }
   },

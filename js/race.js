@@ -219,7 +219,7 @@ const Race = {
       const penalty = incidents.find(i => i.type === 'penalty');
       if (penalty) {
         car.penaltyTime += penalty.seconds;
-        lapEvents.push({ lap, type: 'penalty', message: `⚠️ ${car.driver.name} — Pénalité +${penalty.seconds}s` });
+        lapEvents.push({ lap, type: 'penalty', message: `⚠️ ${car.driver.firstName} ${car.driver.name} — Pénalité +${penalty.seconds}s` });
       }
 
       // ── Pit stop ─────────────────────────────────────────────
@@ -383,7 +383,7 @@ const Race = {
             lapEvents.push({
               lap,
               type: 'pit',
-              message: `⚠️ ${car.driver.name} — Arrêt raté ! (+${penalty.toFixed(1)}s)`,
+              message: `⚠️ ${car.driver.firstName} ${car.driver.name} — Arrêt raté ! (+${penalty.toFixed(1)}s)`,
             });
           }
         } catch(e) { /* ignore */ }
@@ -412,7 +412,7 @@ const Race = {
           driverId: car.driver.id,
           teamId:   car.driver.teamId,
           compound: nextCompound,
-          message: `🔧 ${car.driver.name} — Pit stop → ${F1Data.tyres[nextCompound].name} (${pitReasonText})`,
+          message: `🔧 ${car.driver.firstName} ${car.driver.name} — Pit stop → ${F1Data.tyres[nextCompound].name} (${pitReasonText})`,
         });
       }
 
@@ -514,7 +514,7 @@ const Race = {
           lapEvents.push({
             lap,
             type: 'overtake',
-            message: `🏎️ ${attacker.driver.name} dépasse ${defender.driver.name}${cir.overtakingDifficulty > 0.7 ? ' — dépassement exceptionnel !' : ''}`,
+            message: `🏎️ ${attacker.driver.firstName} ${attacker.driver.name} dépasse ${defender.driver.firstName} ${defender.driver.name}${cir.overtakingDifficulty > 0.7 ? ' — dépassement exceptionnel !' : ''}`,
           });
         }
       }
@@ -585,7 +585,7 @@ const Race = {
     const car = this.state.grid.find(c => c.driver.id === driverId);
     if (!car || car.status !== 'racing') return false;
     car.orderMode = ['attack','normal','save'].includes(mode) ? mode : 'normal';
-    this.state.events.push({ lap: this.state.currentLap, type: 'team_order', message: `📻 ${car.driver.name} reçoit l'ordre : ${car.orderMode === 'attack' ? 'attaque' : car.orderMode === 'save' ? 'économie pneus' : 'rythme normal'}` });
+    this.state.events.push({ lap: this.state.currentLap, type: 'team_order', message: `📻 ${car.driver.firstName} ${car.driver.name} reçoit l'ordre : ${car.orderMode === 'attack' ? 'attaque' : car.orderMode === 'save' ? 'économie pneus' : 'rythme normal'}` });
     return true;
   },
 
@@ -595,7 +595,7 @@ const Race = {
     if (!car || car.status !== 'racing') return false;
     car.forcePit = true;
     car.requestedCompound = compound;
-    this.state.events.push({ lap: this.state.currentLap, type: 'team_order', message: `📻 ${car.driver.name} appelé aux stands pour ${F1Data.tyres[compound]?.name || compound}` });
+    this.state.events.push({ lap: this.state.currentLap, type: 'team_order', message: `📻 ${car.driver.firstName} ${car.driver.name} appelé aux stands pour ${F1Data.tyres[compound]?.name || compound}` });
     return true;
   },
 

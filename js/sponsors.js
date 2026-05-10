@@ -911,7 +911,7 @@ const Sponsors = {
   updateAfterRace(save, raceResult) {
     if (!save?.sponsors?.length || !raceResult) return;
 
-    const playerResults = raceResult.results?.filter(r => r.teamId === save.playerTeamId) || [];
+    const playerResults = raceResult.results?.filter(r => (r.team?.id || r.teamId) === save.playerTeamId) || [];
     const bestPos       = playerResults.length ? Math.min(...playerResults.map(r => r.position||20)) : 20;
     const teamPoints    = playerResults.reduce((s,r) => s+(r.points||0), 0);
     const dnfs          = playerResults.filter(r => r.status === 'dnf').length;

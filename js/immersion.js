@@ -78,7 +78,7 @@ const Immersion = {
 
   updateRecords(im, results){
     results.forEach(r=>{
-      const id = r.driverId || r.driverName;
+      const id = r.driver?.id || r.driverId || r.driverName;
       if(!id) return;
       const name = this.driverName(r);
       im.records.points[id] = { name, value:(im.records.points[id]?.value||0)+(r.points||0) };
@@ -86,7 +86,7 @@ const Immersion = {
       if(r.position<=3) im.records.podiums[id] = { name, value:(im.records.podiums[id]?.value||0)+1 };
       const prev = im.records.bestResults[id];
       if(!prev || r.position < prev.value) im.records.bestResults[id] = { name, value:r.position };
-      const tid = r.teamId || r.teamName;
+      const tid = r.team?.id || r.teamId || r.teamName;
       if(tid && r.position===1) im.records.teamWins[tid] = { name:this.teamName(r), value:(im.records.teamWins[tid]?.value||0)+1 };
       if(tid && r.position<=3) im.records.teamPodiums[tid] = { name:this.teamName(r), value:(im.records.teamPodiums[tid]?.value||0)+1 };
     });
@@ -111,7 +111,7 @@ const Immersion = {
     rep.tags = tags.length ? tags : ['Projet stable'];
 
     player.forEach(r=>{
-      const id = r.driverId || r.driverName;
+      const id = r.driver?.id || r.driverId || r.driverName;
       const base = im.driverMorale[id]?.value ?? 60;
       let md = 0;
       if(r.position<=3) md+=8; else if(r.position<=6) md+=5; else if(r.points>0) md+=2; else md-=2;
