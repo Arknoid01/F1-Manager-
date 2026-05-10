@@ -96,6 +96,10 @@
   <div class="top-pills">
     <div class="pill pill-muted" id="seasonBadge">—</div>
     <div class="pill pill-gold" id="budgetBadge">—</div>
+    <a href="social.html" id="socialBadge" style="display:none;position:relative;text-decoration:none;font-size:18px;padding:2px 4px" title="Messages en attente">
+      📩<span id="socialCount" style="position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-family:var(--fh);font-size:9px;font-weight:900;padding:1px 4px;border-radius:8px;min-width:14px;text-align:center"></span>
+    </a>
+    <a href="aide.html" style="text-decoration:none;font-size:18px;padding:2px 4px" title="Aide">ℹ️</a>
   </div>
 </div>
 
@@ -364,6 +368,7 @@ function showDashboard() {
   renderCarTiles(team);
   renderNavTiles(team,drivers);
   renderSaveTools();
+  updateSocialBadge();
   renderStoryDecisions();
   renderStandings();
   renderNews();
@@ -521,6 +526,19 @@ function showToast(msg,isError=false) {
 function renderSaveTools() {
   // Section affichée via toggle
 }
+function updateSocialBadge() {
+  const pending = (save.socialEvents||[]).filter(e=>!e.resolved).length;
+  const badge   = document.getElementById('socialBadge');
+  const count   = document.getElementById('socialCount');
+  if (!badge) return;
+  if (pending > 0) {
+    badge.style.display = 'inline-flex';
+    count.textContent   = pending > 9 ? '9+' : pending;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 function toggleSaveTools() {
   const el = document.getElementById('saveToolsSection');
   if (!el) return;

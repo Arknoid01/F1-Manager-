@@ -96,102 +96,162 @@ function generateSocialEvents(save) {
   const drivers = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
   const lastGP  = save.lastGpSummary;
   const race    = save.race || 0;
+  const season  = save.season || 2025;
+  const totalRaces = F1Data.circuits.length;
 
   drivers.forEach(d => {
     const moral      = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
+    const confiance  = save.driverConfidence?.[d.id] ?? 50;
+    const loyalty    = save.driverLoyalty?.[d.id] ?? 50;
     const contract   = save.contracts?.[d.id];
     const yearsLeft  = contract?.years ?? 2;
     const driverPts  = save.driverStandings?.[d.id] || 0;
-    const key        = `social_${d.id}`;
+    const driverRank = Object.entries(save.driverStandings||{}).filter(([,v])=>v>driverPts).length + 1;
 
-    // Déjà un event en attente pour ce pilote ?
+    // Un seul event en attente par pilote max
     const existing = (save.socialEvents||[]).find(e => e.driverId === d.id && !e.resolved);
     if (existing) return;
 
-    // DNF récent
-    const lastResult = lastGP?.playerResults?.find(r => r.driverId === d.id || r.driverName?.includes(d.name));
+    const lastResult = lastGP?.playerResults?.find(r => r.driverName?.includes(d.name));
+
+    // ── DNF récent ──────────────────────────────────────────
     if (lastResult?.status === 'dnf' && !save[`social_dnf_${d.id}_${race}`]) {
-      events.push({
-        id: `dnf_${d.id}_${race}`,
-        driverId: d.id,
-        type: 'dnf',
-        trigger: `Abandon au dernier GP`,
-        text: `${d.firstName} ${d.name} est dans le garage, visiblement frustré. L'abandon du dernier Grand Prix pèse lourd. En tant que Team Principal, comment gérez-vous la situation ?`,
+      const msgs = [
+        `${d.firstName} ${d.name} est dans le garage, casque encore sur la tête. L'abandon du dernier GP pèse lourd. Il faudrait lui parler.`,
+        `${d.firstName} ${d.name} n'a pas dit un mot depuis l'abandon. Les mécaniciens sont mal à l'aise. En tant que Team Principal, c'est à vous d'intervenir.`,
+        `Abandon brutal pour ${d.firstName} ${d.name}. La frustration est visible sur son visage. Comment gérez-vous la situation ?`,
+      ];
+      events.push({ id:`dnf_${d.id}_${race}`, driverId:d.id, type:'dnf', trigger:'Abandon au dernier GP',
+        text: msgs[Math.floor(Math.random()*msgs.length)],
         choices: [
-          { text: "C'était mécanique, pas ta faute. On va régler ça.", effect: { moral: +8, confiance: +5, loyalty: +3 }, label: '😤 Soutien', type: 'positive' },
-          { text: "Analysons ensemble les données pour comprendre.", effect: { moral: +3, confiance: +3, data: +1 }, label: '📊 Analyse', type: 'neutral' },
-          { text: "Ces abandons coûtent cher à l'équipe. Sois plus prudent.", effect: { moral: -8, confiance: -5, pace: +2 }, label: '😤 Pression', type: 'negative' },
+          { text:"C'était mécanique, pas ta faute. On règle ça en usine.", effect:{moral:+8,confiance:+5,loyalty:+3}, label:'🤝 Soutien', type:'positive' },
+          { text:"Analysons les données ensemble. Tu aurais pu anticiper ?", effect:{moral:+2,confiance:+4}, label:'📊 Analyse', type:'neutral' },
+          { text:"Ces abandons coûtent des millions aux sponsors. Sois plus prudent.", effect:{moral:-10,confiance:-6,loyalty:-3,pace:+2}, label:'😤 Pression', type:'negative' },
         ]
       });
       save[`social_dnf_${d.id}_${race}`] = true;
     }
 
-    // Moral très bas
-    else if (moral < 40 && !save[`social_moral_${d.id}_${race}`]) {
-      events.push({
-        id: `moralLow_${d.id}_${race}`,
-        driverId: d.id,
-        type: 'moral',
-        trigger: `Moral en baisse`,
-        text: `${d.firstName} ${d.name} semble distant ces derniers jours. Ses réponses en conférence de presse sont laconiques, ses tours de chauffe moins engagés. Il faudrait lui parler.`,
+    // ── Moral très bas ───────────────────────────────────────
+    else if (moral < 35 && !save[`social_moral_${d.id}_${race}`]) {
+      const msgs = [
+        `${d.firstName} ${d.name} semble distant ces derniers jours. Ses réponses en conférence de presse sont laconiques, ses tours de chauffe moins engagés.`,
+        `Le staff technique rapporte que ${d.firstName} ${d.name} quitte le garage dès la fin des sessions sans débriefing. Quelque chose ne va pas.`,
+        `${d.firstName} ${d.name} a été photographié dans un restaurant rival hier soir. La rumeur court. Il faudrait clarifier la situation.`,
+      ];
+      events.push({ id:`moralLow_${d.id}_${race}`, driverId:d.id, type:'moral', trigger:'Moral en baisse',
+        text: msgs[Math.floor(Math.random()*msgs.length)],
         choices: [
-          { text: "Je crois en toi. Tu es essentiel à ce projet.", effect: { moral: +12, confiance: +6, loyalty: +4 }, label: '💪 Encouragement', type: 'positive' },
-          { text: "Qu'est-ce qui ne va pas ? Parle-moi.", effect: { moral: +6, confiance: +8 }, label: '🤝 Écoute', type: 'neutral' },
-          { text: "Les résultats doivent s'améliorer rapidement.", effect: { moral: -5, confiance: -3, pace: +3 }, label: '📋 Exigence', type: 'negative' },
+          { text:"Je crois en toi et en ce projet. Tu es essentiel ici.", effect:{moral:+14,confiance:+7,loyalty:+5}, label:'💪 Soutien fort', type:'positive' },
+          { text:"Qu'est-ce qui se passe vraiment ? Parle-moi franchement.", effect:{moral:+6,confiance:+10}, label:'🤝 Dialogue', type:'neutral' },
+          { text:"Les résultats doivent s'améliorer ou on reconsidère tout.", effect:{moral:-8,confiance:-6,loyalty:-5,pace:+3}, label:'⚠️ Ultimatum', type:'negative' },
         ]
       });
       save[`social_moral_${d.id}_${race}`] = true;
     }
 
-    // Contrat qui expire
-    else if (yearsLeft <= 1 && !save[`social_contract_${d.id}`]) {
-      events.push({
-        id: `contract_${d.id}`,
-        driverId: d.id,
-        type: 'contract',
-        trigger: `Contrat en fin de vie`,
-        text: `${d.firstName} ${d.name} n'a plus qu'un an de contrat. Son agent a discrètement contacté deux équipes rivales. Il attend un signal de votre part.`,
+    // ── Contrat qui expire bientôt ───────────────────────────
+    else if (yearsLeft <= 1 && !save[`social_contract_${d.id}_${season}`]) {
+      const msgs = [
+        `L'agent de ${d.firstName} ${d.name} a contacté deux équipes rivales. Le pilote attend un signal de votre part avant de prendre une décision.`,
+        `${d.firstName} ${d.name} vous a demandé un entretien. Son contrat expire en fin de saison et il veut savoir où il en est dans vos plans.`,
+        `La presse spécule sur l'avenir de ${d.firstName} ${d.name}. Son entourage confirme que des offres sont sur la table. À vous de jouer.`,
+      ];
+      events.push({ id:`contract_${d.id}_${season}`, driverId:d.id, type:'contract', trigger:'Contrat en fin de saison',
+        text: msgs[Math.floor(Math.random()*msgs.length)],
         choices: [
-          { text: "On te prolonge. Tu es l'avenir de cette équipe.", effect: { moral: +10, confiance: +10, loyalty: +8, contractSignal: true }, label: '✅ Prolongation', type: 'positive' },
-          { text: "On y travaille. Laisse-moi un peu de temps.", effect: { moral: +2, confiance: +2 }, label: '⏳ Patience', type: 'neutral' },
-          { text: "On verra ça en fin de saison selon les résultats.", effect: { moral: -6, confiance: -8, loyalty: -5 }, label: '❄️ Froid', type: 'negative' },
+          { text:"On te prolonge. Tu es central à notre projet long terme.", effect:{moral:+12,confiance:+12,loyalty:+10,contractSignal:true}, label:'✅ Prolongation', type:'positive' },
+          { text:"Je veux te garder mais j'ai besoin d'un peu de temps.", effect:{moral:+3,confiance:+3,loyalty:-2}, label:'⏳ Patience', type:'neutral' },
+          { text:"On évalue toutes les options. Rien n'est décidé.", effect:{moral:-8,confiance:-10,loyalty:-8}, label:'❄️ Ambiguïté', type:'negative' },
         ]
       });
-      save[`social_contract_${d.id}`] = true;
+      save[`social_contract_${d.id}_${season}`] = true;
     }
 
-    // Bonne performance — félicitations
-    else if (lastResult?.position <= 5 && lastResult?.position && !save[`social_good_${d.id}_${race}`]) {
-      events.push({
-        id: `good_${d.id}_${race}`,
-        driverId: d.id,
-        type: 'performance',
-        trigger: `Belle performance`,
-        text: `${d.firstName} ${d.name} rayonne après son P${lastResult.position} au dernier GP. C'est le moment d'entretenir cette dynamique positive.`,
+    // ── Excellente performance ───────────────────────────────
+    else if (lastResult?.position <= 3 && lastResult?.position && !save[`social_podium_${d.id}_${race}`]) {
+      const msgs = [
+        `${d.firstName} ${d.name} est sur un nuage après son P${lastResult.position}. Le garage était en feu à l'arrivée. C'est le moment de capitaliser sur cette énergie.`,
+        `Le sourire de ${d.firstName} ${d.name} en dit long. P${lastResult.position} et une performance magistrale. La dynamique est là — comment la nourrir ?`,
+        `P${lastResult.position} pour ${d.firstName} ${d.name}. Les interviews s'enchaînent, les sponsors sont ravis. Votre réaction en tant que TP compte beaucoup pour lui.`,
+      ];
+      events.push({ id:`podium_${d.id}_${race}`, driverId:d.id, type:'podium', trigger:`Podium P${lastResult.position}`,
+        text: msgs[Math.floor(Math.random()*msgs.length)],
         choices: [
-          { text: "Excellent travail. C'est ça qu'on attend de toi.", effect: { moral: +8, confiance: +5, loyalty: +3 }, label: '🏆 Félicitations', type: 'positive' },
-          { text: "Bonne course. Maintenant on vise encore plus haut.", effect: { moral: +4, confiance: +3, pace: +2 }, label: '🎯 Ambition', type: 'neutral' },
-          { text: "C'est bien mais les adversaires s'adaptent.", effect: { moral: -2, confiance: +1, pace: +3 }, label: '📊 Réaliste', type: 'negative' },
+          { text:"Tu as été parfait. Ce podium est entièrement mérité.", effect:{moral:+10,confiance:+7,loyalty:+5}, label:'🏆 Célébration', type:'positive' },
+          { text:"Excellent travail. Maintenant on vise la victoire.", effect:{moral:+6,confiance:+5,pace:+2}, label:'🎯 Ambition', type:'neutral' },
+          { text:"Bonne course mais le rythme en fin de relance était insuffisant.", effect:{moral:-3,confiance:+2,pace:+3}, label:'📊 Critique', type:'negative' },
+        ]
+      });
+      save[`social_podium_${d.id}_${race}`] = true;
+    }
+
+    // ── Bonne performance (points) ───────────────────────────
+    else if (lastResult?.position <= 8 && lastResult?.position && !save[`social_good_${d.id}_${race}`]) {
+      events.push({ id:`good_${d.id}_${race}`, driverId:d.id, type:'performance', trigger:`P${lastResult.position} au dernier GP`,
+        text: `${d.firstName} ${d.name} est satisfait de son P${lastResult.position}. Pas parfait mais solide. Il cherche votre validation avant de se concentrer sur le prochain GP.`,
+        choices: [
+          { text:"Très bonne course. L'équipe est fière de toi.", effect:{moral:+7,confiance:+5,loyalty:+3}, label:'👍 Validation', type:'positive' },
+          { text:"Points pris, c'est l'essentiel. On continue à progresser.", effect:{moral:+3,confiance:+3}, label:'📈 Pragmatisme', type:'neutral' },
+          { text:"On méritait mieux. Il y a eu des erreurs à analyser.", effect:{moral:-4,confiance:-2,pace:+2}, label:'🔍 Exigence', type:'negative' },
         ]
       });
       save[`social_good_${d.id}_${race}`] = true;
     }
 
-    // Mi-saison — point général
-    else if (race === Math.floor(F1Data.circuits.length / 2) && !save[`social_midseason_${d.id}`]) {
-      events.push({
-        id: `midseason_${d.id}`,
-        driverId: d.id,
-        type: 'midseason',
-        trigger: `Point de mi-saison`,
-        text: `Mi-saison. ${d.firstName} ${d.name} a ${driverPts} points au championnat. C'est le bon moment pour une conversation de fond sur la seconde partie de saison.`,
+    // ── Conflit potentiel entre équipiers ───────────────────
+    else if (drivers.length >= 2 && race > 5 && !save[`social_rivalry_${season}`] && Math.random() < 0.3) {
+      const d2 = drivers.find(x => x.id !== d.id);
+      if (d2) {
+        events.push({ id:`rivalry_${season}_${race}`, driverId:d.id, type:'rivalry', trigger:'Tension en interne',
+          text: `${d.firstName} ${d.name} vous demande un entretien privé. Il estime que ${d2.firstName} ${d2.name} reçoit un traitement de faveur en termes de setup et de stratégie. La situation peut dégénérer.`,
+          choices: [
+            { text:"Les deux pilotes sont traités à égalité. Je te le garantis.", effect:{moral:+8,confiance:+6,loyalty:+4}, label:'⚖️ Équité', type:'positive' },
+            { text:"On va analyser les données et clarifier ça ensemble.", effect:{moral:+4,confiance:+5}, label:'📊 Transparence', type:'neutral' },
+            { text:"C'est moi qui décide des priorités. Concentre-toi sur ta course.", effect:{moral:-8,confiance:-8,loyalty:-5,pace:+3}, label:'✊ Autorité', type:'negative' },
+          ]
+        });
+        save[`social_rivalry_${season}`] = true;
+      }
+    }
+
+    // ── Demande d'augmentation ───────────────────────────────
+    else if (race > 10 && driverPts > 40 && !save[`social_salary_${d.id}_${season}`] && Math.random() < 0.4) {
+      events.push({ id:`salary_${d.id}_${season}`, driverId:d.id, type:'salary', trigger:'Discussion financière',
+        text: `Avec ${driverPts} points au championnat, l'agent de ${d.firstName} ${d.name} estime que son salaire ne reflète plus sa valeur marchande. Une conversation s'impose.`,
         choices: [
-          { text: "Tu es exactement où on voulait que tu sois.", effect: { moral: +6, confiance: +6, loyalty: +3 }, label: '✅ Satisfaction', type: 'positive' },
-          { text: "Objectif : doubler les points en seconde partie.", effect: { moral: +2, confiance: +2, pace: +2 }, label: '🎯 Objectif', type: 'neutral' },
-          { text: "On attendait mieux. Il faut hausser le niveau.", effect: { moral: -8, confiance: -5, pace: +4 }, label: '😤 Déception', type: 'negative' },
+          { text:"Tu mérites une revalorisation. On trouve un accord.", effect:{moral:+10,confiance:+8,loyalty:+6}, label:'💰 Accord', type:'positive' },
+          { text:"On en parle en fin de saison avec une vision complète.", effect:{moral:+2,confiance:+2,loyalty:-2}, label:'⏳ Report', type:'neutral' },
+          { text:"Ton contrat court jusqu'au bout. On verra après.", effect:{moral:-8,confiance:-8,loyalty:-6}, label:'🚫 Refus', type:'negative' },
         ]
       });
-      save[`social_midseason_${d.id}`] = true;
+      save[`social_salary_${d.id}_${season}`] = true;
+    }
+
+    // ── Fatigue en fin de saison ─────────────────────────────
+    else if (race >= totalRaces - 4 && !save[`social_fatigue_${d.id}_${season}`]) {
+      events.push({ id:`fatigue_${d.id}_${season}`, driverId:d.id, type:'fatigue', trigger:'Fatigue de fin de saison',
+        text: `${d.firstName} ${d.name} accuse le coup du calendrier. Après ${race} GP, la fatigue se lit sur son visage. Les dernières courses sont cruciales.`,
+        choices: [
+          { text:"Prends soin de toi. On gère ensemble ces derniers GP.", effect:{moral:+8,confiance:+6,loyalty:+4}, label:'❤️ Bienveillance', type:'positive' },
+          { text:"Encore ${totalRaces - race} courses. Tu peux le faire.", effect:{moral:+4,confiance:+3}, label:'💪 Motivation', type:'neutral' },
+          { text:"La fatigue ne peut pas être une excuse pour les résultats.", effect:{moral:-6,confiance:-4,pace:+2}, label:'😤 Exigence', type:'negative' },
+        ]
+      });
+      save[`social_fatigue_${d.id}_${season}`] = true;
+    }
+
+    // ── Mi-saison ────────────────────────────────────────────
+    else if (race === Math.floor(totalRaces/2) && !save[`social_midseason_${d.id}_${season}`]) {
+      events.push({ id:`midseason_${d.id}_${season}`, driverId:d.id, type:'midseason', trigger:'Point de mi-saison',
+        text: `Mi-saison. ${d.firstName} ${d.name} est P${driverRank} au championnat avec ${driverPts} points. C'est le moment d'une conversation de fond sur la suite.`,
+        choices: [
+          { text:"Tu es exactement où on voulait. Continue comme ça.", effect:{moral:+8,confiance:+6,loyalty:+4}, label:'✅ Satisfait', type:'positive' },
+          { text:"Objectif clair : doubler les points en seconde partie.", effect:{moral:+4,confiance:+4,pace:+2}, label:'🎯 Objectif', type:'neutral' },
+          { text:"Franchement, on attendait mieux de ta part.", effect:{moral:-10,confiance:-7,pace:+4}, label:'😤 Déception', type:'negative' },
+        ]
+      });
+      save[`social_midseason_${d.id}_${season}`] = true;
     }
   });
 
