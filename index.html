@@ -306,7 +306,8 @@ function confirmTeam() {
   };
   Save.save(newSave); save=newSave;
   restoreDriverStates(newSave); migrateSave(newSave);
-  showDashboard(); showToast(`✅ ${team.name} sélectionné !`);
+  // Rediriger vers la page de présentation de l'équipe
+  location.href = 'team-intro.html';
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────
