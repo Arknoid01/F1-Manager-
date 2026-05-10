@@ -15,7 +15,11 @@ const Immersion = {
     im.interviews = Array.isArray(im.interviews) ? im.interviews : [];
     im.gpHistory = Array.isArray(im.gpHistory) ? im.gpHistory : [];
     im.records = im.records || { wins:{}, podiums:{}, points:{}, poles:{}, bestResults:{}, teamWins:{}, teamPodiums:{} };
-    im.teamReputation = im.teamReputation || { value: save.reputation || 50, tags: [] };
+    // Extraire la réputation selon son format (objet ou nombre)
+    const repBase = typeof save.reputation === 'object'
+      ? Math.round(((save.reputation.sport||50) + (save.reputation.media||50) + (save.reputation.tech||50)) / 3)
+      : (save.reputation || 50);
+    im.teamReputation = im.teamReputation || { value: repBase, tags: [] };
     im.driverMorale = im.driverMorale || {};
     im.staffMorale = im.staffMorale || { value: 60, note:'Ambiance stable dans le garage.' };
     im.sponsorMood = im.sponsorMood || { value: 60, note:'Les partenaires attendent des résultats réguliers.' };
