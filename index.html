@@ -422,7 +422,7 @@ function renderNavTiles(team,drivers) {
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
     {href:'social.html',icon:'💬',lbl:'Social',val:(() => { const pending = (save.socialEvents||[]).filter(e=>!e.read).length; return pending > 0 ? `${pending} message${pending>1?'s':''}` : 'OK'; })(),sub:'Relations pilotes · équipe',c:'var(--accent)'},
     {href:'training.html',icon:'🏋️',lbl:'Entraînement',val:'Bientôt',sub:'Simulateur · Sport',c:'var(--muted)'},
-    {href:'#saveToolsSection',icon:'💾',lbl:'Sauvegarde',val:'Export/Import',sub:'Gérer ta partie',c:'var(--muted)',onclick:'document.getElementById(\'saveToolsSection\').scrollIntoView({behavior:\'smooth\'})'},
+    {href:'#saveToolsSection',icon:'💾',lbl:'Sauvegarde',val:'Export/Import',sub:"Gérer ta partie",c:"var(--muted)"},
   ];
 
   document.getElementById('navTiles').innerHTML=tiles.map(t=>`<a href="${t.href}" class="tile" style="border-left:2px solid ${t.c}"><span class="tile-icon">${t.icon}</span><div class="tile-lbl">${t.lbl}</div><div class="tile-val" style="color:${t.c}">${t.val}</div><div class="tile-sub">${t.sub}</div></a>`).join('');
@@ -543,7 +543,7 @@ function importSave(event) {
       const data = JSON.parse(e.target.result);
       // Vérification basique
       if (!data.playerTeamId && !data.season) {
-        showToast('❌ Fichier invalide — ce n'est pas une sauvegarde F1 Manager', true);
+        showToast("❌ Fichier invalide — pas une sauvegarde F1 Manager valide", true);
         return;
       }
       if (!confirm(`Importer cette sauvegarde ?
