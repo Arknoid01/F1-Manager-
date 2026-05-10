@@ -141,8 +141,17 @@ function doTrain(driverId, type) {
   save = Save.load();
 
   const driver  = F1Data.drivers.find(d=>d.id===driverId);
-  const state   = save.driverStates?.[driverId];
-  if (!driver || !state) { showToast('Pilote introuvable', true); return; }
+  if (!driver) { showToast('Pilote introuvable', true); return; }
+  // Initialiser driverStates si absent (save ancien)
+  if (!save.driverStates) save.driverStates = {};
+  if (!save.driverStates[driverId]) {
+    save.driverStates[driverId] = {
+      pace: driver.pace, consistency: driver.consistency, wetSkill: driver.wetSkill,
+      overtaking: driver.overtaking, defending: driver.defending, potential: driver.potential,
+      age: driver.age,
+    };
+  }
+  const state = save.driverStates[driverId];
 
   const sessKey = `train_${type}_${driverId}_${save.race||0}_${save.season||2025}`;
   const used    = save[sessKey] || 0;
