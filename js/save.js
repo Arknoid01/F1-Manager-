@@ -222,7 +222,7 @@ const Save = {
       d.personality = state.personality ?? d.personality;
       d.contractYears = state.contractYears ?? d.contractYears ?? 0;
       d.seasons = state.seasons ?? d.seasons ?? 0;
-      if (Object.prototype.hasOwnProperty.call(state, 'teamId')) d.teamId = state.teamId;
+      if (Object.prototype.hasOwnProperty.call(state, 'teamId') && state.teamId) d.teamId = state.teamId;
     });
   },
 
