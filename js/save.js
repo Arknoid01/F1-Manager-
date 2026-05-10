@@ -230,12 +230,32 @@ const Save = {
     if (!save || typeof F1Data === 'undefined') return;
     save.driverStates = save.driverStates || {};
     F1Data.drivers.forEach(d => {
-      save.driverStates[d.id] = {
-        age: d.age, pace: d.pace, consistency: d.consistency, wetSkill: d.wetSkill,
-        overtaking: d.overtaking, defending: d.defending, salary: d.salary,
-        trait: d.trait, potential: d.potential, retired: d.retired, teamId: d.teamId,
-        seasons: d.seasons || 0, contractYears: d.contractYears || 0, personality: d.personality,
-      };
+      const existing = save.driverStates[d.id];
+      if (existing) {
+        // Conserver les stats acquises — seulement mettre à jour les champs non-stats
+        save.driverStates[d.id] = {
+          ...existing,
+          age: d.age, salary: d.salary, trait: d.trait,
+          retired: d.retired, teamId: d.teamId,
+          seasons: d.seasons || 0, contractYears: d.contractYears || 0,
+          personality: d.personality,
+          // Conserver potential et stats si déjà présents
+          potential:    existing.potential    ?? d.potential,
+          pace:         existing.pace         ?? d.pace,
+          consistency:  existing.consistency  ?? d.consistency,
+          wetSkill:     existing.wetSkill     ?? d.wetSkill,
+          overtaking:   existing.overtaking   ?? d.overtaking,
+          defending:    existing.defending    ?? d.defending,
+        };
+      } else {
+        // Nouveau pilote — initialiser avec les valeurs de base
+        save.driverStates[d.id] = {
+          age: d.age, pace: d.pace, consistency: d.consistency, wetSkill: d.wetSkill,
+          overtaking: d.overtaking, defending: d.defending, salary: d.salary,
+          trait: d.trait, potential: d.potential, retired: d.retired, teamId: d.teamId,
+          seasons: d.seasons || 0, contractYears: d.contractYears || 0, personality: d.personality,
+        };
+      }
     });
   },
 
@@ -278,6 +298,57 @@ const Save = {
     const playerResults = results.filter(r => r.team && r.team.id === playerTeamId);
     const bestPosition  = playerResults.length ? Math.min(...playerResults.map(r => r.position)) : 20;
     const teamPoints    = playerResults.reduce((sum, r) => sum + (r.points || 0), 0);
+
+    // -- PROGRESSION EN COURSE --
+    // Gains très faibles — progression sur 2-3 saisons max
+    try {
+      if (!save.driverStates) save.driverStates = {};
+      results.forEach(r => {
+        const dId = r.driverId || r.driver?.id;
+        if (!dId) return;
+        const driver = F1Data.drivers.find(d => d.id === dId);
+        if (!driver) return;
+        const state = save.driverStates[dId];
+        if (!state) return;
+
+        const pot   = state.potential || driver.potential || 85;
+        const age   = state.age       || driver.age       || 25;
+        const pos   = r.position || 20;
+        const isDnf = r.status === 'dnf';
+        if (isDnf) return; // pas de progression sur abandon
+
+        // Facteur age
+        const ageFactor = age < 23 ? 1.2 : age < 29 ? 1.0 : age < 34 ? 0.6 : 0.2;
+        // Facteur resultat
+        const posFactor = pos <= 3 ? 1.2 : pos <= 6 ? 1.0 : pos <= 10 ? 0.7 : 0.4;
+        // Gain de base par course : 0.05 à 0.15
+        const baseGain  = (0.05 + Math.random() * 0.10) * ageFactor * posFactor;
+
+        // Stat a ameliorer
+        const statToImprove = pos <= 10
+          ? (Math.random() < 0.6 ? 'pace' : 'consistency')
+          : (Math.random() < 0.5 ? 'defending' : 'overtaking');
+
+        const current = state[statToImprove] || driver[statToImprove] || 75;
+        if (current >= pot) return; // plafond potentiel
+
+        // Ralentir si proche du potentiel
+        const gap       = pot - current;
+        const gapFactor = gap <= 2 ? 0.2 : gap <= 5 ? 0.5 : 1.0;
+        const finalGain = Math.round(baseGain * gapFactor * 10) / 10;
+
+        if (finalGain > 0) {
+          state[statToImprove] = Math.min(pot, Math.round((current + finalGain) * 10) / 10);
+        }
+
+        // Regression legere apres 34 ans
+        if (age >= 34 && Math.random() < 0.15) {
+          const regStat = Math.random() < 0.5 ? 'pace' : 'consistency';
+          const cur = state[regStat] || driver[regStat] || 75;
+          state[regStat] = Math.max(cur - 0.1, Math.round(cur * 0.998 * 10) / 10);
+        }
+      });
+    } catch(e) { console.warn('Progression pilotes:', e); }
 
     // Récompense course de base
     const reward = 2 + Math.round(teamPoints * 0.3) + (bestPosition <= 3 ? 3 : bestPosition <= 10 ? 1 : 0);
