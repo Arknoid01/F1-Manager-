@@ -247,6 +247,33 @@
 <script src="js/career.js"></script>
 <script>
 
+function getCareerEventsSafe(){
+  if (typeof window !== 'undefined' && window.CareerEvents) return window.CareerEvents;
+  if (typeof CareerEvents !== 'undefined') return CareerEvents;
+  return {
+    ensure(s){
+      s.news = Array.isArray(s.news) ? s.news : [];
+      s.reputation = Number.isFinite(s.reputation) ? s.reputation : 50;
+      s.fanBase = Number.isFinite(s.fanBase) ? s.fanBase : 50;
+      s.boardPressure = Number.isFinite(s.boardPressure) ? s.boardPressure : 0;
+      s.boardObjectives = s.boardObjectives || {
+        season:s.season||2025, constructorPos:8, driverPos:12, minPointsRaces:3, budgetSurplus:8
+      };
+      return s;
+    },
+    generateObjectives(s){ return this.ensure(s).boardObjectives; },
+    evaluateObjectives(s){ return {score:0, details:[], constPos:null, driverPos:null}; },
+    getPressureLevel(p){
+      if (p >= 80) return { label:'🔴 Licenciement imminent', color:'#ff2244', fire:true };
+      if (p >= 60) return { label:'🟠 Forte pression', color:'#ff8844', fire:false };
+      if (p >= 40) return { label:'🟡 Sous surveillance', color:'#ffdd44', fire:false };
+      if (p >= 20) return { label:'🟢 Acceptable', color:'#44cc44', fire:false };
+      return { label:'✅ Direction satisfaite', color:'#00e676', fire:false };
+    },
+    log(s,item){ s.news = Array.isArray(s.news) ? s.news : []; s.news.unshift({date:new Date().toISOString(), season:s.season, race:s.race, ...item}); }
+  };
+}
+
 let save = null;
 
 function init() {
@@ -269,7 +296,7 @@ function init() {
     });
   }
 
-  CareerEvents.ensure(save);
+  getCareerEventsSafe().ensure(save);
 
   document.getElementById('seasonBadge').textContent  = `Saison ${save.season || 2025}`;
   document.getElementById('budgetBadge').textContent  = `💰 ${Math.round((save.budget||0)*10)/10}M €`;
@@ -283,7 +310,7 @@ function init() {
 
 function renderPressure() {
   const pressure = save.boardPressure || 0;
-  const level    = CareerEvents.getPressureLevel(pressure);
+  const level    = getCareerEventsSafe().getPressureLevel(pressure);
 
   document.getElementById('pressureNumber').textContent = Math.round(pressure);
   document.getElementById('pressureNumber').style.color = level.color;
@@ -301,8 +328,8 @@ function renderPressure() {
 }
 
 function renderObjectives() {
-  const obj  = save.boardObjectives || CareerEvents.generateObjectives(save);
-  const eval_= CareerEvents.evaluateObjectives(save);
+  const obj  = save.boardObjectives || getCareerEventsSafe().generateObjectives(save);
+  const eval_= getCareerEventsSafe().evaluateObjectives(save);
   const list = document.getElementById('objectivesList');
 
   document.getElementById('objScore').textContent = `Score : ${eval_.score}/100`;
@@ -415,7 +442,7 @@ function renderActions() {
         save.reputation = Math.min(100, rep+4);
         save.boardPressure = Math.max(0, pressure-6);
         save.fanBase = Math.min(100,(save.fanBase||50)+3);
-        CareerEvents.log(save,{phase:'board',icon:'🎤',title:'Conférence de presse',text:'Votre prise de parole rassure la direction et booste la réputation.'});
+        getCareerEventsSafe().log(save,{phase:'board',icon:'🎤',title:'Conférence de presse',text:'Votre prise de parole rassure la direction et booste la réputation.'});
         Save.save(save); init();
         toast('✅ Conférence réussie ! Réputation +4, Pression -6');
       }
@@ -430,7 +457,7 @@ function renderActions() {
         save.budget = Math.round((budget-8)*10)/10;
         save.fanBase = Math.min(100,(save.fanBase||50)+8);
         save.reputation = Math.min(100,rep+2);
-        CareerEvents.log(save,{phase:'board',icon:'🏭',title:'Portes ouvertes',text:'La journée portes ouvertes attire des milliers de fans.'});
+        getCareerEventsSafe().log(save,{phase:'board',icon:'🏭',title:'Portes ouvertes',text:'La journée portes ouvertes attire des milliers de fans.'});
         Save.save(save); init();
         toast('✅ Fanbase +8 !');
       }
@@ -444,7 +471,7 @@ function renderActions() {
       fn: () => {
         save.tokens = Math.max(0,(save.tokens||0)-2);
         save.boardPressure = Math.max(0,pressure-15);
-        CareerEvents.log(save,{phase:'board',icon:'🤝',title:'Réunion board',text:'Votre plan convainc la direction. La pression retombe.'});
+        getCareerEventsSafe().log(save,{phase:'board',icon:'🤝',title:'Réunion board',text:'Votre plan convainc la direction. La pression retombe.'});
         Save.save(save); init();
         toast('✅ Pression -15 !');
       }
@@ -459,7 +486,7 @@ function renderActions() {
         save.budget = Math.round((budget-15)*10)/10;
         save.tokens = (save.tokens||0)+2;
         save.reputation = Math.min(100,rep+2);
-        CareerEvents.log(save,{phase:'board',icon:'💼',title:'Analyste recruté',text:'Votre nouvel analyste data renforce le département technique.'});
+        getCareerEventsSafe().log(save,{phase:'board',icon:'💼',title:'Analyste recruté',text:'Votre nouvel analyste data renforce le département technique.'});
         Save.save(save); init();
         toast('✅ +2 tokens R&D !');
       }
@@ -475,7 +502,7 @@ function renderActions() {
         const bonus = Math.round(8 + Math.random() * 15);
         save.budget = Math.round((save.budget+bonus)*10)/10;
         save.fanBase = Math.min(100,(save.fanBase||50)+4);
-        CareerEvents.log(save,{phase:'board',icon:'📈',title:'Campagne marketing',text:`La campagne attire un nouveau sponsor. +${bonus}M€.`});
+        getCareerEventsSafe().log(save,{phase:'board',icon:'📈',title:'Campagne marketing',text:`La campagne attire un nouveau sponsor. +${bonus}M€.`});
         Save.save(save); init();
         toast(`✅ Nouveau sponsor ! +${bonus}M€`);
       }
@@ -490,18 +517,18 @@ function renderActions() {
         if (Math.random() > 0.4) {
           save.reputation = Math.max(0,rep-5);
           save.boardPressure = Math.max(0,pressure-10);
-          save.boardObjectives = CareerEvents.generateObjectives(save);
+          save.boardObjectives = getCareerEventsSafe().generateObjectives(save);
           save.boardObjectives.renegotiated = true;
           // Adoucir les objectifs
           save.boardObjectives.constructorPos = Math.min(10,save.boardObjectives.constructorPos+2);
           save.boardObjectives.driverPos = Math.min(15,save.boardObjectives.driverPos+3);
-          CareerEvents.log(save,{phase:'board',icon:'🎯',title:'Objectifs renégociés',text:'La direction accepte des objectifs plus réalistes.'});
+          getCareerEventsSafe().log(save,{phase:'board',icon:'🎯',title:'Objectifs renégociés',text:'La direction accepte des objectifs plus réalistes.'});
           Save.save(save); init();
           toast('✅ Objectifs revus à la baisse !');
         } else {
           save.reputation = Math.max(0,rep-8);
           save.boardPressure = Math.min(100,pressure+5);
-          CareerEvents.log(save,{phase:'board',icon:'❌',title:'Refus de la direction',text:'La direction refuse de revoir les objectifs. Situation tendue.'});
+          getCareerEventsSafe().log(save,{phase:'board',icon:'❌',title:'Refus de la direction',text:'La direction refuse de revoir les objectifs. Situation tendue.'});
           Save.save(save); init();
           toast('❌ La direction refuse !', true);
         }

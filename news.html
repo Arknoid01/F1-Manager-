@@ -194,6 +194,33 @@
 <script src="js/career.js"></script>
 <script>
 
+function getCareerEventsSafe(){
+  if (typeof window !== 'undefined' && window.CareerEvents) return window.CareerEvents;
+  if (typeof CareerEvents !== 'undefined') return CareerEvents;
+  return {
+    ensure(s){
+      s.news = Array.isArray(s.news) ? s.news : [];
+      s.reputation = Number.isFinite(s.reputation) ? s.reputation : 50;
+      s.fanBase = Number.isFinite(s.fanBase) ? s.fanBase : 50;
+      s.boardPressure = Number.isFinite(s.boardPressure) ? s.boardPressure : 0;
+      s.boardObjectives = s.boardObjectives || {
+        season:s.season||2025, constructorPos:8, driverPos:12, minPointsRaces:3, budgetSurplus:8
+      };
+      return s;
+    },
+    generateObjectives(s){ return this.ensure(s).boardObjectives; },
+    evaluateObjectives(s){ return {score:0, details:[], constPos:null, driverPos:null}; },
+    getPressureLevel(p){
+      if (p >= 80) return { label:'🔴 Licenciement imminent', color:'#ff2244', fire:true };
+      if (p >= 60) return { label:'🟠 Forte pression', color:'#ff8844', fire:false };
+      if (p >= 40) return { label:'🟡 Sous surveillance', color:'#ffdd44', fire:false };
+      if (p >= 20) return { label:'🟢 Acceptable', color:'#44cc44', fire:false };
+      return { label:'✅ Direction satisfaite', color:'#00e676', fire:false };
+    },
+    log(s,item){ s.news = Array.isArray(s.news) ? s.news : []; s.news.unshift({date:new Date().toISOString(), season:s.season, race:s.race, ...item}); }
+  };
+}
+
 let save       = null;
 let activeFilter = 'all';
 
@@ -234,7 +261,7 @@ function init() {
     document.querySelector('.page').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);font-family:var(--fh)"><div style="font-size:24px;margin-bottom:12px">Aucune carrière trouvée</div><a href="index.html" style="background:var(--accent);color:#fff;padding:8px 20px;border-radius:4px;text-decoration:none;font-family:var(--fh);font-weight:700">Créer</a></div>`;
     return;
   }
-  CareerEvents.ensure(save);
+  getCareerEventsSafe().ensure(save);
   document.getElementById('seasonBadge').textContent = `Saison ${save.season||2025}`;
   renderQuickStats();
   renderFilters();
