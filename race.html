@@ -21,6 +21,33 @@
     .w-heavy { background:#0a0a2a; color:#6688ff; border:1px solid #2a2a6a; }
     .sc-pill { display:none; background:#2a2a00; border:1px solid var(--yellow); color:var(--yellow); font-family:var(--fh); font-weight:700; font-size:11px; padding:3px 8px; border-radius:12px; animation:pulse 1s ease infinite alternate; }
     .sc-pill.on { display:block; }
+    .race-live-pills { overflow: visible !important; flex-shrink: 0 !important; }
+    .race-live-pills .lap-pill, .race-live-pills .w-badge, .race-live-pills .sc-pill { flex-shrink: 0; }
+    .lap-pill { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:4px 12px; line-height:1.2; }
+    .w-badge { border-radius:20px; padding:4px 12px; line-height:1.2; white-space:nowrap; }
+    @media(max-width:520px){
+      .race-live-pills { gap:6px !important; margin-left:auto !important; }
+      .race-live-pills .lap-pill { font-size:12px; padding:3px 8px; }
+      .race-live-pills .lap-pill span { font-size:11px; }
+      .race-live-pills .w-badge { font-size:10px; padding:3px 8px; }
+      .race-live-pills .sc-pill { font-size:10px; padding:3px 7px; }
+    }
+    @media(max-width:380px){
+      .race-live-pills .lap-pill { max-width:none !important; }
+      .race-live-pills .w-badge { max-width:none !important; }
+    }
+
+    /* Correctif onglet Ordres : mêmes dimensions et même rendu pour tous les boutons */
+    .race-order-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+    .race-order-grid .btn,.race-pit-row .btn{width:100%!important;min-height:44px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;border:1px solid var(--border)!important;border-radius:6px!important;background:var(--surface)!important;color:var(--text)!important;opacity:1!important}
+    .race-order-grid .btn.order-active{border-color:var(--accent)!important;background:rgba(0,153,255,.14)!important;color:var(--accent)!important;box-shadow:inset 0 0 0 1px rgba(0,153,255,.18)}
+    .race-order-grid .btn.order-attack.order-active{border-color:var(--gold)!important;background:rgba(245,200,66,.12)!important;color:var(--gold)!important}
+    .race-order-grid .btn.order-save.order-active{border-color:var(--green)!important;background:rgba(0,220,120,.10)!important;color:var(--green)!important}
+    .race-pit-row{display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:stretch;margin-top:8px}
+    .race-pit-row .mini-sel{width:100%;min-height:44px!important;border-radius:6px!important}
+    .race-pit-row .btn{background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important}
+    @media(max-width:420px){.race-order-grid{grid-template-columns:1fr}.race-pit-row{grid-template-columns:1fr}}
+
     @keyframes pulse { from{opacity:.6} to{opacity:1} }
 
     /* PAGE LAYOUT — mobile first: stack vertical */
@@ -204,11 +231,8 @@
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span style="color:#ffffff !important">Manager</span></div>
-  <a href="index.html" class="nav-link">🏠 Équipe</a>
-  <a href="race.html"  class="nav-link active">🏁 Course</a>
-  <a href="standings.html" class="nav-link">🏆 Champ.</a>
-  <a href="drivers.html" class="nav-link">👤 Pilotes & Contrats</a>
-  <div class="tb-right">
+  <a href="index.html" class="nav-back">← Accueil</a>
+  <div class="top-pills race-live-pills">
     <div class="lap-pill" id="tLap">Tour <b>0</b>/<span id="tTotal">—</span></div>
     <div id="wBadge" class="w-badge w-dry" onclick="toggleWeatherPopup()" style="cursor:pointer" title="Voir les prévisions météo">☀️ SEC</div>
     <!-- POPUP MÉTÉO -->
@@ -1695,11 +1719,12 @@ function syncOrdersTab() {
       <div style="font-family:var(--fh);font-size:11px;color:var(--muted);margin-bottom:8px">
         <span style="color:${tyre.color}">● ${tyre.name}</span> ${cond}% &nbsp;|&nbsp; Gap: ${car.gap===0?'LEADER':'+'+car.gap.toFixed(1)+'s'} &nbsp;|&nbsp; ${pit} &nbsp;|&nbsp; ${laps} tours restants
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-gold" onclick="setMode('${car.driver.id}','attack')" ${mode==='attack'?'disabled':''}>⚡ Attaquer</button>
-        <button class="btn btn-sec"  onclick="setMode('${car.driver.id}','normal')"  ${mode==='normal'?'disabled':''}>◼ Normal</button>
-        <button class="btn btn-sec"  onclick="setMode('${car.driver.id}','save')"    ${mode==='save'?'disabled':''}>🌿 Économiser</button>
-        &nbsp;
+      <div class="race-order-grid">
+        <button class="btn race-order-btn order-attack ${mode==='attack'?'order-active':''}" onclick="setMode('${car.driver.id}','attack')">⚡ Attaquer</button>
+        <button class="btn race-order-btn order-normal ${mode==='normal'?'order-active':''}" onclick="setMode('${car.driver.id}','normal')">◼ Normal</button>
+        <button class="btn race-order-btn order-save ${mode==='save'?'order-active':''}" onclick="setMode('${car.driver.id}','save')">🌿 Économiser</button>
+      </div>
+      <div class="race-pit-row">
         <select class="mini-sel" id="pit_new_${car.driver.id}">
           ${['SOFT','MEDIUM','HARD','INTER','WET'].map(c=>`<option value="${c}"${c==='MEDIUM'?' selected':''}>${F1Data.tyres[c].name}</option>`).join('')}
         </select>

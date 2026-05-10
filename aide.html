@@ -5,149 +5,136 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700&family=Barlow:wght@300;400;500;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/immersive-theme.css?v=20260508f">
-<title>Aide — F1 Manager</title>
+<title>Informations — F1 Manager</title>
 <style>
-  .help-hero{background:linear-gradient(135deg,#16000f,#07070d);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:18px;overflow:hidden;position:relative}
-  .help-hero:after{content:"?";position:absolute;right:14px;top:-18px;font-family:var(--fh);font-size:110px;font-weight:900;color:rgba(255,255,255,.035);line-height:1}
-  .help-title{font-family:var(--fh);font-size:30px;font-weight:900;letter-spacing:1px;line-height:1;text-transform:uppercase;position:relative;z-index:1}
-  .help-sub{font-family:var(--fb);font-size:13px;color:var(--muted);line-height:1.55;margin-top:8px;position:relative;z-index:1;max-width:620px}
-  .quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .quick-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-decoration:none;display:block;min-height:82px}
-  .quick-ico{font-size:22px;margin-bottom:7px}
-  .quick-title{font-family:var(--fh);font-weight:900;font-size:16px;letter-spacing:.5px}
-  .quick-txt{font-family:var(--fb);font-size:12px;color:var(--muted);line-height:1.35;margin-top:3px}
-  .guide-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-  .guide-body{padding:14px 16px;font-family:var(--fb);font-size:13px;color:#cfcfde;line-height:1.6}
-  .guide-body strong{color:var(--text)}
-  .guide-body ul{padding-left:18px;margin:8px 0 0}
-  .guide-body li{margin:6px 0}
-  .step{display:flex;gap:11px;margin:12px 0;align-items:flex-start}
-  .step-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--fh);font-weight:900;display:flex;align-items:center;justify-content:center;flex:0 0 26px}
-  .step-txt{flex:1;color:#cfcfde;font-size:13px;line-height:1.5}
-  .tip{border-left:3px solid var(--gold);background:#161200;border-radius:6px;padding:10px 12px;margin-top:10px;color:#e8d88b;font-size:12px;line-height:1.5}
-  .warning{border-left:3px solid var(--accent);background:#1a0710;border-radius:6px;padding:10px 12px;margin-top:10px;color:#ffb8c8;font-size:12px;line-height:1.5}
-  .mini-list{display:grid;gap:8px;margin-top:8px}
-  .mini{display:flex;gap:10px;padding:9px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;align-items:flex-start}
-  .mini b{font-family:var(--fh);font-size:14px;color:var(--gold);min-width:86px}
-  .mini span{font-size:12px;color:#cfcfde;line-height:1.45}
-  details{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-  summary{font-family:var(--fh);font-weight:900;letter-spacing:1px;cursor:pointer;padding:12px 16px;background:var(--surface2);list-style:none}
-  summary::-webkit-details-marker{display:none}
-  details .answer{padding:12px 16px;font-family:var(--fb);font-size:13px;color:#cfcfde;line-height:1.55;border-top:1px solid var(--border)}
-  @media(max-width:520px){.quick-grid{grid-template-columns:1fr}.help-title{font-size:26px}.mini{display:block}.mini b{display:block;margin-bottom:3px}}
+.help-hero{background:linear-gradient(135deg,#12000e,#07070d);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:16px}
+.help-title{font-family:var(--fh);font-size:28px;font-weight:900;letter-spacing:1px;line-height:1}
+.help-sub{font-family:var(--fb);font-size:13px;color:var(--muted);line-height:1.55;margin-top:8px}
+.quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.quick-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-decoration:none;color:inherit;min-height:86px}
+.quick-icon{font-size:22px;margin-bottom:6px}.quick-title{font-family:var(--fh);font-weight:900;font-size:15px}.quick-text{font-family:var(--fb);font-size:11px;color:var(--muted);line-height:1.45;margin-top:4px}
+.help-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.help-body{padding:14px 16px}.help-body p{font-family:var(--fb);font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px}.help-body p:last-child{margin-bottom:0}
+.step{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}.step:last-child{border-bottom:0}.step-num{font-family:var(--fh);font-weight:900;font-size:22px;color:var(--accent);width:30px;flex-shrink:0}.step-title{font-family:var(--fh);font-weight:900;font-size:15px}.step-text{font-family:var(--fb);font-size:12px;color:var(--muted);line-height:1.5;margin-top:2px}
+.info-list{display:grid;gap:8px}.info-row{display:flex;gap:10px;align-items:flex-start;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px}.info-ico{font-size:20px;width:24px;text-align:center}.info-title{font-family:var(--fh);font-weight:900;font-size:14px}.info-text{font-family:var(--fb);font-size:12px;color:var(--muted);line-height:1.45;margin-top:2px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px}.stat-name{font-family:var(--fh);font-size:14px;font-weight:900}.stat-desc{font-family:var(--fb);font-size:11px;color:var(--muted);line-height:1.4;margin-top:3px}
+.tip{background:#111600;border:1px solid #2d3b08;border-left:3px solid var(--green);border-radius:8px;padding:12px;font-family:var(--fb);font-size:12px;color:var(--text);line-height:1.55}.warn{background:#180b0b;border-color:#3b1b1b;border-left-color:var(--orange)}
+.link-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.link-row a{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;text-decoration:none;font-family:var(--fh);font-size:13px;font-weight:900;color:var(--text)}
+@media(max-width:560px){.quick-grid,.stat-grid,.link-row{grid-template-columns:1fr}.help-title{font-size:24px}}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <span class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span>Manager</span></span>
+  <span class="logo"><img src="img/f1.png" style="height:22px;vertical-align:middle;margin-right:4px" alt="F1"><span style="color:#ffffff !important">Manager</span></span>
   <a href="index.html" class="nav-back">← Accueil</a>
 </div>
 
 <main class="page">
   <section class="help-hero">
-    <div class="hero-kicker">Guide du manager</div>
-    <h1 class="help-title">Comment jouer à F1 Manager</h1>
-    <p class="help-sub">Choisis une écurie, développe ta voiture, entraîne tes pilotes, gère ton budget et prends les bonnes décisions pendant les week-ends de Grand Prix pour grimper au classement.</p>
+    <div class="hero-kicker">Guide du team principal</div>
+    <div class="help-title">Informations & règles du jeu</div>
+    <div class="help-sub">Cette page explique la boucle de carrière, les statistiques, la R&D, le staff, les médias, les objectifs de direction et ce qui influence réellement les courses.</div>
   </section>
 
-  <section class="quick-grid" aria-label="Accès rapide">
-    <a class="quick-card" href="#debut"><div class="quick-ico">🏁</div><div class="quick-title">Débuter</div><div class="quick-txt">Créer une carrière et comprendre l’objectif.</div></a>
-    <a class="quick-card" href="#gestion"><div class="quick-ico">🏎️</div><div class="quick-title">Gérer l’écurie</div><div class="quick-txt">Budget, pilotes, staff, sponsors et R&D.</div></a>
-    <a class="quick-card" href="#weekend"><div class="quick-ico">⏱️</div><div class="quick-title">Week-end GP</div><div class="quick-txt">Essais, qualifications, course et stratégie.</div></a>
-    <a class="quick-card" href="#conseils"><div class="quick-ico">💡</div><div class="quick-title">Conseils</div><div class="quick-txt">Quelques réflexes pour progresser vite.</div></a>
-  </section>
-
-  <section id="debut" class="guide-card">
-    <div class="sec-lbl">🏁 Objectif du jeu</div>
-    <div class="guide-body">
-      Tu incarnes le directeur d’une écurie de Formule 1. Ton but est de marquer des points, améliorer la voiture, faire progresser tes pilotes et terminer la saison le plus haut possible au classement constructeurs.
-      <div class="step"><div class="step-num">1</div><div class="step-txt"><strong>Nouvelle carrière :</strong> sélectionne une équipe. Les meilleures écuries sont plus performantes, mais les petites équipes offrent un plus gros défi.</div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Tableau de bord :</strong> consulte le prochain Grand Prix, ton budget, l’état de tes pilotes, les nouvelles et les raccourcis importants.</div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-txt"><strong>Cycle de jeu :</strong> prépare ton écurie entre deux courses, puis lance le week-end pour transformer tes choix en résultats.</div></div>
-    </div>
-  </section>
-
-  <section id="gestion" class="guide-card">
-    <div class="sec-lbl">🏎️ Ce que tu peux gérer</div>
-    <div class="guide-body">
-      <div class="mini-list">
-        <div class="mini"><b>Direction</b><span>Le centre de contrôle de ta carrière : finances, classement, prochains événements et accès aux autres menus.</span></div>
-        <div class="mini"><b>Pilotes</b><span>Analyse les statistiques, la forme et le niveau de tes pilotes pour savoir qui peut rapporter le plus de points.</span></div>
-        <div class="mini"><b>Entraînement</b><span>Choisis une statistique à travailler pour améliorer progressivement un pilote selon les besoins de ton équipe.</span></div>
-        <div class="mini"><b>R&D</b><span>Investis dans le développement de la voiture pour gagner en performance sur les prochains Grands Prix.</span></div>
-        <div class="mini"><b>Staff</b><span>Gère le personnel qui aide l’équipe à progresser, préparer la voiture et mieux performer.</span></div>
-        <div class="mini"><b>Sponsors</b><span>Signe des partenaires pour gagner de l’argent, mais surveille les objectifs qu’ils peuvent imposer.</span></div>
-        <div class="mini"><b>Classements</b><span>Suis les points pilotes et constructeurs pour mesurer ta progression pendant la saison.</span></div>
-        <div class="mini"><b>Actus</b><span>Lis les nouvelles du paddock pour rester au courant de ce qui se passe autour de ton écurie.</span></div>
-      </div>
-      <div class="tip"><strong>Astuce :</strong> ne dépense pas tout d’un coup. Une bonne saison se construit avec un équilibre entre développement, entraînement et sécurité financière.</div>
-    </div>
-  </section>
-
-  <section id="weekend" class="guide-card">
-    <div class="sec-lbl">⏱️ Comment se déroule un Grand Prix</div>
-    <div class="guide-body">
-      <div class="step"><div class="step-num">1</div><div class="step-txt"><strong>Avant-course :</strong> vérifie le circuit, la météo, la forme de l’équipe et prépare ta stratégie.</div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Essais libres :</strong> récolte des informations utiles pour mieux aborder les qualifications et la course.</div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-txt"><strong>Qualifications :</strong> tente de placer tes pilotes le plus haut possible sur la grille de départ.</div></div>
-      <div class="step"><div class="step-num">4</div><div class="step-txt"><strong>Course :</strong> suis le déroulement du Grand Prix, gère les décisions importantes et vise les points.</div></div>
-      <div class="warning"><strong>Attention :</strong> une voiture rapide ne suffit pas toujours. La météo, la fiabilité, la stratégie et les performances des pilotes peuvent changer le résultat.</div>
-    </div>
-  </section>
-
-  <section class="guide-card">
-    <div class="sec-lbl">📊 Comprendre les statistiques</div>
-    <div class="guide-body">
-      Les statistiques représentent les forces et faiblesses de tes pilotes et de ton écurie. Elles influencent les résultats, mais le contexte d’un Grand Prix peut aussi jouer.
-      <ul>
-        <li><strong>Pace / Vitesse :</strong> performance pure sur un tour et rythme général.</li>
-        <li><strong>Racecraft :</strong> capacité à dépasser, défendre et gérer les duels en piste.</li>
-        <li><strong>Qualifying :</strong> efficacité pendant les séances de qualification.</li>
-        <li><strong>Consistency :</strong> régularité et limitation des erreurs.</li>
-        <li><strong>Experience :</strong> meilleure gestion des situations compliquées.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="conseils" class="guide-card">
-    <div class="sec-lbl">💡 Conseils rapides</div>
-    <div class="guide-body">
-      <ul>
-        <li>Regarde souvent le classement pour savoir si tu dois viser les points ou construire sur le long terme.</li>
-        <li>Entraîne d’abord les faiblesses les plus visibles de tes pilotes.</li>
-        <li>Développe la voiture régulièrement : une écurie qui stagne finit par reculer.</li>
-        <li>Accepte les sponsors adaptés à ton niveau réel, pas seulement ceux qui paient le plus.</li>
-        <li>Avant un Grand Prix, vérifie toujours le briefing pour éviter les mauvaises surprises.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="guide-card">
-    <div class="sec-lbl">❓ Questions fréquentes</div>
-    <div class="guide-body" style="display:grid;gap:8px;padding:12px">
-      <details>
-        <summary>Comment gagner de l’argent ?</summary>
-        <div class="answer">Les sponsors, les résultats et la progression de l’équipe sont les principales sources de revenus. Évite les dépenses inutiles si ton budget est bas.</div>
-      </details>
-      <details>
-        <summary>Pourquoi mes résultats changent beaucoup ?</summary>
-        <div class="answer">Les performances dépendent des pilotes, de la voiture, du circuit, de la météo, de la stratégie et parfois d’événements de course.</div>
-      </details>
-      <details>
-        <summary>Que faire si mon équipe est faible ?</summary>
-        <div class="answer">Concentre-toi sur la régularité, l’entraînement et la R&D. Marquer quelques points avec une petite équipe est déjà une réussite importante.</div>
-      </details>
-      <details>
-        <summary>Quand dois-je lancer le prochain Grand Prix ?</summary>
-        <div class="answer">Quand tu as vérifié tes pilotes, ton budget, tes développements et ta stratégie. Une bonne préparation augmente tes chances.</div>
-      </details>
-    </div>
-  </section>
-
-  <div class="btns" style="justify-content:center;margin:4px 0 18px">
-    <a class="btn btn-red" href="board.html">Retour à la direction</a>
-    <a class="btn btn-sec" href="index.html">Accueil</a>
+  <div class="quick-grid">
+    <a class="quick-card" href="#debut"><div class="quick-icon">🏁</div><div class="quick-title">Bien débuter</div><div class="quick-text">Comprendre quoi faire entre deux Grands Prix.</div></a>
+    <a class="quick-card" href="#course"><div class="quick-icon">🎮</div><div class="quick-title">Course</div><div class="quick-text">Stratégie, rythme, risques et résultats.</div></a>
+    <a class="quick-card" href="#progression"><div class="quick-icon">📈</div><div class="quick-title">Progression</div><div class="quick-text">Pilotes, voiture, staff et R&D.</div></a>
+    <a class="quick-card" href="#direction"><div class="quick-icon">🏢</div><div class="quick-title">Direction</div><div class="quick-text">Objectifs, réputation, pression et finances.</div></a>
   </div>
+
+  <section class="help-section" id="debut">
+    <div class="sec-lbl">🔰 Commencer une carrière</div>
+    <div class="help-body">
+      <div class="step"><div class="step-num">1</div><div><div class="step-title">Choisir une équipe</div><div class="step-text">Chaque équipe démarre avec une voiture, un budget, des pilotes et un niveau de pression différent. Une top team vise les titres, une petite équipe vise surtout les points et la progression.</div></div></div>
+      <div class="step"><div class="step-num">2</div><div><div class="step-title">Préparer le week-end</div><div class="step-text">Avant la course, consulte les briefings, les médias, la R&D, le staff et l'entraînement. Ces choix influencent la performance, les risques et l'ambiance de l'équipe.</div></div></div>
+      <div class="step"><div class="step-num">3</div><div><div class="step-title">Simuler le Grand Prix</div><div class="step-text">La course utilise la performance finale de la voiture, les stats pilotes, la stratégie, la météo, la fiabilité, la forme et certains effets temporaires.</div></div></div>
+      <div class="step"><div class="step-num">4</div><div><div class="step-title">Analyser et progresser</div><div class="step-text">Après chaque GP, tu gagnes de l'argent, des points, parfois de la réputation, de la progression pilote et de nouvelles nouvelles à lire.</div></div></div>
+    </div>
+  </section>
+
+  <section class="help-section" id="course">
+    <div class="sec-lbl">🏎️ Ce qui influence une course</div>
+    <div class="help-body info-list">
+      <div class="info-row"><div class="info-ico">⚙️</div><div><div class="info-title">Performance voiture</div><div class="info-text">Aéro, châssis, moteur et fiabilité déterminent la base de performance. Les valeurs affichées doivent être les valeurs finales avec les bonus R&D et staff.</div></div></div>
+      <div class="info-row"><div class="info-ico">👤</div><div><div class="info-title">Niveau des pilotes</div><div class="info-text">Le rythme, la défense, la régularité et l'expérience influencent les positions, les erreurs, les dépassements et la capacité à convertir une bonne voiture en résultat.</div></div></div>
+      <div class="info-row"><div class="info-ico">🛞</div><div><div class="info-title">Stratégie</div><div class="info-text">La stratégie choisie doit guider le comportement en course. Des événements comme pluie, safety car ou dégradation peuvent modifier le contexte, mais le plan joueur reste prioritaire.</div></div></div>
+      <div class="info-row"><div class="info-ico">🌧️</div><div><div class="info-title">Météo et incidents</div><div class="info-text">La pluie, les erreurs, les DNF, les pénalités et la fiabilité peuvent créer des surprises. Une bonne voiture réduit les risques, mais ne les annule pas totalement.</div></div></div>
+    </div>
+  </section>
+
+  <section class="help-section" id="stats">
+    <div class="sec-lbl">📊 Comprendre les statistiques</div>
+    <div class="help-body">
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-name">Aéro</div><div class="stat-desc">Influence la vitesse en virage, l'usure pneus et la performance globale sur circuits techniques.</div></div>
+        <div class="stat-box"><div class="stat-name">Châssis</div><div class="stat-desc">Aide l'équilibre de la voiture, la constance et la performance sur différents types de circuits.</div></div>
+        <div class="stat-box"><div class="stat-name">Moteur</div><div class="stat-desc">Améliore la vitesse pure, les lignes droites, les dépassements et certains circuits rapides.</div></div>
+        <div class="stat-box"><div class="stat-name">Fiabilité</div><div class="stat-desc">Réduit les risques de DNF, d'usure excessive, de pénalités et de problèmes mécaniques.</div></div>
+        <div class="stat-box"><div class="stat-name">Pit stop</div><div class="stat-desc">Influence la perte de temps aux arrêts et peut faire gagner ou perdre des positions clés.</div></div>
+        <div class="stat-box"><div class="stat-name">Réputation</div><div class="stat-desc">Aide les sponsors, la direction, les contrats et l'attractivité de ton équipe.</div></div>
+      </div>
+      <div class="tip" style="margin-top:12px">Astuce : une stat finale doit représenter <b>base + R&D + staff + effets temporaires</b>. Si une page affiche seulement la base, elle peut donner l'impression que les bonus ne fonctionnent pas.</div>
+    </div>
+  </section>
+
+  <section class="help-section" id="progression">
+    <div class="sec-lbl">📈 Progression & développement</div>
+    <div class="help-body info-list">
+      <div class="info-row"><div class="info-ico">🧪</div><div><div class="info-title">R&D</div><div class="info-text">Investir en R&D améliore durablement la voiture. Les bonus doivent être visibles sur l'index, la page staff, la course et toutes les pages qui parlent de performance technique.</div></div></div>
+      <div class="info-row"><div class="info-ico">👨‍🔧</div><div><div class="info-title">Staff</div><div class="info-text">Le staff ajoute des bonus techniques et peut améliorer certains systèmes. Un staff trop fort peut déséquilibrer le jeu, donc ses bonus doivent rester raisonnables.</div></div></div>
+      <div class="info-row"><div class="info-ico">🏋️</div><div><div class="info-title">Entraînement pilote</div><div class="info-text">L'entraînement donne de petits gains ciblés. Il sert à orienter un pilote, pas à le transformer instantanément en champion.</div></div></div>
+      <div class="info-row"><div class="info-ico">🏁</div><div><div class="info-title">Progression après course</div><div class="info-text">Les pilotes progressent surtout en roulant. Les jeunes montent plus vite, les pilotes proches de leur potentiel progressent plus lentement.</div></div></div>
+    </div>
+  </section>
+
+  <section class="help-section" id="media">
+    <div class="sec-lbl">📱 Médias & interactions</div>
+    <div class="help-body">
+      <p>La page média sert à gérer la pression extérieure : réponses aux journalistes, messages sociaux, ambiance pilote, signaux de contrat et effets temporaires.</p>
+      <div class="info-list">
+        <div class="info-row"><div class="info-ico">💬</div><div><div class="info-title">Réponses publiques</div><div class="info-text">Elles peuvent modifier la confiance, le moral, la réputation, la pression ou un bonus/malus de course.</div></div></div>
+        <div class="info-row"><div class="info-ico">🔔</div><div><div class="info-title">Messages non lus</div><div class="info-text">Une notification doit apparaître automatiquement quand un message social non lu existe, puis disparaître une fois consulté.</div></div></div>
+        <div class="info-row"><div class="info-ico">🔥</div><div><div class="info-title">Effets cachés</div><div class="info-text">Certains choix peuvent augmenter le risque d'erreur, aider un pilote en qualif, améliorer la gestion pneus ou créer une tension contractuelle.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="help-section" id="direction">
+    <div class="sec-lbl">🏢 Direction, objectifs & finances</div>
+    <div class="help-body info-list">
+      <div class="info-row"><div class="info-ico">🎯</div><div><div class="info-title">Objectifs saison</div><div class="info-text">La direction évalue les résultats selon la saison en cours : classement constructeurs, pilotes, points, budget et réputation.</div></div></div>
+      <div class="info-row"><div class="info-ico">📉</div><div><div class="info-title">Pression</div><div class="info-text">La pression monte si tu rates les objectifs, si les finances chutent ou si les résultats sont trop faibles. À 100, le poste est en danger.</div></div></div>
+      <div class="info-row"><div class="info-ico">💰</div><div><div class="info-title">Budget</div><div class="info-text">Le budget sert au staff, à l'entraînement, aux contrats, aux actions et au développement. Une bonne santé financière rassure la direction.</div></div></div>
+      <div class="info-row"><div class="info-ico">🤝</div><div><div class="info-title">Sponsors</div><div class="info-text">Les sponsors donnent de l'argent mais peuvent aussi imposer une pression sportive ou une direction stratégique.</div></div></div>
+    </div>
+  </section>
+
+  <section class="help-section">
+    <div class="sec-lbl">🗺️ Pages importantes</div>
+    <div class="help-body">
+      <div class="link-row">
+        <a href="index.html">Accueil / résumé</a>
+        <a href="weekend.html">Week-end GP</a>
+        <a href="rd.html">R&D</a>
+        <a href="staff.html">Staff</a>
+        <a href="training.html">Entraînement</a>
+        <a href="social.html">Médias</a>
+        <a href="board.html">Direction</a>
+        <a href="contracts.html">Contrats</a>
+        <a href="standings.html">Classements</a>
+        <a href="news.html">News</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="help-section">
+    <div class="sec-lbl">💡 Conseils rapides</div>
+    <div class="help-body">
+      <div class="tip">Pour une petite équipe : vise la fiabilité, quelques points, un staff raisonnable et des jeunes pilotes à potentiel.</div>
+      <div class="tip warn" style="margin-top:8px">Attention : empiler trop vite R&D + staff + entraînement peut rendre l'équipe trop forte. Les meilleures stats doivent rester rares.</div>
+    </div>
+  </section>
 </main>
 
 <script src="js/data.js"></script>

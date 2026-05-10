@@ -722,29 +722,22 @@ function renderOverview() {
   const team = F1Data.teams.find(t => t.id === save.playerTeamId);
   const carDev = save.carDev || {};
   const sb = save.staffBonuses || {};
-  const bd = save._carBreakdown || {};
-
-  function finalCarStat(key, fallback) {
-    const rawBase = carDev[key]?.base ?? bd[key]?.base ?? fallback ?? 70;
-    const rdLevel = carDev[key]?.level ?? rawBase;
-    const staffBonus = Number(sb[key] || 0);
-    return Math.max(1, Math.min(100, Math.round((rdLevel + staffBonus) * 10) / 10));
-  }
 
   const stats = [
-    { lbl:'Aéro',      val:finalCarStat('aero', team?.aero),             color:'#2979ff' },
-    { lbl:'Châssis',   val:finalCarStat('chassis', team?.chassis),       color:'#e8003d' },
-    { lbl:'Moteur',    val:finalCarStat('engine', team?.engine),         color:'#ff9944' },
-    { lbl:'Fiabilité', val:finalCarStat('reliability', team?.reliability),color:'#00e676' },
-    { lbl:'Pit Stop',  val:Math.max(1, Math.min(100, Math.round(((carDev.pitstop?.level ?? 50) + Number(sb.pitstop || 0)) * 10) / 10)), color:'#ffd700' },
-    { lbl:'Staff',     val:save.staff?.length || 0,                      color:'#aa44ff', max:4 },
+    { lbl:'Aéro',      val:Math.min(100,(team?.aero||70)+(carDev.aero?.level||0)/10+(sb.aero||0)/5|0),    base:team?.aero||70,     bonus:sb.aero||0,     color:'#2979ff' },
+    { lbl:'Châssis',   val:Math.min(100,(team?.chassis||70)+(carDev.chassis?.level||0)/10+(sb.chassis||0)/5|0), base:team?.chassis||70,  bonus:sb.chassis||0,  color:'#e8003d' },
+    { lbl:'Moteur',    val:Math.min(100,(team?.engine||70)+(carDev.engine?.level||0)/10+(sb.engine||0)/5|0),  base:team?.engine||70,   bonus:sb.engine||0,   color:'#ff9944' },
+    { lbl:'Fiabilité', val:Math.min(100,(team?.reliability||70)+(sb.reliability||0)|0),                       base:team?.reliability||70,bonus:sb.reliability||0,color:'#00e676'},
+    { lbl:'Pit Stop',  val:Math.min(100,50+(carDev.pitstop?.level||0)/2+(sb.pitstop||0)|0),                  base:50,                 bonus:sb.pitstop||0,  color:'#ffd700' },
+    { lbl:'Staff',     val:save.staff?.length||0,                                                             base:0,                  bonus:0,              color:'#aa44ff',max:4 },
   ];
 
   document.getElementById('overviewGrid').innerHTML = stats.map(s => {
     const pct = s.max ? Math.round(s.val / s.max * 100) : s.val;
+    const bonusText = s.bonus > 0 ? ` <span style="color:var(--green);font-size:12px">+${s.bonus}</span>` : '';
     return `
       <div class="ov-card">
-        <div class="ov-val" style="color:${s.color}">${s.val}</div>
+        <div class="ov-val" style="color:${s.color}">${s.val}${bonusText}</div>
         <div class="ov-lbl">${s.lbl}</div>
         <div class="ov-bar"><div class="ov-fill" style="width:${pct}%;background:${s.color}"></div></div>
       </div>
