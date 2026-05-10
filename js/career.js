@@ -978,15 +978,18 @@ const Career = {
     // Elite très rare (2%)
     const isElite = Math.random() < 0.02;
 
-    // Niveau d'impact basé sur le level
-    const impactBase = Math.round((baseLevel - 55) / 4); // 1-9
+    // Niveau d'impact basé sur le level, mais volontairement nerfé.
+    // Avant, un staff généré pouvait sortir à +7/+9 sur une stat, ce qui écrasait trop la R&D.
+    // Nouvelle règle : +1 à +3 normalement, +4 seulement pour les profils elite très rares.
+    const rawImpact  = Math.round((baseLevel - 55) / 7); // progression plus douce
+    const impactBase = Math.max(1, Math.min(isElite ? 4 : 3, rawImpact));
     const impacts    = { [specialty]: impactBase };
 
-    // Parfois impact secondaire
-    if (Math.random() > 0.5) {
+    // Parfois impact secondaire, limité à +1 pour éviter les profils trop polyvalents.
+    if (Math.random() > 0.55) {
       const secondarySpecs = specs.filter(s => s !== specialty);
       const secondary      = secondarySpecs[Math.floor(Math.random() * secondarySpecs.length)];
-      impacts[secondary]   = Math.max(1, Math.round(impactBase * 0.4));
+      impacts[secondary]   = 1;
     }
 
     const salary = Math.max(1, Math.round(baseLevel * 0.08));

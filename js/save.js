@@ -126,7 +126,13 @@ const Save = {
 
     const stats = ['aero','chassis','engine','reliability'];
     save._carBreakdown = save._carBreakdown || {};
+
+    // Sécurité d'équilibrage : les anciens staffs générés pouvaient sauvegarder des bonus énormes (+7/+9).
+    // On limite l'effet total du staff sur les stats voiture pour que la R&D reste importante.
     const staffBonuses = save.staffBonuses || {};
+    ['aero','chassis','engine','reliability'].forEach(stat => {
+      if (staffBonuses[stat] != null) staffBonuses[stat] = Math.max(0, Math.min(6, Number(staffBonuses[stat]) || 0));
+    });
 
     stats.forEach(stat => {
       const originalBase = save.carDev?.[stat]?.base ?? team[stat] ?? 70;
