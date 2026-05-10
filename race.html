@@ -1134,6 +1134,13 @@ function renderStandings() {
       ? fmtTime(car.totalTime)
       : car.gap !== null ? '+'+car.gap.toFixed(1)+'s' : 'DNF';
 
+    // Intervalle avec le pilote devant
+    const standings = Race.getStandings();
+    const carAhead  = standings.find(c => c.position === car.position - 1 && c.status !== 'dnf');
+    const interval  = (!isLead && !isDnf && carAhead && car.gap !== null && carAhead.gap !== null)
+      ? '+' + Math.abs(car.gap - carAhead.gap).toFixed(2) + 's'
+      : null;
+
     const badge = car.pitThisLap
       ? '<span class="pit-b">PIT</span>'
       : isDnf ? '<span class="dnf-b">DNF</span>' : '';
@@ -1155,6 +1162,7 @@ function renderStandings() {
           <div class="tyre-cond"><div class="tyre-bar" style="width:${cond}%;background:${cc}"></div></div>
           <div style="font-family:var(--fh);font-size:9px;color:${cc}">${cond}%${penaltyStr}</div>
           <div class="gap-cell ${isLead?'ldr':''}" style="margin-top:1px">${gap}</div>
+          ${interval ? `<div style="font-family:var(--fh);font-size:9px;color:var(--muted);margin-top:1px">▲ ${interval}</div>` : ''}
         </div>
       </div>
       <div class="last-cell">${last}</div>
