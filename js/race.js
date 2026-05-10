@@ -19,7 +19,8 @@ const Race = {
       if (save && save.playerTeamId === team.id && save.carDev) {
         ['aero', 'chassis', 'engine', 'reliability'].forEach(stat => {
           if (save.carDev[stat] && Number.isFinite(save.carDev[stat].level)) {
-            effective[stat] = Math.max(1, Math.min(100, save.carDev[stat].level));
+            const staffBonus = Number(save.staffBonuses?.[stat] || 0);
+            effective[stat] = Math.max(1, Math.min(100, save.carDev[stat].level + staffBonus));
           }
         });
         effective.performance = Math.round((effective.aero + effective.chassis + effective.engine) / 3);

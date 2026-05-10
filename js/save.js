@@ -71,6 +71,7 @@ const Save = {
       }
 
       this.applyDriverStates(save);
+      this.applyTeamDevelopment(save);
       return save;
     } catch (e) {
       console.error('[Save] Erreur chargement:', e);
@@ -111,6 +112,38 @@ const Save = {
     save.dataVersion = newVersion;
     try { localStorage.setItem(this.KEY, JSON.stringify(save)); } catch(e) {}
     console.log(`[Save] Migration data v${newVersion} OK`);
+  },
+
+
+
+  // ── SYNCHRO VOITURE JOUEUR / R&D / STAFF ─────────────────
+  // Les pages lisent souvent directement F1Data.teams. On applique ici
+  // la valeur finale partout : base sauvegardée + R&D + bonus staff.
+  applyTeamDevelopment(save) {
+    if (!save || typeof F1Data === 'undefined' || !Array.isArray(F1Data.teams) || !save.playerTeamId) return;
+    const team = F1Data.teams.find(t => String(t.id) === String(save.playerTeamId));
+    if (!team) return;
+
+    const stats = ['aero','chassis','engine','reliability'];
+    save._carBreakdown = save._carBreakdown || {};
+    const staffBonuses = save.staffBonuses || {};
+
+    stats.forEach(stat => {
+      const originalBase = save.carDev?.[stat]?.base ?? team[stat] ?? 70;
+      if (save.carDev?.[stat] && save.carDev[stat].base == null) save.carDev[stat].base = originalBase;
+      const rdLevel = Number(save.carDev?.[stat]?.level ?? originalBase);
+      const staff = Number(staffBonuses[stat] || 0);
+      const finalValue = Math.max(1, Math.min(100, Math.round((rdLevel + staff) * 10) / 10));
+      save._carBreakdown[stat] = {
+        base: originalBase,
+        rd: Math.round((rdLevel - originalBase) * 10) / 10,
+        staff,
+        final: finalValue
+      };
+      team[stat] = finalValue;
+    });
+
+    team.performance = Math.round(((team.aero || 0) + (team.chassis || 0) + (team.engine || 0)) / 3);
   },
 
   // ── SYNCHRO PILOTES / MARCHÉ ──────────────────────────────
