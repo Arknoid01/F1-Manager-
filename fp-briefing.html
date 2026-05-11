@@ -188,6 +188,21 @@ function getDriverStandings(save){
 
 function render(){
   const save = Save.load();
+
+  // Appliquer driverStates sur TOUS les pilotes F1Data (y compris GAS, COL etc.)
+  // pour refléter les changements d'équipe en cours de saison
+  if (save.driverStates) {
+    F1Data.drivers.forEach(d => {
+      const state = save.driverStates[d.id];
+      if (!state) return;
+      if (Object.prototype.hasOwnProperty.call(state, 'teamId')) {
+        d.teamId = state.teamId;
+      }
+      if (Object.prototype.hasOwnProperty.call(state, 'retired')) {
+        d.retired = state.retired;
+      }
+    });
+  }
   if(!save||!save.playerTeamId){
     document.getElementById('content').innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">Aucune carrière trouvée. <a href="index.html" style="color:var(--accent)">Retour accueil</a></div>';
     return;

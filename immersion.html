@@ -190,6 +190,16 @@ function doPromote(juniorId){
   const result = Immersion.promoteJunior(save, juniorId, replaceDriverId);
   if(!result.ok){ alert(result.msg); return; }
   save = Save.load();
+
+  // Synchroniser F1Data avec driverStates (teamId, retired)
+  if (save && save.driverStates) {
+    F1Data.drivers.forEach(d => {
+      const st = save.driverStates[d.id];
+      if (!st) return;
+      if (Object.prototype.hasOwnProperty.call(st, 'teamId')) d.teamId = st.teamId;
+      if (Object.prototype.hasOwnProperty.call(st, 'retired')) d.retired = st.retired;
+    });
+  }
   Immersion.ensure(save);
   document.getElementById('academyContent').innerHTML = renderAcademy(save.immersion);
   alert(result.msg + (result.replaced ? `\n${result.replaced.firstName} ${result.replaced.name} devient agent libre.` : '') + '\n\nContrat rookie généré : 2 ans, 1 à 3M€/an.');

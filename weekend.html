@@ -290,6 +290,16 @@ const CIRCUIT_FLAGS = {
 // ══════════════════════════════════════════════════════════
 function init() {
   save = Save.load();
+
+  // Synchroniser F1Data avec driverStates (teamId, retired)
+  if (save && save.driverStates) {
+    F1Data.drivers.forEach(d => {
+      const st = save.driverStates[d.id];
+      if (!st) return;
+      if (Object.prototype.hasOwnProperty.call(st, 'teamId')) d.teamId = st.teamId;
+      if (Object.prototype.hasOwnProperty.call(st, 'retired')) d.retired = st.retired;
+    });
+  }
   if (!save || !save.playerTeamId) {
     document.querySelector('.page').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);font-family:var(--fh)"><div style="font-size:22px;margin-bottom:12px">Aucune carrière trouvée</div><a href="index.html" class="btn btn-red">Créer une carrière</a></div>`;
     return;
