@@ -661,16 +661,9 @@ const Save = {
         });
       }
 
-      // Choisir 1-2 events technique selon le contexte
-      if (hasDnf) {
-        events.push(techOptions[0]); // fiabilite en priorite
-        if (techOptions.length > 2) events.push(techOptions[techOptions.length-1]); // + pneus
-      } else {
-        // Un debrief + un pneus ou RD
-        events.push(techOptions.find(e=>e.id.includes('debrief')) || techOptions[0]);
-        const extra = techOptions.find(e=>e.id.includes('rd') || e.id.includes('tyres'));
-        if (extra) events.push(extra);
-      }
+      // Toujours pousser tous les techOptions dans events — max 2
+      const techToAdd = techOptions.slice(0, 2);
+      techToAdd.forEach(te => events.push(te));
     }
 
     // ── PHASE PRE-COURSE (1 event) ───────────────────────────
