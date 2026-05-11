@@ -453,6 +453,300 @@ const Save = {
     const ok = this.save(save);
     return ok ? { reward: reward + sponsorBonus,
       operatingCost: gpOperatingCost, baseReward: reward, sponsorBonus, tokens, save } : null;
+
+    // -- GENERATION DISCUSSIONS SOCIALES POST-COURSE --
+    // Genere une seule fois apres chaque GP
+    try {
+      this.generatePostRaceSocial(save, results, playerTeamId);
+    } catch(e) { console.warn('Social gen:', e); }
+
+    return null;
+  },
+
+  // -- GENERATION DISCUSSIONS SOCIALES POST-COURSE --
+  // Appele une seule fois par recordRaceResults — genere 3-5 discussions structurees
+  generatePostRaceSocial(save, results, playerTeamId) {
+    if (!save || !playerTeamId) return;
+
+    // Ne pas regenerer si deja fait pour ce GP
+    const gpKey = `social_generated_gp_${save.race||0}_${save.season||2025}`;
+    if (save[gpKey]) return;
+    save[gpKey] = true;
+
+    const drivers    = F1Data.drivers.filter(d => d.teamId && d.teamId === playerTeamId && !d.retired);
+    const circuits   = F1Data.circuits || [];
+    const nextCirc   = circuits[(save.race||0) % Math.max(1, circuits.length)];
+    const race       = save.race || 0;
+    const season     = save.season || 2025;
+    const totalRaces = circuits.length;
+    const pct        = race / Math.max(1, totalRaces);
+
+    if (!save.socialEvents) save.socialEvents = [];
+
+    const playerResults = results.filter(r => (r.team?.id || r.teamId) === playerTeamId);
+    const bestPos       = playerResults.length ? Math.min(...playerResults.map(r => r.position||20)) : 20;
+    const hasDnf        = playerResults.some(r => r.status === 'dnf');
+    const hasPodium     = bestPos <= 3;
+    const hasPoints     = bestPos <= 10;
+
+    const events = [];
+
+    // ── PHASE POST-COURSE (1-2 events) ──────────────────────
+    drivers.forEach(d => {
+      const dRes    = playerResults.find(r => (r.driver?.id || r.driverId) === d.id);
+      const pos     = dRes?.position || 20;
+      const isDnf   = dRes?.status === 'dnf';
+      const moral   = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
+      const loyalty = save.driverLoyalty?.[d.id] ?? 50;
+
+      // Choisir la situation la plus pertinente pour ce pilote
+      if (isDnf) {
+        const texts = [
+          `${d.firstName} est silencieux dans le motorhome depuis l'abandon. Personne n'ose lui parler. C'est a vous de faire le premier pas.`,
+          `La radio de ${d.firstName} est coupee depuis l'arrivee au garage. Son mecanicien vous fait signe du regard — il faut intervenir.`,
+          `${d.firstName} est assis seul sur le muret des stands, casque entre les mains. La deception est palpable.`,
+        ];
+        events.push({
+          id: `post_dnf_${d.id}_${race}`,
+          driverId: d.id, phase: 'post', type: 'driver',
+          trigger: 'Abandon',
+          text: texts[race % texts.length],
+          choices: [
+            { text: "Tu n'y es pour rien. La mecanique nous a laches — on va regler ca.", effect: {moral:+10, confiance:+6, loyalty:+4}, choiceType:'positive' },
+            { text: "Raconte-moi ce qui s'est passe depuis ton point de vue.", effect: {moral:+4, confiance:+8}, choiceType:'neutral' },
+            { text: "Ce genre d'abandon nous coute des points precieux. On doit faire mieux.", effect: {moral:-8, confiance:-5, loyalty:-3}, choiceType:'negative' },
+          ]
+        });
+      } else if (pos <= 3) {
+        const texts = [
+          `${d.firstName} arrive dans votre bureau, sourire aux levres. P${pos}. L'equipe est en feu. Il attend votre reaction.`,
+          `Le debriefing vient de se terminer. ${d.firstName} est en pleine confiance — c'est le moment de capitaliser.`,
+          `P${pos} pour ${d.firstName}. Les sponsors appellent deja. Comment gerez-vous ce moment ?`,
+        ];
+        events.push({
+          id: `post_podium_${d.id}_${race}`,
+          driverId: d.id, phase: 'post', type: 'driver',
+          trigger: `P${pos}`,
+          text: texts[race % texts.length],
+          choices: [
+            { text: "Une performance magistrale. Tu as tout donne et ca se voit.", effect: {moral:+8, confiance:+6, loyalty:+5}, choiceType:'positive' },
+            { text: "Excellent. Maintenant on ne relache pas la pression.", effect: {moral:+4, confiance:+4, pace:+2}, choiceType:'neutral' },
+            { text: "Bon resultat mais j'ai vu des details a corriger pour la prochaine fois.", effect: {moral:-2, confiance:+3, pace:+3}, choiceType:'negative' },
+          ]
+        });
+      } else if (pos <= 10) {
+        events.push({
+          id: `post_points_${d.id}_${race}`,
+          driverId: d.id, phase: 'post', type: 'driver',
+          trigger: `P${pos}`,
+          text: `${d.firstName} est pragmatique apres son P${pos}. Points pris, voiture dans le mur, course propre. Il vient vous voir avant de quitter le circuit.`,
+          choices: [
+            { text: "Travail propre et efficace. C'est exactement ce qu'on attendait.", effect: {moral:+6, confiance:+5, loyalty:+3}, choiceType:'positive' },
+            { text: "P${pos} c'est correct. On a encore de la marge pour progresser.", effect: {moral:+2, confiance:+3}, choiceType:'neutral' },
+            { text: "Honnêtement on meritait mieux. Il y avait des opportunites ratees.", effect: {moral:-4, confiance:-2, pace:+2}, choiceType:'negative' },
+          ]
+        });
+      } else if (moral < 45) {
+        // Moral bas apres une mauvaise course
+        events.push({
+          id: `post_low_moral_${d.id}_${race}`,
+          driverId: d.id, phase: 'post', type: 'driver',
+          trigger: 'Passage difficile',
+          text: `${d.firstName} n'est pas en grande forme ces derniers temps. P${pos} aujourd'hui, et quelque chose semble peser. Son mecanicien rapporte qu'il a quitte le garage sans debriefing.`,
+          choices: [
+            { text: "Je t'ai observe en course — je sais que tu peux faire bien mieux. Qu'est-ce qui se passe ?", effect: {moral:+10, confiance:+8, loyalty:+5}, choiceType:'positive' },
+            { text: "On va analyser les donnees ensemble et repartir de zero.", effect: {moral:+5, confiance:+6, pace:+1}, choiceType:'neutral' },
+            { text: "Ces resultats ne sont pas acceptables. Il faut que ca change rapidement.", effect: {moral:-8, confiance:-6, loyalty:-4, pace:+3}, choiceType:'negative' },
+          ]
+        });
+      }
+    });
+
+    // ── PHASE TECHNIQUE (1-2 events ingenieur) ──────────────
+    const engExisting = events.filter(e => e.phase === 'tech').length;
+    if (engExisting === 0) {
+      const techOptions = [];
+
+      // Fiabilite si DNF
+      if (hasDnf) {
+        techOptions.push({
+          id: `tech_reliability_${race}`,
+          driverId: 'engineer', phase: 'tech', type: 'engineer',
+          trigger: 'Analyse fiabilite',
+          text: `Votre chef mecanicien a passe la nuit a analyser l'abandon. Il identifie deux options pour le prochain GP : changer la piece concernee au risque d'une penalite de grille, ou rouler avec le risque d'un nouvel abandon.`,
+          choices: [
+            { text: "On change. Une penalite de 5 places vaut mieux qu'un deuxieme abandon.", effect: {moral:+3, confiance:+5, penaltyGrid:true}, choiceType:'positive' },
+            { text: "On surveille de pres et on decide jeudi apres les donnees EL.", effect: {moral:+1, confiance:+2}, choiceType:'neutral' },
+            { text: "On prend le risque. La grille de depart ne se negocie pas.", effect: {dnfRisk:true, moral:-2}, choiceType:'negative' },
+          ]
+        });
+      }
+
+      // Analyse post-course standard
+      const postAnalysis = [
+        `Votre ingenieur de piste vient de compiler les donnees de la course. Il y a une piste serieuse d'amelioration sur le comportement en freinage tardif. Votre feu vert est necessaire pour lancer le travail.`,
+        `L'analyse post-course est prete. Les donnees montrent que l'on perd principalement dans les virages lents — setup ou pilotage, la question se pose. L'ingenieur attend votre decision sur l'orientation.`,
+        `Debriefing termine. Votre ingenieur a identifie un gain potentiel sur la gestion thermique des pneus. Cela necessite un changement de protocole pour le prochain week-end.`,
+      ];
+      techOptions.push({
+        id: `tech_debrief_${race}`,
+        driverId: 'engineer', phase: 'tech', type: 'engineer',
+        trigger: 'Debriefing technique',
+        text: postAnalysis[race % postAnalysis.length],
+        choices: [
+          { text: "Lancez le travail. On integre ca au programme du prochain week-end.", effect: {pace:+2, confiance:+3, tokenBonus:0}, choiceType:'positive' },
+          { text: "Interessant. On fait un point apres les EL du prochain GP avant de valider.", effect: {pace:+1}, choiceType:'neutral' },
+          { text: "On a d'autres priorites pour l'instant. Gardez ca en reserve.", effect: {}, choiceType:'negative' },
+        ]
+      });
+
+      // R&D tous les 4 GP
+      if (race % 4 === 0 && race > 0) {
+        const domains = ['aero','chassis','engine','reliability'];
+        const labels  = {aero:'aerodynamique',chassis:'chassis',engine:'moteur',reliability:'fiabilite'};
+        const dom     = domains[race % domains.length];
+        techOptions.push({
+          id: `tech_rd_${race}`,
+          driverId: 'engineer', phase: 'tech', type: 'engineer',
+          trigger: 'Opportunite R&D',
+          text: `L'equipe technique a identifie une piste de developpement sur le ${labels[dom]} suite aux donnees de ce GP. Les ressources sont disponibles mais limitees.`,
+          choices: [
+            { text: "On investit. C'est exactement le genre d'opportunite qu'on cherchait.", effect: {rdBonus:dom, tokenBonus:+1}, choiceType:'positive' },
+            { text: "Donnez-moi les projections detaillees avant que je valide.", effect: {}, choiceType:'neutral' },
+            { text: "Pas maintenant. On concentre les ressources ailleurs.", effect: {}, choiceType:'negative' },
+          ]
+        });
+      }
+
+      // Briefing pneus prochain circuit
+      if (nextCirc) {
+        const highDeg = nextCirc.tyreDegradation > 1.2;
+        techOptions.push({
+          id: `tech_tyres_${race}`,
+          driverId: 'engineer', phase: 'tech', type: 'engineer',
+          trigger: `Preparation ${nextCirc.name || 'prochain GP'}`,
+          text: `Premier briefing sur le prochain circuit. La degradation des pneus est ${highDeg ? 'elevee — les simulations privilegient deux arrets' : 'moderee — un seul arret bien gere semble optimal'}. Comment orientez-vous la preparation ?`,
+          choices: [
+            { text: highDeg ? "Deux arrets. On optimise chaque relance plutot que de subir la degradation." : "Un arret. On maximise le rythme et on gere.", effect: {setupBonus:'race', moral:+2}, choiceType:'positive' },
+            { text: "On reste ouverts aux deux options et on decide selon la meteo du vendredi.", effect: {}, choiceType:'neutral' },
+            { text: "On attaque avec les Softs des le depart et on verra.", effect: {setupBonus:'qualify'}, choiceType:'negative' },
+          ]
+        });
+      }
+
+      // Choisir 1-2 events technique selon le contexte
+      if (hasDnf) {
+        events.push(techOptions[0]); // fiabilite en priorite
+        if (techOptions.length > 2) events.push(techOptions[techOptions.length-1]); // + pneus
+      } else {
+        // Un debrief + un pneus ou RD
+        events.push(techOptions.find(e=>e.id.includes('debrief')) || techOptions[0]);
+        const extra = techOptions.find(e=>e.id.includes('rd') || e.id.includes('tyres'));
+        if (extra) events.push(extra);
+      }
+    }
+
+    // ── PHASE PRE-COURSE (1 event) ───────────────────────────
+    if (drivers.length > 0) {
+      const d = drivers[Math.floor(Math.random() * drivers.length)];
+      const driverPts = save.driverStandings?.[d.id] || 0;
+      const loyalty   = save.driverLoyalty?.[d.id] ?? 50;
+      const nextName  = nextCirc?.name || 'le prochain Grand Prix';
+
+      let preEvent = null;
+
+      // Arc narratif selon la phase de saison
+      if (pct < 0.22 && !save[`arc_start_${d.id}_${season}`]) {
+        save[`arc_start_${d.id}_${season}`] = true;
+        preEvent = {
+          id: `pre_arc_start_${d.id}_${season}`,
+          driverId: d.id, phase: 'pre', type: 'driver',
+          trigger: 'Debut de saison',
+          text: `${d.firstName} vient vous voir dans votre bureau. "On a fait quoi comme objectifs cette saison ?" La question est posee calmement mais elle compte.`,
+          choices: [
+            { text: "On vise le top 5 constructeurs minimum. Et on se bat pour chaque point.", effect: {moral:+8, confiance:+6, loyalty:+5}, choiceType:'positive' },
+            { text: "On progresse GP apres GP. Pas d'objectif chiffre — juste la performance.", effect: {moral:+4, confiance:+4}, choiceType:'neutral' },
+            { text: "L'objectif c'est d'etre competitif a chaque sortie. Le classement suivra.", effect: {moral:+2, confiance:+3, pace:+1}, choiceType:'negative' },
+          ]
+        };
+      } else if (pct >= 0.48 && pct < 0.70 && !save[`arc_tension_${d.id}_${season}`]) {
+        save[`arc_tension_${d.id}_${season}`] = true;
+        preEvent = {
+          id: `pre_arc_tension_${d.id}_${season}`,
+          driverId: d.id, phase: 'pre', type: 'driver',
+          trigger: 'Phase cruciale',
+          text: `On arrive dans le coeur de la saison. ${d.firstName} vous prend a part : "Les prochains GP vont tout decider. Je veux savoir jusqu'ou tu es pret a pousser cette voiture."`,
+          choices: [
+            { text: "On attaque. Setup agressif, strategie audacieuse — on ne gere pas.", effect: {moral:+6, confiance:+5, pace:+3, dnfRisk:true}, choiceType:'positive' },
+            { text: "On joue nos forces. Regularite et saisir les opportunites.", effect: {moral:+4, confiance:+5, pace:+1}, choiceType:'neutral' },
+            { text: "On securise les points. On prend zero risque inutile.", effect: {moral:+2, confiance:+3, pace:-1}, choiceType:'negative' },
+          ]
+        };
+      } else if (pct >= 0.87 && !save[`arc_end_${d.id}_${season}`]) {
+        save[`arc_end_${d.id}_${season}`] = true;
+        preEvent = {
+          id: `pre_arc_end_${d.id}_${season}`,
+          driverId: d.id, phase: 'pre', type: 'driver',
+          trigger: 'Derniers GP de la saison',
+          text: `Il ne reste que quelques courses. ${d.firstName} vous dit simplement : "C'est la derniere ligne droite. Je veux qu'on finisse fort ensemble."`,
+          choices: [
+            { text: "On finit comme on a commence — tout donner. Carte blanche.", effect: {moral:+12, confiance:+10, loyalty:+8, pace:+3}, choiceType:'positive' },
+            { text: "On reste concentres. Chaque point compte jusqu'au bout.", effect: {moral:+6, confiance:+6, pace:+2}, choiceType:'neutral' },
+            { text: "On protege notre classement. La prudence d'abord.", effect: {moral:+2, confiance:+3, pace:-1}, choiceType:'negative' },
+          ]
+        };
+      } else {
+        // Event pré-course contextuel
+        const preTexts = [
+          `${d.firstName} passe la tete dans votre bureau la veille du depart pour ${nextName}. "On est prets ?" Il attend votre leadership avant de monter dans l'avion.`,
+          `Avant de quitter le paddock, ${d.firstName} vous croise dans le couloir. "Le prochain circuit me convient bien. On peut viser plus haut ?" Sa confiance est visible.`,
+          `${d.firstName} vous envoie un message depuis l'hotel : il a regarde des donnees de qualification sur ${nextName} et a des idees. Il veut en discuter.`,
+        ];
+        preEvent = {
+          id: `pre_generic_${d.id}_${race}`,
+          driverId: d.id, phase: 'pre', type: 'driver',
+          trigger: `Avant ${nextName}`,
+          text: preTexts[race % preTexts.length],
+          choices: [
+            { text: "Plus que prets. On va chercher le maximum la-bas.", effect: {moral:+7, confiance:+5, loyalty:+3}, choiceType:'positive' },
+            { text: "On fait notre travail et on reste concentres sur nos points forts.", effect: {moral:+3, confiance:+3}, choiceType:'neutral' },
+            { text: "On se concentre d'abord sur les EL avant de fixer des objectifs.", effect: {moral:+1, confiance:+2}, choiceType:'negative' },
+          ]
+        };
+      }
+
+      if (preEvent) events.push(preEvent);
+    }
+
+    // ── EVENT D'ESCALADE PRIORITAIRE ────────────────────────
+    drivers.forEach(d => {
+      const loyalty = save.driverLoyalty?.[d.id] ?? 50;
+      const moral   = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
+      const history = (save.socialHistory||[]).filter(h => h.driverName?.includes(d.name));
+      const hardCount = history.slice(0,5).filter(h=>h.choiceType==='negative').length;
+
+      if (hardCount >= 2 && loyalty < 35 && !save[`esc_threat_${d.id}_${season}`]) {
+        save[`esc_threat_${d.id}_${season}`] = true;
+        events.unshift({
+          id: `esc_threat_${d.id}_${season}`,
+          driverId: d.id, phase: 'post', type: 'escalation', urgent: true,
+          trigger: 'Situation critique',
+          text: `${d.firstName} ${d.name} a demande un entretien prive d'urgence. Son agent est en contact avec deux equipes. Les tensions des derniers GP ont fragilise la relation. Il est temps de clarifier.`,
+          choices: [
+            { text: "J'ai fait des erreurs de management. On repart sur une base saine.", effect: {moral:+15, confiance:+12, loyalty:+15}, choiceType:'positive' },
+            { text: "Je t'offre une prolongation avec une revalorisation. Tu es notre avenir.", effect: {moral:+10, confiance:+8, loyalty:+10, contractSignal:true}, choiceType:'neutral' },
+            { text: "Si les conditions ne te conviennent plus, je comprends. Chacun ses choix.", effect: {moral:-15, confiance:-15, loyalty:-20}, choiceType:'negative' },
+          ]
+        });
+      }
+    });
+
+    // Ajouter tous les events au save
+    events.forEach(ev => {
+      if (!save.socialEvents.find(e => e.id === ev.id)) {
+        save.socialEvents.push({...ev, read: false, resolved: false});
+      }
+    });
   },
 
   // ── RESET RÉGLEMENTAIRE ───────────────────────────────────
