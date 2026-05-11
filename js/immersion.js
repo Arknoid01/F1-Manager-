@@ -347,7 +347,13 @@ const Immersion = {
 
     F1Data.drivers.push(newDriver);
     save.generatedDrivers = Array.isArray(save.generatedDrivers) ? save.generatedDrivers : [];
-    save.generatedDrivers.push({...newDriver});
+    // Eviter les doublons
+    if (!save.generatedDrivers.find(d => d.id === newDriver.id)) {
+      save.generatedDrivers.push({...newDriver});
+    } else {
+      const gi = save.generatedDrivers.findIndex(d => d.id === newDriver.id);
+      save.generatedDrivers[gi] = {...newDriver};
+    }
     save.contracts = save.contracts || {};
 
     let transfer = { ok:true, replaced:null };
