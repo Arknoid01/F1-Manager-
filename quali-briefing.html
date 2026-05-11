@@ -116,15 +116,50 @@ function render(){
   console.log('[QualiB] fpResults:', JSON.stringify(fpResults.slice(0,2)));
   console.log('[QualiB] myDrivers ids:', myDrivers.map(d=>d.id));
 
+  // Calculer la degradation estimee selon le circuit et la voiture
+  const tyreBase    = circuit.tyreDegradation || 1.0;
+  const reliability = save.carDev?.reliability?.level || 75;
+  const degradFactor = Math.round(tyreBase * (1 + (100 - reliability) / 200) * 100) / 100;
+  const degradLabel = degradFactor > 1.3 ? 'Elevee' : degradFactor > 1.1 ? 'Moderee' : 'Faible';
+  const degradColor = degradFactor > 1.3 ? 'var(--accent)' : degradFactor > 1.1 ? 'var(--gold)' : 'var(--green)';
+
   const elCards = myDrivers.map(d=>{
-    const dRes = fpResults.filter(r=>(r.driverId||r.driver?.id||r.driver)===d.id);
-    const best = dRes.length ? Math.min(...dRes.map(r=>r.bestLap||999)) : null;
-    const avgPos = dRes.length ? Math.round(dRes.reduce((s,r)=>s+(r.position||20),0)/dRes.length) : null;
+    const dRes   = fpResults.filter(r=>(r.driverId||r.driver?.id||r.driver)===d.id);
+    const state  = save.driverStates?.[d.id];
+
+    // Meilleur temps — simuler si pas de données EL réelles
+    let bestRaw = dRes.length ? Math.min(...dRes.map(r=>r.bestLap||999)) : null;
+    if (!bestRaw || bestRaw >= 999) {
+      // Simuler un temps réaliste selon le circuit et la perf pilote
+      const baseTime   = circuit.lapRecord || 90;
+      const carPerf    = ((save.carDev?.aero?.level||70) + (save.carDev?.chassis?.level||70) + (save.carDev?.engine?.level||70)) / 3;
+      const driverPace = state?.pace || d.pace || 80;
+      const perfFactor = 1 + ((100 - carPerf) * 0.002) + ((100 - driverPace) * 0.001);
+      bestRaw = baseTime * perfFactor * (0.98 + Math.random() * 0.04);
+    }
+    const mins = Math.floor(bestRaw / 60);
+    const secs = (bestRaw % 60).toFixed(3).padStart(6,'0');
+    const bestFormatted = `${mins}:${secs}`;
+
+    // Pneu recommande pour les qualifs
+    const tyreTip = circuit.tyreDegradation > 1.2
+      ? 'Soft neuf pour Q3 — 1 run max'
+      : 'Soft neuf pour Q3 — 2 runs possibles';
+
+    // Progression EL (nombre de sessions)
+    const sessionsDone = dRes.length || fpDone;
+
     return `<div class="el-card">
-      <div class="ec-session">Bilan EL</div>
+      <div class="ec-session">Bilan EL · ${sessionsDone} session${sessionsDone!==1?'s':''}</div>
       <div class="ec-name">${esc(d.firstName)} ${esc(d.name)}</div>
-      ${best&&best<999?`<div class="ec-time">&#9201; ${best.toFixed(3)}s</div>`:''}
-      ${avgPos?`<div class="ec-pos">Pos. moyenne : P${avgPos}</div>`:'<div class="ec-pos" style="color:var(--muted)">Pas de donnees EL</div>'}
+      <div class="ec-time" style="font-size:20px;font-weight:900;color:var(--gold);font-family:var(--fh)">&#9201; ${bestFormatted}</div>
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">Pneus : <strong style="color:var(--text)">${tyreTip}</strong></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:5px">
+        <span style="font-family:var(--fh);font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase">Degradation</span>
+        <span style="font-family:var(--fh);font-size:12px;font-weight:700;color:${degradColor}">${degradLabel}</span>
+      </div>
     </div>`;
   }).join('');
 
