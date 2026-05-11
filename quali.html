@@ -137,20 +137,40 @@ if (!save?.playerTeamId) location.href = 'weekend.html';
 
 // Synchroniser F1Data avec la sauvegarde (pilotes titulaires + juniors promus)
 function restoreDriverStatesForQuali() {
+  // 1. Mettre a jour les stats des pilotes F1Data standards
   if (save.driverStates) {
     F1Data.drivers.forEach(d => {
       const st = save.driverStates[d.id];
       if (!st) return;
-      Object.assign(d, st);
-      if (Object.prototype.hasOwnProperty.call(st, 'teamId')) d.teamId = st.teamId;
-      if (Object.prototype.hasOwnProperty.call(st, 'retired')) d.retired = st.retired;
+      // Appliquer stats mais pas retired ni teamId si free_agent
+      if (st.pace       !== undefined) d.pace       = st.pace;
+      if (st.consistency!== undefined) d.consistency= st.consistency;
+      if (st.wetSkill   !== undefined) d.wetSkill   = st.wetSkill;
+      if (st.overtaking !== undefined) d.overtaking = st.overtaking;
+      if (st.defending  !== undefined) d.defending  = st.defending;
+      if (st.potential  !== undefined) d.potential  = st.potential;
+      // teamId et retired : seulement si la clé existe et est significative
+      if (Object.prototype.hasOwnProperty.call(st, 'teamId') && st.teamId !== undefined) {
+        d.teamId = st.teamId;
+      }
+      if (Object.prototype.hasOwnProperty.call(st, 'retired') && st.retired !== undefined) {
+        d.retired = st.retired;
+      }
     });
   }
+  // 2. Ajouter les juniors promus
   if (save.generatedDrivers?.length) {
     save.generatedDrivers.forEach(gd => {
       const st = save.driverStates?.[gd.id] || {};
-      const merged = {...gd, ...st};
-      if (st.teamId !== undefined) merged.teamId = st.teamId;
+      const merged = {...gd};
+      // Stats
+      ['pace','consistency','wetSkill','overtaking','defending','potential','age','salary'].forEach(k => {
+        if (st[k] !== undefined) merged[k] = st[k];
+      });
+      // teamId depuis driverStates en priorité
+      merged.teamId  = st.teamId  !== undefined ? st.teamId  : gd.teamId;
+      merged.retired = st.retired !== undefined ? st.retired : (gd.retired || false);
+      // Exclure si pas d equipe ou agent libre ou retraite
       if (!merged.teamId || merged.teamId === 'free_agent' || merged.retired) return;
       const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
       if (idx < 0) F1Data.drivers.push(merged);
@@ -159,6 +179,7 @@ function restoreDriverStatesForQuali() {
   }
 }
 restoreDriverStatesForQuali();
+
 
 const playerTeamId = save.playerTeamId;
 const circuit      = F1Data.circuits[(save.race||0) % F1Data.circuits.length];
