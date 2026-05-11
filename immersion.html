@@ -174,7 +174,9 @@ function toggleJr(id){
 // doFP supprimé — les sessions EL se lancent depuis la page Weekend
 
 function doPromote(juniorId){
-  const current = F1Data.drivers.filter(d=>d.teamId===save.playerTeamId && !d.retired);
+  // Exclure les juniors déjà promus du comptage (évite les doublons)
+  const promotedIds = (save.immersion?.juniorAcademy||[]).filter(j=>j.promoted).map(j=>j.driverId).filter(Boolean);
+  const current = F1Data.drivers.filter(d=>d.teamId&&d.teamId===save.playerTeamId && !d.retired && !promotedIds.includes(d.id));
   let replaceDriverId = null;
   if(current.length >= 2){
     const list = current.map((d,i)=>`${i+1}. ${d.firstName} ${d.name}`).join('\n');
