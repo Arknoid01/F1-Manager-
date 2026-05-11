@@ -487,7 +487,7 @@ function renderNavTiles(team,drivers) {
     {href:'immersion.html#academy',icon:'🌱',lbl:'Académie',val:`${save.immersion?.juniorAcademy?.length || 0}`,sub:'jeunes talents',c:'var(--blue)'},
     {href:'rd.html',icon:'🔬',lbl:'R&D',val:`${save.tokens||0} tokens`,sub:`Budget : ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--blue)'},
     {href:`profile.html?type=team&id=${save.playerTeamId}`,icon:'🔍',lbl:'Fiche équipe',val:team?.shortName||'—',sub:`Budget ${Math.round((save.budget||0)*10)/10}M€`,c:'var(--muted)'},
-    {href:'social.html',icon:'💬',lbl:'Social',val:(() => { const pending = window.SocialEventsSync ? SocialEventsSync.unreadCount(save) : (save.socialEvents||[]).filter(e=>!e.resolved && !e.read).length; return pending > 0 ? `${pending} message${pending>1?'s':''}` : 'OK'; })(),sub:'Relations pilotes · équipe',c:'var(--accent)'},
+    {href:'social.html',icon:'💬',lbl:'Social',val:(() => { const pending = window.SocialEventsSync ? SocialEventsSync.unreadCount(save) : (save.socialEvents||[]).filter(e=>{ if(e.resolved||e.read) return false; const ei=['engineer','engineer2']; if(ei.includes(e.driverId)) return true; const st=save.driverStates?.[e.driverId]; if(st?.teamId==='free_agent') return false; return st?.teamId===save.playerTeamId||F1Data.drivers.find(x=>x.id===e.driverId)?.teamId===save.playerTeamId; }).length; return pending > 0 ? `${pending} message${pending>1?'s':''}` : 'OK'; })(),sub:'Relations pilotes · équipe',c:'var(--accent)'},
     {href:'training.html',icon:'🏋️',lbl:'Entraînement',val:'Sim + Physique',sub:'Progresser entre les GP',c:'var(--green)'},
     {href:'javascript:void(0)',icon:'💾',lbl:'Sauvegarde',val:'Export/Import',sub:'Gerer ta partie',c:'var(--muted)',action:'toggleSaveTools()'},
   ];
@@ -669,7 +669,18 @@ function getSocialUnreadCount() {
     if (window.SocialEventsSync && typeof SocialEventsSync.unreadCount === 'function') {
       return SocialEventsSync.unreadCount(sv);
     }
-    return (sv.socialEvents || []).filter(e => !e.resolved && !e.read).length;
+    const engIds = ['engineer', 'engineer2'];
+    return (sv.socialEvents || []).filter(e => {
+      if (e.resolved || e.read) return false;
+      if (engIds.includes(e.driverId)) return true;
+      // Exclure les pilotes agent libre
+      const st = sv.driverStates?.[e.driverId];
+      if (st?.teamId === 'free_agent') return false;
+      if (st?.teamId && st.teamId !== 'free_agent' && st.teamId === sv.playerTeamId) return true;
+      // Pilotes F1Data standards
+      const d = typeof F1Data !== 'undefined' ? F1Data.drivers.find(x => x.id === e.driverId) : null;
+      return d && d.teamId && d.teamId !== 'free_agent' && d.teamId === sv.playerTeamId;
+    }).length;
   } catch (e) {
     return 0;
   }

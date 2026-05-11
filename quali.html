@@ -8,26 +8,23 @@
 <title>Qualifications — F1 Manager</title>
 <style>
 *{box-sizing:border-box}
-.wrap{max-width:700px;margin:0 auto;padding:8px 10px 40px}
-.quali-live{display:flex;gap:8px;align-items:flex-start}
-.quali-main{flex:1;min-width:0}
-.quali-side{width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.wrap{max-width:700px;margin:0 auto;padding:8px 6px 40px}
+.quali-live{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.quali-main{width:100%;min-width:0}
+.quali-side{width:100%;display:flex;flex-direction:column;gap:8px}
 .panel-head{background:var(--surface2);border-bottom:1px solid var(--border);padding:6px 12px;font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
 .panel-head .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .quali-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.quali-card-body{padding:10px}
+.quali-card-body{padding:8px 4px}
 .run-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 .run-meta .mini{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 8px;font-family:var(--fh)}
 .run-meta .mini b{display:block;font-size:15px;color:var(--text)}
 .run-meta .mini span{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
 
-/* Mobile : colonne unique */
-.quali-live{flex-direction:column}
-.quali-side{width:100%}
-/* Desktop 760px+ : côte à côte */
 @media(min-width:760px){
-  .quali-live{flex-direction:row}
-  .quali-side{width:260px}
+  .quali-live{flex-direction:row;align-items:flex-start}
+  .quali-main{flex:1;width:auto}
+  .quali-side{width:260px;flex-shrink:0}
 }
 
 
@@ -43,7 +40,7 @@
 
 /* Classement live */
 .leaderboard{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
-.lb-row{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:7px;transition:all .3s;position:relative;overflow:hidden;min-width:0}
+.lb-row{display:flex;align-items:center;gap:5px;padding:6px 6px;background:var(--surface);border:1px solid var(--border);border-radius:7px;transition:all .3s;position:relative;overflow:hidden;min-width:0}
 .lb-row.player{border-color:var(--gold);background:rgba(245,200,66,.06)}
 .lb-row.eliminated{opacity:.45;background:rgba(232,0,61,.04);border-color:rgba(232,0,61,.2)}
 .lb-row.danger{border-color:rgba(232,0,61,.4);background:rgba(232,0,61,.06)}
