@@ -1866,7 +1866,15 @@ function saveLastGpSummary(results, careerReward) {
     if (!save || !Race.state || !Array.isArray(results) || !results.length) return;
     const circuit = Race.state.circuit || {};
     const playerTeamId = save.playerTeamId;
-    const playerResults = results.filter(r => r.team?.id === playerTeamId);
+    // Filtrer avec driverStates pour exclure les pilotes libérés en cours de saison
+    const activeDriverIds = Object.entries(save.driverStates||{})
+      .filter(([,v]) => v.teamId === playerTeamId && !v.retired)
+      .map(([k]) => k);
+    const playerResults = results.filter(r => {
+      const tid = r.team?.id;
+      const did = r.driver?.id;
+      return tid === playerTeamId && (!did || activeDriverIds.length === 0 || activeDriverIds.includes(did));
+    });
     const weatherLabel = Race.state.weather === 'heavy_rain' ? 'Pluie forte'
       : Race.state.weather === 'light_rain' ? 'Piste humide'
       : 'Sec';
@@ -1898,7 +1906,13 @@ function saveLastGpSummary(results, careerReward) {
       winner: normalized[0] || null,
       podium: normalized.slice(0, 3),
       playerTeamId,
-      playerResults: normalized.filter(r => (r.team?.id || r.teamId) === playerTeamId),
+      playerResults: normalized.filter(r => {
+        const tid = r.team?.id || r.teamId;
+        const did = r.driverId;
+        if (tid !== playerTeamId) return false;
+        if (!did || activeDriverIds.length === 0) return true;
+        return activeDriverIds.includes(did);
+      }),
       teamPoints: playerResults.reduce((sum, r) => sum + (r.points || 0), 0),
       reward: careerReward?.reward || 0,
       operatingCost: careerReward?.operatingCost || 0,
@@ -2122,7 +2136,7 @@ function restoreDriverStates() {
       d.trait       = state.trait       ?? d.trait;
       d.potential   = state.potential   ?? d.potential;
       d.retired     = state.retired     ?? false;
-      d.teamId      = state.teamId ?? d.teamId;  // garder teamId data.js si absent du save
+      d.teamId      = Object.prototype.hasOwnProperty.call(state, 'teamId') ? state.teamId : d.teamId;
       d.seasons     = state.seasons  ?? 0;
     });
   }

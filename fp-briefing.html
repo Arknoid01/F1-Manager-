@@ -203,7 +203,7 @@ function render(){
     save.generatedDrivers.forEach(gd => {
       const state  = save.driverStates?.[gd.id];
       const merged = { ...gd, ...(state||{}) };
-      if (state?.teamId) merged.teamId = state.teamId;
+      if (state && Object.prototype.hasOwnProperty.call(state, 'teamId')) merged.teamId = state.teamId;
       // Ne pas ajouter dans F1Data si pas de teamId (non promu)
       if (!merged.teamId) return;
       const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
