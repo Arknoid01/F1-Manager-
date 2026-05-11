@@ -473,7 +473,7 @@ const Save = {
     // Nettoyer les anciens events resolus pour ne garder que les non traites
     save.socialEvents = (save.socialEvents||[]).filter(e => !e.resolved);
 
-    const drivers    = F1Data.drivers.filter(d => d.teamId && d.teamId === playerTeamId && !d.retired);
+    const drivers    = F1Data.drivers.filter(d => d.teamId && d.teamId && d.teamId !== 'free_agent' && d.teamId === playerTeamId && !d.retired);
     const circuits   = F1Data.circuits || [];
     const nextCirc   = circuits[(save.race||0) % Math.max(1, circuits.length)];
     const race       = save.race || 0;

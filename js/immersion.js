@@ -336,7 +336,7 @@ const Immersion = {
     const newDriver = {
       id:`JR_${j.id}`, name:j.name, firstName:j.firstName, nationality:j.flag,
       flag: j.flag || '🏁',
-      teamId:null, number:10+Math.floor(Math.random()*89),
+      teamId:'free_agent', number:10+Math.floor(Math.random()*89),
       age:j.age||18, potential:j.potential||80, trait:j.profile?.traits?.[0]||'prodigy',
       retired:false, generated:true, fromAcademy:true,
       pace:Math.min(77, stats.pace||68), consistency:Math.min(77, stats.consistency||65),
@@ -390,7 +390,11 @@ const Immersion = {
       salary: newDriver.salary, flag: newDriver.flag || j.flag || '🏁',
     };
     const fn=`${j.firstName} ${j.name}`;
-    this.addNews(save,'🏁','Promotion en F1 !',`${fn} rejoint l\'équipe avec un contrat rookie de 2 ans (${rookieSalary}M€/an).${transfer.replaced ? ` ${transfer.replaced.firstName} ${transfer.replaced.name} devient agent libre.` : ''}`,'promotion');
+    const promoNewsId = `promo_${newDriver.id}_${save.season||2025}`;
+    if (!(save.news||[]).some(n => n.id === promoNewsId)) {
+      this.addNews(save,'🏁','Promotion en F1 !',`${fn} rejoint l'equipe avec un contrat rookie de 2 ans (${rookieSalary}M/an).${transfer.replaced ? ` ${transfer.replaced.firstName} ${transfer.replaced.name} devient agent libre.` : ''}`,'promotion');
+      if (save.news?.length) save.news[0].id = promoNewsId;
+    }
     if(im.staffMorale){ im.staffMorale.value=Math.min(100,(im.staffMorale.value||60)+8); im.staffMorale.note=`L'équipe est fière de voir ${j.firstName} franchir le pas.`; }
     if(im.sponsorMood){ im.sponsorMood.value=Math.min(100,(im.sponsorMood.value||60)+5); im.sponsorMood.note=`Les sponsors voient d'un bon œil la promotion d'un jeune talent maison.`; }
     if(im.teamReputation){ im.teamReputation.value=Math.min(100,(im.teamReputation.value||50)+6); if(!im.teamReputation.tags.includes('Formation jeunes')) im.teamReputation.tags.push('Formation jeunes'); }
@@ -417,7 +421,7 @@ const Immersion = {
       const ovr = Math.min(77, Math.round(j.profile?.ovr || 66));
       const freeDriver = {
         id:`FA_${j.id}_${save.season||2025}`, name:j.name, firstName:j.firstName, nationality:j.flag,
-        teamId:null, number:10+Math.floor(Math.random()*89), age:j.age||18,
+        teamId:'free_agent', number:10+Math.floor(Math.random()*89), age:j.age||18,
         potential:j.potential||78, trait:j.profile?.traits?.[0]||'prodigy', retired:false,
         generated:true, fromAcademy:true, academyReleased:true,
         pace:Math.min(77, stats.pace||66), consistency:Math.min(77, stats.consistency||64),

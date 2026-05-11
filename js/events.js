@@ -21,7 +21,7 @@ const CareerEvents = {
   },
 
   teamDrivers(save) {
-    return F1Data.drivers.filter(d => d.teamId && d.teamId === save.playerTeamId);
+    return F1Data.drivers.filter(d => d.teamId && d.teamId !== 'free_agent' && d.teamId === save.playerTeamId);
   },
 
   // ── NEWS LOG ──────────────────────────────────────────────
@@ -592,7 +592,7 @@ const CareerEvents = {
           const worst = myDrivers.sort((a,b)=>
             ((a.pace+a.consistency)/2) - ((b.pace+b.consistency)/2)
           )[0];
-          if (worst.id !== driverId) worst.teamId = null;
+          if (worst.id !== driverId) worst.teamId = 'free_agent';
         }
       }
       save.contracts[driverId] = { years: offer.years||2, salaryDemand: offer.salary||demand };
@@ -606,7 +606,7 @@ const CareerEvents = {
       Object.keys(save.driverStates).forEach(id => {
         if (id !== driverId && save.driverStates[id]?.teamId === save.playerTeamId) {
           const stillMine = F1Data.drivers.find(d=>d.id===id&&d.teamId===save.playerTeamId);
-          if (!stillMine) save.driverStates[id].teamId = null;
+          if (!stillMine) save.driverStates[id].teamId = 'free_agent';
         }
       });
 

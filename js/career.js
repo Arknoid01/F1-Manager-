@@ -194,7 +194,7 @@ const Career = {
 
       // Libère si écart > 12 points et pas l'équipe joueur
       if (gap > 12 && team.id !== save.playerTeamId && Math.random() < 0.45) {
-        worst.teamId = null;
+        worst.teamId = 'free_agent';
         released.push(worst);
       }
     });
@@ -800,13 +800,13 @@ const Career = {
 
     const playerTeamId = save.playerTeamId;
     // Exclure le pilote entrant du comptage pour eviter faux positif
-    const teamDrivers = F1Data.drivers.filter(x => x.teamId && x.teamId === playerTeamId && !x.retired && x.id !== incomingDriver.id);
+    const teamDrivers = F1Data.drivers.filter(x => x.teamId && x.teamId && x.teamId !== 'free_agent' && x.teamId === playerTeamId && !x.retired && x.id !== incomingDriver.id);
     let replaced = null;
 
     // Si l'équipe a déjà 2 pilotes, le joueur doit choisir le siège à remplacer.
     if (teamDrivers.length >= 2) {
       if (!replaceDriverId) return { ok:false, msg:'Choisis le pilote de ton équipe à remplacer.' };
-      replaced = F1Data.drivers.find(x => x.id === replaceDriverId && x.teamId === playerTeamId && !x.retired);
+      replaced = F1Data.drivers.find(x => x.id === replaceDriverId && x.teamId && x.teamId !== 'free_agent' && x.teamId === playerTeamId && !x.retired);
       if (!replaced) return { ok:false, msg:'Le pilote à remplacer est introuvable dans ton équipe.' };
       if (replaced.id === incomingDriver.id) return { ok:false, msg:'Ce pilote est déjà dans ton équipe.' };
     }
@@ -815,7 +815,7 @@ const Career = {
 
     // L'ancien pilote du joueur devient agent libre.
     if (replaced) {
-      replaced.teamId = null;
+      replaced.teamId = 'free_agent';
       replaced.contractYears = 0;
       save.contracts = save.contracts || {};
       save.contracts[replaced.id] = {
@@ -827,11 +827,11 @@ const Career = {
       // Persister teamId null dans driverStates et generatedDrivers
       if (!save.driverStates) save.driverStates = {};
       if (save.driverStates[replaced.id]) {
-        save.driverStates[replaced.id].teamId = null;
+        save.driverStates[replaced.id].teamId = 'free_agent';
       }
       if (Array.isArray(save.generatedDrivers)) {
         const gi = save.generatedDrivers.findIndex(d => d.id === replaced.id);
-        if (gi >= 0) save.generatedDrivers[gi].teamId = null;
+        if (gi >= 0) save.generatedDrivers[gi].teamId = 'free_agent';
       }
       // Nettoyer moral et effets de l'ancien pilote
       if (save.immersion?.driverMorale?.[replaced.id]) {
@@ -929,7 +929,7 @@ const Career = {
       return { ok: false, msg: 'Ce pilote n\'est pas dans ton équipe' };
     }
 
-    const teamDrivers = F1Data.drivers.filter(d => d.teamId === save.playerTeamId && !d.retired);
+    const teamDrivers = F1Data.drivers.filter(d => d.teamId && d.teamId !== 'free_agent' && d.teamId === save.playerTeamId && !d.retired);
     if (teamDrivers.length <= 1) {
       return { ok: false, msg: 'Tu dois garder au moins 1 pilote' };
     }
@@ -937,7 +937,7 @@ const Career = {
     // Indemnité de licenciement
     const penalty = Math.round(driver.salary * 0.5);
     save.budget = Math.round(((save.budget || 0) - penalty) * 10) / 10;
-    driver.teamId = null;
+    driver.teamId = 'free_agent';
 
     if (typeof CareerEvents !== 'undefined') {
       CareerEvents.log(save, {
