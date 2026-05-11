@@ -473,6 +473,9 @@ const Save = {
     if (save[gpKey]) return;
     save[gpKey] = true;
 
+    // Nettoyer les anciens events resolus pour ne garder que les non traites
+    save.socialEvents = (save.socialEvents||[]).filter(e => !e.resolved);
+
     const drivers    = F1Data.drivers.filter(d => d.teamId && d.teamId === playerTeamId && !d.retired);
     const circuits   = F1Data.circuits || [];
     const nextCirc   = circuits[(save.race||0) % Math.max(1, circuits.length)];
@@ -499,7 +502,8 @@ const Save = {
       const moral   = save.immersion?.driverMorale?.[d.id]?.value ?? 70;
       const loyalty = save.driverLoyalty?.[d.id] ?? 50;
 
-      // Choisir la situation la plus pertinente pour ce pilote
+      // Garantir 1 event post-course par pilote
+      // Priorite : DNF > podium > points > moral bas > result generique
       if (isDnf) {
         const texts = [
           `${d.firstName} est silencieux dans le motorhome depuis l'abandon. Personne n'ose lui parler. C'est a vous de faire le premier pas.`,
@@ -547,7 +551,6 @@ const Save = {
           ]
         });
       } else if (moral < 45) {
-        // Moral bas apres une mauvaise course
         events.push({
           id: `post_low_moral_${d.id}_${race}`,
           driverId: d.id, phase: 'post', type: 'driver',
@@ -557,6 +560,24 @@ const Save = {
             { text: "Je t'ai observe en course — je sais que tu peux faire bien mieux. Qu'est-ce qui se passe ?", effect: {moral:+10, confiance:+8, loyalty:+5}, choiceType:'positive' },
             { text: "On va analyser les donnees ensemble et repartir de zero.", effect: {moral:+5, confiance:+6, pace:+1}, choiceType:'neutral' },
             { text: "Ces resultats ne sont pas acceptables. Il faut que ca change rapidement.", effect: {moral:-8, confiance:-6, loyalty:-4, pace:+3}, choiceType:'negative' },
+          ]
+        });
+      } else {
+        // Fallback garanti — resultat quelconque
+        const fallbackTexts = [
+          `Le debriefing vient de se terminer. ${d.firstName} vous croise dans le couloir en sortant du garage. Un regard, quelques mots suffisent parfois.`,
+          `${d.firstName} range ses affaires apres la course. P${pos}. Il leve les yeux quand vous entrez dans le garage.`,
+          `Fin de course. ${d.firstName} signe quelques autographes puis revient vers le motorhome. Il vous fait signe d'approcher.`,
+        ];
+        events.push({
+          id: `post_result_${d.id}_${race}`,
+          driverId: d.id, phase: 'post', type: 'driver',
+          trigger: `P${pos}`,
+          text: fallbackTexts[race % fallbackTexts.length],
+          choices: [
+            { text: "Bonne course. On repart de ca pour le prochain GP.", effect: {moral:+5, confiance:+4, loyalty:+2}, choiceType:'positive' },
+            { text: "P${pos}. Pas parfait mais on avance. On en parle demain.", effect: {moral:+2, confiance:+2}, choiceType:'neutral' },
+            { text: "Je t'attends au debriefing demain matin. On a des choses a revoir.", effect: {moral:-3, confiance:+2, pace:+1}, choiceType:'negative' },
           ]
         });
       }
