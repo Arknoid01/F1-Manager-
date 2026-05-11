@@ -296,7 +296,7 @@ function init() {
     F1Data.drivers.forEach(d => {
       const st = save.driverStates[d.id];
       if (!st) return;
-      if (Object.prototype.hasOwnProperty.call(st, 'teamId')) d.teamId = st.teamId;
+      if (st.teamId !== undefined) d.teamId = st.teamId;
       if (Object.prototype.hasOwnProperty.call(st, 'retired')) d.retired = st.retired;
     });
   }
@@ -314,13 +314,13 @@ function init() {
   }
   if (save.generatedDrivers?.length) {
     save.generatedDrivers.forEach(gd => {
-      if (!gd.teamId) return;
+      if (!gd.teamId || gd.teamId === 'free_agent') return;
       if (!F1Data.drivers.find(d => d.id === gd.id)) F1Data.drivers.push(gd);
     });
   }
 
   circuit   = F1Data.circuits[(save.race || 0) % F1Data.circuits.length];
-  myDrivers = F1Data.drivers.filter(d => d.teamId && d.teamId === save.playerTeamId && !d.retired);
+  myDrivers = F1Data.drivers.filter(d => d.teamId && d.teamId !== 'free_agent' && d.teamId && d.teamId !== 'free_agent' && d.teamId === save.playerTeamId && !d.retired);
 
   // Générer météo + événement paddock si nouveau circuit
   const evKey = `paddock_${save.season}-${save.race}`;
@@ -908,7 +908,7 @@ function buildQualiSection() {
             `).join('')}
           </div>
           <div style="margin-top:12px">
-            <button class="btn btn-red" onclick="runQuali()">⚡ Lancer les qualifications</button>
+            <button class="btn btn-red" onclick="launchQuali()">⚡ Lancer les qualifications</button>
           </div>
         </div>
       </div>
@@ -919,6 +919,20 @@ function buildQualiSection() {
   }
 
   return el;
+}
+
+function launchQuali() {
+  // Sauvegarder les strategies avant de rediriger
+  save.qualiStrategy = {};
+  myDrivers.forEach(driver => {
+    save.qualiStrategy[driver.id] = {
+      mode: document.getElementById(`qm-${driver.id}`)?.value || 'normal',
+    };
+  });
+  const knowledge = Weekend.calcKnowledgeBonus(fpResults);
+  save.weekendKnowledge = knowledge;
+  Save.save(save);
+  location.href = 'quali.html';
 }
 
 function runQuali() {
