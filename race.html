@@ -2127,16 +2127,21 @@ function restoreDriverStates() {
     });
   }
 
-  // Restaurer les pilotes générés
+  // Restaurer les pilotes générés (juniors promus)
   if (save.generatedDrivers?.length) {
     save.generatedDrivers.forEach(gd => {
-      if (!F1Data.drivers.find(d => d.id === gd.id)) {
-        F1Data.drivers.push(gd);
+      // Fusionner avec driverStates pour avoir le teamId final
+      const state = save.driverStates?.[gd.id];
+      const merged = { ...gd, ...(state || {}) };
+      // S'assurer que teamId vient bien de driverStates si disponible
+      if (state?.teamId) merged.teamId = state.teamId;
+      if (!merged.flag && gd.flag) merged.flag = gd.flag;
+
+      const existing = F1Data.drivers.findIndex(d => d.id === gd.id);
+      if (existing < 0) {
+        F1Data.drivers.push(merged);
       } else {
-        const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
-        if (save.driverStates?.[gd.id]) {
-          Object.assign(F1Data.drivers[idx], save.driverStates[gd.id]);
-        }
+        Object.assign(F1Data.drivers[existing], merged);
       }
     });
   }

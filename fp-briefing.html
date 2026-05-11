@@ -198,7 +198,18 @@ function render(){
   const cid     = circuit.id;
   const cd      = CIRCUIT_DATA[cid] || { flag:'🏁', spectateurs:'—', anecdote:`${circuit.fullName||circuit.name} est l'un des circuits emblématiques du calendrier.`, setup:'Setup équilibré recommandé.' };
   const myTeam  = F1Data.teams.find(t=>t.id===save.playerTeamId);
-  const myDrivers = F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
+  // Restaurer les pilotes generés avant filtrage
+  if (save.generatedDrivers?.length) {
+    save.generatedDrivers.forEach(gd => {
+      const state  = save.driverStates?.[gd.id];
+      const merged = { ...gd, ...(state||{}) };
+      if (state?.teamId) merged.teamId = state.teamId;
+      const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
+      if (idx < 0) F1Data.drivers.push(merged);
+      else Object.assign(F1Data.drivers[idx], merged);
+    });
+  }
+    const myDrivers = F1Data.drivers.filter(d=>d.teamId===save.playerTeamId&&!d.retired);
   const weather = save.weekendWeather || 'dry';
   const season  = save.season||2025;
   const gpNum   = (save.race||0)+1;
