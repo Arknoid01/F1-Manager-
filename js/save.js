@@ -450,21 +450,14 @@ const Save = {
       }
     }
 
-    const ok = this.save(save);
-    return ok ? { reward: reward + sponsorBonus,
-      operatingCost: gpOperatingCost, baseReward: reward, sponsorBonus, tokens, save } : null;
-
     // -- GENERATION DISCUSSIONS SOCIALES POST-COURSE --
     try {
       this.generatePostRaceSocial(save, results, playerTeamId);
-      Save.save(save);
     } catch(e) { console.warn('Social gen:', e); }
 
-    return save ? {
-      reward, tokens,
-      operatingCost: gpOperatingCost,
-      sponsorBonus,
-    } : null;
+    const ok = this.save(save);
+    return ok ? { reward: reward + sponsorBonus,
+      operatingCost: gpOperatingCost, baseReward: reward, sponsorBonus, tokens, save } : null;
   },
 
   // -- GENERATION DISCUSSIONS SOCIALES POST-COURSE --
