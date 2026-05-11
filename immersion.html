@@ -196,7 +196,7 @@ function doPromote(juniorId){
     F1Data.drivers.forEach(d => {
       const st = save.driverStates[d.id];
       if (!st) return;
-      if (Object.prototype.hasOwnProperty.call(st, 'teamId')) d.teamId = st.teamId;
+      if (st.teamId !== undefined) d.teamId = st.teamId;
       if (Object.prototype.hasOwnProperty.call(st, 'retired')) d.retired = st.retired;
     });
   }
