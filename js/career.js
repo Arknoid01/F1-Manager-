@@ -829,6 +829,17 @@ const Career = {
     incomingDriver.teamId = playerTeamId;
     incomingDriver.salary = Number(contractData.salary ?? incomingDriver.salary ?? 1);
     incomingDriver.contractYears = Number(contractData.years ?? 1);
+
+    // Persister le teamId dans generatedDrivers et driverStates si c'est un junior
+    if (incomingDriver.generated || incomingDriver.fromAcademy) {
+      if (!save.driverStates) save.driverStates = {};
+      if (!save.driverStates[incomingDriver.id]) save.driverStates[incomingDriver.id] = {};
+      save.driverStates[incomingDriver.id].teamId = playerTeamId;
+      if (Array.isArray(save.generatedDrivers)) {
+        const gi = save.generatedDrivers.findIndex(d => d.id === incomingDriver.id);
+        if (gi >= 0) save.generatedDrivers[gi].teamId = playerTeamId;
+      }
+    }
     save.contracts[incomingDriver.id] = {
       ...(save.contracts[incomingDriver.id] || {}),
       years: Number(contractData.years ?? 1),
