@@ -152,6 +152,8 @@ function render(){
       const state  = save.driverStates?.[gd.id];
       const merged = { ...gd, ...(state||{}) };
       if (state?.teamId) merged.teamId = state.teamId;
+      // Ne pas ajouter dans F1Data si pas de teamId (non promu)
+      if (!merged.teamId) return;
       const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
       if (idx < 0) F1Data.drivers.push(merged);
       else Object.assign(F1Data.drivers[idx], merged);

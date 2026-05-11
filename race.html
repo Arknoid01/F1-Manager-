@@ -2133,10 +2133,10 @@ function restoreDriverStates() {
       // Fusionner avec driverStates pour avoir le teamId final
       const state = save.driverStates?.[gd.id];
       const merged = { ...gd, ...(state || {}) };
-      // S'assurer que teamId vient bien de driverStates si disponible
       if (state?.teamId) merged.teamId = state.teamId;
       if (!merged.flag && gd.flag) merged.flag = gd.flag;
-
+      // Ne pas ajouter dans F1Data si pas de teamId (junior non promu)
+      if (!merged.teamId) return;
       const existing = F1Data.drivers.findIndex(d => d.id === gd.id);
       if (existing < 0) {
         F1Data.drivers.push(merged);

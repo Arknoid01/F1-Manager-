@@ -304,6 +304,7 @@ function init() {
   }
   if (save.generatedDrivers?.length) {
     save.generatedDrivers.forEach(gd => {
+      if (!gd.teamId) return;
       if (!F1Data.drivers.find(d => d.id === gd.id)) F1Data.drivers.push(gd);
     });
   }

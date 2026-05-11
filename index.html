@@ -764,7 +764,7 @@ GP : ${data.race || 0}/${F1Data.circuits.length}
 
       localStorage.setItem(key, JSON.stringify(data));
       showToast('✅ Sauvegarde importée ! Rechargement...');
-      setTimeout(() => location.reload(), 1500);
+      setTimeout(() => location.href = location.href.split('?')[0] + '?nocache=' + Date.now(), 1500);
     } catch(err) {
       showToast('❌ Erreur import : ' + err.message, true);
     }

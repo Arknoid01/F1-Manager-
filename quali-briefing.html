@@ -107,6 +107,7 @@ function render(){
       const merged = { ...gd, ...(state||{}) };
       if (state?.teamId) merged.teamId = state.teamId;
       if (!merged.flag && gd.flag) merged.flag = gd.flag;
+      if (!merged.teamId) return;
       const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
       if (idx < 0) F1Data.drivers.push(merged);
       else Object.assign(F1Data.drivers[idx], merged);
