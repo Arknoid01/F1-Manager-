@@ -186,30 +186,35 @@ function render() {
     return;
   }
 
-  const drivers = F1Data.drivers.filter(d => d.teamId && d.teamId === save.playerTeamId && !d.retired);
+  const drivers = F1Data.drivers.filter(d => d.teamId && d.teamId !== 'free_agent' && d.teamId && d.teamId !== 'free_agent' && d.teamId === save.playerTeamId && !d.retired);
   // Exclure les events de pilotes qui ne sont plus dans l'équipe
   const activeDriverIds2 = Object.entries(save.driverStates||{})
-    .filter(([,v]) => v.teamId === save.playerTeamId && !v.retired)
+    .filter(([,v]) => v.teamId && v.teamId !== 'free_agent' && v.teamId === save.playerTeamId && !v.retired)
     .map(([k]) => k);
   const engIds = ['engineer', 'engineer2'];
-  const pending = (save.socialEvents||[]).filter(e =>
-    !e.resolved && (engIds.includes(e.driverId) || activeDriverIds2.length === 0 || activeDriverIds2.includes(e.driverId))
-  );
+  const pending = (save.socialEvents||[]).filter(e => {
+    if (e.resolved) return false;
+    if (engIds.includes(e.driverId)) return true;
+    if (activeDriverIds2.length === 0) return true;
+    if (activeDriverIds2.includes(e.driverId)) return true;
+    // Vérifier aussi dans F1Data (pilotes standards non dans driverStates)
+    const d = F1Data.drivers.find(x => x.id === e.driverId);
+    if (d && d.teamId && d.teamId !== 'free_agent' && d.teamId === save.playerTeamId) return true;
+    // Exclure si explicitement free_agent
+    const st = save.driverStates?.[e.driverId];
+    if (st?.teamId === 'free_agent') return false;
+    return false;
+  });
   const season  = save.season || 2025;
   const race    = save.race || 0;
   const lastGP  = save.lastGpSummary;
-  // Filtrer playerResults avec les pilotes actifs dans driverStates
+  // Filtrer playerResults — exclure les pilotes agent libre
   if (lastGP?.playerResults) {
-    const activeIds = Object.entries(save.driverStates||{})
-      .filter(([,v]) => v.teamId === save.playerTeamId && !v.retired)
-      .map(([k]) => k);
-    if (activeIds.length > 0) {
-      lastGP.playerResults = lastGP.playerResults.filter(r =>
-        activeIds.includes(r.driverId) || activeIds.some(id => r.driverName?.includes(
-          F1Data.drivers.find(d=>d.id===id)?.name || '___'
-        ))
-      );
-    }
+    lastGP.playerResults = lastGP.playerResults.filter(r => {
+      if (!r.driverId) return true;
+      const st = save.driverStates?.[r.driverId];
+      return !st || st.teamId !== 'free_agent';
+    });
   }
 
   document.getElementById('topPills').innerHTML = `

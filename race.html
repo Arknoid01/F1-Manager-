@@ -1883,7 +1883,7 @@ function saveLastGpSummary(results, careerReward) {
     const playerTeamId = save.playerTeamId;
     // Filtrer avec driverStates pour exclure les pilotes libérés en cours de saison
     const activeDriverIds = Object.entries(save.driverStates||{})
-      .filter(([,v]) => v.teamId === playerTeamId && !v.retired)
+      .filter(([,v]) => v.teamId && v.teamId !== 'free_agent' && v.teamId === playerTeamId && !v.retired)
       .map(([k]) => k);
     const playerResults = results.filter(r => {
       const tid = r.team?.id;
@@ -2151,7 +2151,7 @@ function restoreDriverStates() {
       d.trait       = state.trait       ?? d.trait;
       d.potential   = state.potential   ?? d.potential;
       d.retired     = state.retired     ?? false;
-      d.teamId      = Object.prototype.hasOwnProperty.call(state, 'teamId') ? state.teamId : d.teamId;
+      d.teamId      = state.teamId !== undefined ? state.teamId : d.teamId;
       d.seasons     = state.seasons  ?? 0;
     });
   }
@@ -2165,7 +2165,7 @@ function restoreDriverStates() {
       if (state?.teamId) merged.teamId = state.teamId;
       if (!merged.flag && gd.flag) merged.flag = gd.flag;
       // Ne pas ajouter dans F1Data si pas de teamId (junior non promu)
-      if (!merged.teamId) return;
+      if (!merged.teamId || merged.teamId === 'free_agent') return;
       const existing = F1Data.drivers.findIndex(d => d.id === gd.id);
       if (existing < 0) {
         F1Data.drivers.push(merged);
