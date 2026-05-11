@@ -823,6 +823,28 @@ const Career = {
         status: 'agent libre',
         satisfaction: Math.max(25, (save.contracts[replaced.id]?.satisfaction ?? 50) - 12),
       };
+      // Persister teamId null dans driverStates et generatedDrivers
+      if (!save.driverStates) save.driverStates = {};
+      if (save.driverStates[replaced.id]) {
+        save.driverStates[replaced.id].teamId = null;
+      }
+      if (Array.isArray(save.generatedDrivers)) {
+        const gi = save.generatedDrivers.findIndex(d => d.id === replaced.id);
+        if (gi >= 0) save.generatedDrivers[gi].teamId = null;
+      }
+      // Nettoyer moral et effets de l'ancien pilote
+      if (save.immersion?.driverMorale?.[replaced.id]) {
+        delete save.immersion.driverMorale[replaced.id];
+      }
+      if (save.driverEffects?.[replaced.id]) {
+        delete save.driverEffects[replaced.id];
+      }
+      if (save.driverConfidence?.[replaced.id]) {
+        delete save.driverConfidence[replaced.id];
+      }
+      if (save.driverLoyalty?.[replaced.id]) {
+        delete save.driverLoyalty[replaced.id];
+      }
     }
 
     // Le nouveau pilote prend exactement ce siège.
