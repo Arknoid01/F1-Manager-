@@ -455,12 +455,16 @@ const Save = {
       operatingCost: gpOperatingCost, baseReward: reward, sponsorBonus, tokens, save } : null;
 
     // -- GENERATION DISCUSSIONS SOCIALES POST-COURSE --
-    // Genere une seule fois apres chaque GP
     try {
       this.generatePostRaceSocial(save, results, playerTeamId);
+      Save.save(save);
     } catch(e) { console.warn('Social gen:', e); }
 
-    return null;
+    return save ? {
+      reward, tokens,
+      operatingCost: gpOperatingCost,
+      sponsorBonus,
+    } : null;
   },
 
   // -- GENERATION DISCUSSIONS SOCIALES POST-COURSE --
@@ -493,6 +497,8 @@ const Save = {
     const hasPoints     = bestPos <= 10;
 
     const events = [];
+
+    console.log('[Social] Génération GP'+race+' — drivers:', drivers.map(d=>d.id), '— playerResults:', playerResults.map(r=>({id:r.driver?.id||r.driverId, pos:r.position, status:r.status})));
 
     // ── PHASE POST-COURSE (1-2 events) ──────────────────────
     drivers.forEach(d => {
@@ -763,11 +769,13 @@ const Save = {
     });
 
     // Ajouter tous les events au save
+    console.log('[Social] Events generés:', events.length, events.map(e=>e.id));
     events.forEach(ev => {
       if (!save.socialEvents.find(e => e.id === ev.id)) {
         save.socialEvents.push({...ev, read: false, resolved: false});
       }
     });
+    console.log('[Social] Total socialEvents apres ajout:', save.socialEvents.length);
   },
 
   // ── RESET RÉGLEMENTAIRE ───────────────────────────────────
