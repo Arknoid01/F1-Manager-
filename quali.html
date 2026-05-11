@@ -8,7 +8,19 @@
 <title>Qualifications — F1 Manager</title>
 <style>
 *{box-sizing:border-box}
-.wrap{max-width:700px;margin:0 auto;padding:0 12px 40px}
+.wrap{max-width:1040px;margin:0 auto;padding:8px 12px 40px}
+.quali-live{display:flex;gap:8px;align-items:flex-start}
+.quali-main{flex:1;min-width:0}
+.quali-side{width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.panel-head{background:var(--surface2);border-bottom:1px solid var(--border);padding:6px 12px;font-family:var(--fh);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
+.panel-head .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.quali-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.quali-card-body{padding:10px}
+.run-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.run-meta .mini{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 8px;font-family:var(--fh)}
+.run-meta .mini b{display:block;font-size:15px;color:var(--text)}
+.run-meta .mini span{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+@media(max-width:760px){.quali-live{flex-direction:column}.quali-side{width:100%}.run-meta{grid-template-columns:1fr}}
 
 /* Header session */
 .session-header{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
@@ -57,16 +69,16 @@
 .cut-line::after{content:attr(data-label);position:absolute;right:0;top:-10px;font-family:var(--fh);font-size:9px;letter-spacing:1px;color:var(--accent);text-transform:uppercase}
 
 /* Radio messages */
-.radio-feed{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px;max-height:120px;overflow-y:auto}
+.radio-feed{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:220px;overflow-y:auto}
 .radio-msg{font-size:12px;color:#ccc;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:8px}
 .radio-msg:last-child{border:none;color:var(--gold)}
 .radio-time{font-family:var(--fh);font-size:10px;color:var(--muted);flex-shrink:0;width:30px}
 .radio-icon{flex-shrink:0}
 
 /* Contrôles joueur */
-.player-controls{background:var(--surface);border:1px solid var(--gold);border-radius:10px;padding:12px 14px;margin-bottom:10px}
-.pc-title{font-family:var(--fh);font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
-.pc-drivers{display:flex;flex-direction:column;gap:8px}
+.player-controls{background:var(--surface);border:1px solid var(--gold);border-radius:6px;padding:0;overflow:hidden;margin-bottom:0}
+.pc-title{font-family:var(--fh);font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 10px;margin-bottom:0}
+.pc-drivers{display:flex;flex-direction:column;gap:8px;padding:10px}
 .pc-driver{display:flex;align-items:center;gap:10px}
 .pc-name{font-family:var(--fh);font-weight:700;font-size:13px;flex:1}
 .pc-btn{font-family:var(--fh);font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s}
@@ -117,31 +129,37 @@
 let save = Save.load();
 if (!save?.playerTeamId) location.href = 'weekend.html';
 
-// Synchroniser F1Data avec driverStates
-if (save.driverStates) {
-  F1Data.drivers.forEach(d => {
-    const st = save.driverStates[d.id];
-    if (!st) return;
-    if (st.teamId !== undefined) d.teamId = st.teamId;
-    if (st.retired !== undefined) d.retired = st.retired;
-  });
+// Synchroniser F1Data avec la sauvegarde (pilotes titulaires + juniors promus)
+function restoreDriverStatesForQuali() {
+  if (save.driverStates) {
+    F1Data.drivers.forEach(d => {
+      const st = save.driverStates[d.id];
+      if (!st) return;
+      Object.assign(d, st);
+      if (Object.prototype.hasOwnProperty.call(st, 'teamId')) d.teamId = st.teamId;
+      if (Object.prototype.hasOwnProperty.call(st, 'retired')) d.retired = st.retired;
+    });
+  }
+  if (save.generatedDrivers?.length) {
+    save.generatedDrivers.forEach(gd => {
+      const st = save.driverStates?.[gd.id] || {};
+      const merged = {...gd, ...st};
+      if (st.teamId !== undefined) merged.teamId = st.teamId;
+      if (!merged.teamId || merged.teamId === 'free_agent' || merged.retired) return;
+      const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
+      if (idx < 0) F1Data.drivers.push(merged);
+      else Object.assign(F1Data.drivers[idx], merged);
+    });
+  }
 }
-if (save.generatedDrivers?.length) {
-  save.generatedDrivers.forEach(gd => {
-    const st = save.driverStates?.[gd.id];
-    const merged = {...gd, ...(st||{})};
-    if (!merged.teamId || merged.teamId === 'free_agent') return;
-    const idx = F1Data.drivers.findIndex(d => d.id === gd.id);
-    if (idx < 0) F1Data.drivers.push(merged);
-    else Object.assign(F1Data.drivers[idx], merged);
-  });
-}
+restoreDriverStatesForQuali();
 
 const playerTeamId = save.playerTeamId;
 const circuit      = F1Data.circuits[(save.race||0) % F1Data.circuits.length];
 const weather      = save.weekendWeather || 'dry';
 const myDrivers    = F1Data.drivers.filter(d => d.teamId && d.teamId !== 'free_agent' && d.teamId === playerTeamId && !d.retired);
 const allDrivers   = F1Data.drivers.filter(d => d.teamId && d.teamId !== 'free_agent' && !d.retired);
+const RUN_LAPS_COST = 3;
 
 // ── ÉTAT DE LA SESSION ────────────────────────────────────
 const state = {
@@ -163,8 +181,8 @@ const state = {
 
 // Init modes pilotes
 myDrivers.forEach(d => {
-  state.playerModes[d.id] = 'normal';
-  state.playerRuns[d.id]  = 0;
+  state.playerModes[d.id] = state.playerModes[d.id] || 'normal';
+  state.playerRuns[d.id]  = state.playerRuns[d.id] || 0;
 });
 
 // ── CALCUL TEMPS ─────────────────────────────────────────
@@ -223,6 +241,18 @@ function fmtTimer(s) {
   return `${m}:${sec}`;
 }
 
+function consumeRunTime(lapReference) {
+  const lap = Number(lapReference) || 90;
+  const used = Math.min(state.timer, Math.max(1, Math.ceil(lap * RUN_LAPS_COST)));
+  state.timer = Math.max(0, state.timer - used);
+  const el = document.getElementById('sessionTimer');
+  if (el) {
+    el.textContent = fmtTimer(state.timer);
+    el.className = `sh-timer${state.timer < 120 ? ' critical' : ''}`;
+  }
+  return used;
+}
+
 // ── RADIO ────────────────────────────────────────────────
 function addRadio(icon, msg, timeLeft) {
   const mins = Math.floor(timeLeft/60);
@@ -248,7 +278,7 @@ function initDrivers(driverList) {
 // ── SIMULER UN RUN ────────────────────────────────────────
 function simRun(driver, forceMode) {
   const ds = state.drivers[driver.id];
-  if (!ds) return;
+  if (!ds) return null;
   const isPlayer = driver.teamId === playerTeamId;
   const mode = isPlayer ? (forceMode || state.playerModes[driver.id]) : 'normal';
   const t = calcQualiTime(driver, true, mode);
@@ -268,6 +298,7 @@ function simRun(driver, forceMode) {
       addRadio('📻', `${driver.firstName} ${driver.name} — Pas d amélioration. ${fmtTime(t)}`, state.timer);
     }
   }
+  return t;
 }
 
 // ── SIMULER TOUS LES RIVAUX ──────────────────────────────
@@ -378,6 +409,7 @@ function stopTimer() {
 
 // ── LANCER UNE PHASE ─────────────────────────────────────
 function startPhase(phase, drivers) {
+  stopTimer();
   state.phase   = phase;
   state.running = true;
   state.phaseComplete = false;
@@ -402,7 +434,6 @@ function renderPhase(phase, drivers, board) {
   const phaseColors = { Q1:'q1', Q2:'q2', Q3:'q3' };
 
   document.getElementById('content').innerHTML = `
-    <!-- Header -->
     <div class="session-header">
       <div>
         <div class="sh-phase" style="color:${phase==='Q3'?'var(--gold)':phase==='Q2'?'#ff8800':'#64a0ff'}">${phase}</div>
@@ -418,30 +449,43 @@ function renderPhase(phase, drivers, board) {
       </div>
     </div>
 
-    <!-- Contrôles joueur -->
-    <div class="player-controls">
-      <div class="pc-title">🎮 Tes pilotes</div>
-      <div class="pc-drivers" id="playerControls">
-        ${myDrivers.filter(d => !state.eliminated.includes(d.id)).map(d => `
-          <div class="pc-driver">
-            <div class="pc-name">${d.firstName} ${d.name}</div>
-            <span class="pc-status" id="status_${d.id}">En attente</span>
-            <button class="pc-btn${state.playerModes[d.id]==='push'?' active':''}" onclick="setMode('${d.id}','push')">⚡ Push</button>
-            <button class="pc-btn${state.playerModes[d.id]==='normal'?' active':''}" onclick="setMode('${d.id}','normal')">🎯 Normal</button>
+    <div class="quali-live">
+      <section class="quali-main quali-card">
+        <div class="panel-head"><span class="dot"></span>Classement live</div>
+        <div class="quali-card-body">
+          <div class="leaderboard" id="leaderboard"></div>
+        </div>
+      </section>
+
+      <aside class="quali-side">
+        <div class="player-controls">
+          <div class="pc-title">🎮 Mur des stands</div>
+          <div class="pc-drivers" id="playerControls">
+            ${myDrivers.filter(d => !state.eliminated.includes(d.id) && drivers.find(x=>x.id===d.id)).map(d => `
+              <div class="pc-driver">
+                <div class="pc-name">${d.firstName} ${d.name}</div>
+                <span class="pc-status" id="status_${d.id}">En attente</span>
+              </div>
+              <div class="pc-driver" style="padding-left:0">
+                <button class="pc-btn${state.playerModes[d.id]==='push'?' active':''}" onclick="setMode('${d.id}','push')">⚡ Push</button>
+                <button class="pc-btn${state.playerModes[d.id]==='normal'?' active':''}" onclick="setMode('${d.id}','normal')">🎯 Normal</button>
+              </div>
+            `).join('')}
+            <button class="btn-run" id="btnRun" onclick="doPlayerRun()">🏎️ Lancer un run</button>
+            <button class="btn-run secondary" id="btnEnd" onclick="endPhase()">⏭ Terminer ${phase}</button>
+            <div class="run-meta">
+              <div class="mini"><span>Coût run</span><b>3 tours</b></div>
+              <div class="mini"><span>Sortie</span><b>1 tour</b></div>
+              <div class="mini"><span>Retour</span><b>1 tour</b></div>
+            </div>
           </div>
-        `).join('')}
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-run" id="btnRun" onclick="doPlayerRun()">🏎️ Lancer un run</button>
-        <button class="btn-run secondary" id="btnEnd" onclick="endPhase()">⏭ Terminer ${phase}</button>
-      </div>
+        </div>
+        <div class="quali-card">
+          <div class="panel-head"><span class="dot"></span>Radio</div>
+          <div class="radio-feed" id="radioFeed"></div>
+        </div>
+      </aside>
     </div>
-
-    <!-- Radio -->
-    <div class="radio-feed" id="radioFeed"></div>
-
-    <!-- Classement -->
-    <div class="leaderboard" id="leaderboard"></div>
   `;
 
   const subEl = document.getElementById('sessionSub');
@@ -493,10 +537,14 @@ function doPlayerRun() {
 
   const currentDrivers = getCurrentDrivers();
 
-  // Simuler run joueur
+  // Simuler run joueur : les deux voitures sortent sur la même fenêtre de piste.
+  const playerTimes = [];
   myDrivers.filter(d => !state.eliminated.includes(d.id) && currentDrivers.find(x=>x.id===d.id)).forEach(d => {
-    simRun(d);
+    const t = simRun(d);
+    if (t) playerTimes.push(t);
   });
+  const used = consumeRunTime(playerTimes.length ? Math.max(...playerTimes) : 90);
+  addRadio('⏱️', `Run terminé — ${RUN_LAPS_COST} tours consommés (${fmtTimer(used)}).`, state.timer);
 
   // Simuler aussi quelques rivaux qui s'améliorent
   const rivals = currentDrivers.filter(d => d.teamId !== playerTeamId);
@@ -542,7 +590,7 @@ function checkDangerZone(board, drivers) {
 }
 
 function getCurrentDrivers() {
-  if (state.phase === 'Q1') return allDrivers.filter(d => !state.eliminated.includes(d.id)).slice(0, 20);
+  if (state.phase === 'Q1') return allDrivers.filter(d => !state.eliminated.includes(d.id));
   if (state.phase === 'Q2') return state.q2Drivers;
   return state.q3Drivers;
 }
@@ -781,7 +829,7 @@ function renderStart() {
       💡 Pendant chaque session tu peux <strong style="color:var(--gold)">choisir le mode</strong> de tes pilotes (Push ou Normal) et <strong style="color:var(--gold)">lancer des runs</strong> quand tu veux. Les rivaux s'améliorent aussi entre tes runs.
     </div>
 
-    <button class="btn-run" onclick="startPhase('Q1', allDrivers.slice(0,20))">⚡ Lancer Q1 →</button>
+    <button class="btn-run" onclick="startPhase('Q1', allDrivers)">⚡ Lancer Q1 →</button>
     <a href="weekend.html" class="btn-run secondary" style="text-decoration:none;display:block;text-align:center;margin-top:6px">← Retour</a>
   `;
 }
