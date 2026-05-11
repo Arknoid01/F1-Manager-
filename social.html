@@ -187,10 +187,30 @@ function render() {
   }
 
   const drivers = F1Data.drivers.filter(d => d.teamId && d.teamId === save.playerTeamId && !d.retired);
-  const pending = (save.socialEvents||[]).filter(e => !e.resolved);
+  // Exclure les events de pilotes qui ne sont plus dans l'équipe
+  const activeDriverIds2 = Object.entries(save.driverStates||{})
+    .filter(([,v]) => v.teamId === save.playerTeamId && !v.retired)
+    .map(([k]) => k);
+  const engIds = ['engineer', 'engineer2'];
+  const pending = (save.socialEvents||[]).filter(e =>
+    !e.resolved && (engIds.includes(e.driverId) || activeDriverIds2.length === 0 || activeDriverIds2.includes(e.driverId))
+  );
   const season  = save.season || 2025;
   const race    = save.race || 0;
   const lastGP  = save.lastGpSummary;
+  // Filtrer playerResults avec les pilotes actifs dans driverStates
+  if (lastGP?.playerResults) {
+    const activeIds = Object.entries(save.driverStates||{})
+      .filter(([,v]) => v.teamId === save.playerTeamId && !v.retired)
+      .map(([k]) => k);
+    if (activeIds.length > 0) {
+      lastGP.playerResults = lastGP.playerResults.filter(r =>
+        activeIds.includes(r.driverId) || activeIds.some(id => r.driverName?.includes(
+          F1Data.drivers.find(d=>d.id===id)?.name || '___'
+        ))
+      );
+    }
+  }
 
   document.getElementById('topPills').innerHTML = `
     <span style="font-family:var(--fh);font-size:11px;color:var(--muted)">S${season} · GP${race}</span>
