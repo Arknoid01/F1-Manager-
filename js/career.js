@@ -799,7 +799,8 @@ const Career = {
     if (!save || !incomingDriver) return { ok:false, msg:'Transfert impossible.' };
 
     const playerTeamId = save.playerTeamId;
-    const teamDrivers = F1Data.drivers.filter(x => x.teamId === playerTeamId && !x.retired);
+    // Exclure le pilote entrant du comptage pour eviter faux positif
+    const teamDrivers = F1Data.drivers.filter(x => x.teamId && x.teamId === playerTeamId && !x.retired && x.id !== incomingDriver.id);
     let replaced = null;
 
     // Si l'équipe a déjà 2 pilotes, le joueur doit choisir le siège à remplacer.
